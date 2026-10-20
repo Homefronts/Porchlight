@@ -23,6 +23,7 @@ import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { AiNoticeDialog, AiToggleButton } from "@/components/layout/ai-toggle-button";
 import { useFullscreenStore } from "@/lib/store/fullscreen";
 import {
   DropdownMenu,
@@ -210,6 +211,12 @@ export function TopBar() {
             almost anywhere in the bar to move the window. */}
         <div data-tauri-drag-region className="h-full flex-1" />
 
+        {/* Clear of the fixed window controls (3 x w-11) off macOS. */}
+        {fullscreen ? null : (
+          <AiToggleButton
+            className={cn(NAV_BTN_CLS, IS_MAC ? "mr-2" : "mr-[140px]")}
+          />
+        )}
       </header>
 
       {/* Keeps the window draggable by its title bar while a dialog is
@@ -274,6 +281,7 @@ export function TopBar() {
 
       <ReportIssueDialog open={reportOpen} onOpenChange={setReportOpen} />
       <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />
+      <AiNoticeDialog />
     </>
   );
 }
