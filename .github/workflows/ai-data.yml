@@ -1,0 +1,61 @@
+# Rebuilds the AI artist data the app downloads (see
+# docs/superpowers/specs/2026-10-20-ai-music-filter-design.md) and commits
+# it to the `ai-data` branch, which holds nothing but the job's output:
+#   ai-artists.json  what the app fetches from raw.githubusercontent.com
+#   state.json       per-artist results, so each run is incremental
+# A failing smoke test fails the job before anything is pushed, so the
+# published file stays at the last good version.
+name: AI data
+
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+  # TEMP trial trigger, removed before merge.
+  push:
+    branches: [feature/ai-filter]
+    paths: [scripts/ai-data/**, .github/workflows/ai-data.yml]
+
+concurrency:
+  group: ai-data
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check out the data branch
+        run: |
+          if git ls-remote --exit-code --heads origin ai-data > /dev/null; then
+            git fetch --depth 1 origin ai-data
+            git worktree add ai-data-out origin/ai-data
+            git -C ai-data-out switch -c ai-data
+          else
+            git worktree add --detach ai-data-out
+            git -C ai-data-out switch --orphan ai-data
+          fi
+
+      - name: Build
+        run: npx -y --package=tsx@4.20.6 -- tsx scripts/ai-data/run.ts ai-data-out
+
+      - name: Publish
+        working-directory: ai-data-out
+        run: |
+          git add ai-artists.json state.json
+          if git diff --cached --quiet; then
+            echo "No changes."
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -q -m "AI data $(date -u +%F)"
+          git push origin ai-data
