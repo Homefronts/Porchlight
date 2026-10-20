@@ -380,6 +380,23 @@ describe("next() and AI music", () => {
     expect(usePlaybackStore.getState().playing).toBe(false);
   });
 
+  it("setQueue starts past a held AI first track", () => {
+    usePlaybackStore.getState().setQueue([ai("x"), track("a"), track("b")], 0);
+    expect(usePlaybackStore.getState().index).toBe(1);
+  });
+
+  it("setQueue keeps an aiAllowed start", () => {
+    usePlaybackStore.getState().setQueue([ai("x", true), track("a")], 0);
+    expect(usePlaybackStore.getState().index).toBe(0);
+  });
+
+  it("prev() steps back over held AI tracks", () => {
+    usePlaybackSettings.setState({ backButton: "previous" });
+    setup({ queue: [track("a"), ai("b"), track("c")], index: 2, position: 0 });
+    usePlaybackStore.getState().prev();
+    expect(usePlaybackStore.getState().index).toBe(0);
+  });
+
   it("plays everything while AI music is on", async () => {
     const { useSettingsStore } = await import("@/lib/store/settings");
     useSettingsStore.getState().setAiMusic(true);

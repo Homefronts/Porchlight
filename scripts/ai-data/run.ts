@@ -13,6 +13,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   channelsFromSongSearch,
+  confirmedFromState,
   decideChannel,
   mergeResults,
   parseCsvArtists,
@@ -181,11 +182,7 @@ async function main() {
   }
 
   // 4. Build the published file.
-  const confirmed: Record<string, string> = {};
-  for (const cid of ytConfirmed) confirmed[cid] = "(YouTube list)";
-  for (const a of Object.values(state.artists)) {
-    for (const [cid, c] of Object.entries(a.channels)) if (c.verdict === "ai") confirmed[cid] = c.name;
-  }
+  const confirmed = confirmedFromState(state, new Set(spotifyArtists.keys()), ytConfirmed);
   const degraded = spotifyStatus(attempted, failed, parsedAny) === "degraded";
   const data = mergeResults(
     prev,

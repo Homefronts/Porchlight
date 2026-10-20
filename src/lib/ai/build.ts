@@ -97,14 +97,40 @@ export function channelsFromSongSearch(
   return out;
 }
 
-/** Confirmed only when a song title overlaps; otherwise just a namesake. */
+// "Intro" or "Home" overlap by chance; a real namesake must not be confirmed.
+const distinctive = (t: string) => t.includes(" ") || t.length >= 8;
+
+/** Confirmed only when a distinctive song title overlaps; otherwise just a namesake. */
 export function decideChannel(
   spotifyTracks: string[] | null,
   ytSongTitles: string[],
 ): "ai" | "maybe" {
   if (!spotifyTracks) return "maybe";
-  const sp = new Set(spotifyTracks.map(normalizeTitle).filter(Boolean));
+  const sp = new Set(spotifyTracks.map(normalizeTitle).filter(distinctive));
   return ytSongTitles.some((t) => sp.has(normalizeTitle(t))) ? "ai" : "maybe";
+}
+
+type JobState = {
+  artists: Record<string, { channels: Record<string, { name: string; verdict: "ai" | "maybe" }> }>;
+};
+
+/**
+ * Confirmed channels to publish: only from artists still on a list (a
+ * delisted artist was likely a mistake), plus the YouTube list's channel
+ * ids, which carry no name.
+ */
+export function confirmedFromState(
+  state: JobState,
+  listedSpotifyIds: Set<string>,
+  youtubeIds: string[],
+): Record<string, string> {
+  const confirmed: Record<string, string> = {};
+  for (const id of youtubeIds) confirmed[id] = "";
+  for (const [spId, a] of Object.entries(state.artists)) {
+    if (!listedSpotifyIds.has(spId)) continue;
+    for (const [cid, c] of Object.entries(a.channels)) if (c.verdict === "ai") confirmed[cid] = c.name;
+  }
+  return confirmed;
 }
 
 export function spotifyStatus(
@@ -121,11 +147,17 @@ export function mergeResults(
   next: Partial<AiData>,
   degraded: boolean,
 ): AiData {
-  const confirmed = degraded
+  // A failed list download keeps that list's previous results too.
+  const keepPrev = degraded || next.status?.lists === "stale";
+  const confirmed = keepPrev
     ? { ...(prev?.confirmed ?? {}), ...(next.confirmed ?? {}) }
     : { ...(next.confirmed ?? {}) };
   const confirmedNames = new Set(Object.values(confirmed).map(normalizeName));
-  const maybeNames = [...new Set(next.maybeNames ?? prev?.maybeNames ?? [])]
+  const maybeSource = [
+    ...(next.maybeNames ?? prev?.maybeNames ?? []),
+    ...(keepPrev && next.status?.lists === "stale" ? (prev?.maybeNames ?? []) : []),
+  ];
+  const maybeNames = [...new Set(maybeSource)]
     .filter((n) => n.length >= MIN_MAYBE_NAME && !confirmedNames.has(n))
     .sort();
   return {

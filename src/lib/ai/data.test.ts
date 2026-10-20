@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { AI_DATA_URL, aiDetectionMode, parseAiData } from "./data";
+import { AI_DATA_URL, aiDetectionMode, parseAiData, reducedNoticeAction } from "./data";
 import snapshot from "./snapshot.json";
 import type { AiData } from "./match";
 
@@ -61,5 +61,29 @@ describe("AI data host", () => {
   it("is allowed by the Tauri HTTP capability", () => {
     const caps = readFileSync(join(process.cwd(), "src-tauri/capabilities/default.json"), "utf8");
     expect(caps).toContain(`"${new URL(AI_DATA_URL).origin}/*"`);
+  });
+});
+
+describe("reducedNoticeAction", () => {
+  const base = { reason: "stale" as const, noticeReason: null, ready: true, aiMusic: false };
+  it("waits until saved data loaded and the first sync ran", () => {
+    expect(reducedNoticeAction({ ...base, ready: false })).toBeNull();
+  });
+  it("stays quiet for people not using the filter", () => {
+    expect(reducedNoticeAction({ ...base, aiMusic: true })).toBeNull();
+  });
+  it("announces a new reason once", () => {
+    expect(reducedNoticeAction(base)).toBe("announce");
+    expect(reducedNoticeAction({ ...base, noticeReason: "stale" })).toBeNull();
+  });
+  it("clears once healthy again", () => {
+    expect(reducedNoticeAction({ ...base, reason: null, noticeReason: "stale" })).toBe("clear");
+  });
+});
+
+describe("parseAiData validation", () => {
+  it("rejects non-string names", () => {
+    expect(parseAiData({ ...data(), confirmed: { UC1: 5 } })).toBeNull();
+    expect(parseAiData({ ...data(), maybeNames: [1] })).toBeNull();
   });
 });

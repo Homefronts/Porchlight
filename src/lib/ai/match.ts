@@ -54,7 +54,8 @@ export function normalizeTitle(s: string): string {
 export function indexAiData(d: AiData): AiIndex {
   return {
     confirmed: new Set(Object.keys(d.confirmed)),
-    confirmedNames: new Set(Object.values(d.confirmed).map(normalizeName)),
+    // YouTube-list channels have no name ("").
+    confirmedNames: new Set(Object.values(d.confirmed).map(normalizeName).filter(Boolean)),
     maybe: new Set(d.maybeNames),
   };
 }

@@ -29,6 +29,9 @@ export function parseAiData(json: unknown): AiData | null {
   if (typeof d.generatedAt !== "string" || !d.status) return null;
   if (!d.confirmed || typeof d.confirmed !== "object" || Array.isArray(d.confirmed)) return null;
   if (!Array.isArray(d.maybeNames) || !Array.isArray(d.sources)) return null;
+  // Persisted and indexed on every launch: a bad entry must not get in.
+  if (!Object.values(d.confirmed).every((v) => typeof v === "string")) return null;
+  if (!d.maybeNames.every((v) => typeof v === "string")) return null;
   return d;
 }
 
@@ -50,11 +53,29 @@ export function aiDetectionMode(d: AiData, now: number): AiDetectionMode {
   return { reduced: true, reason, message };
 }
 
+/**
+ * Whether to announce reduced mode now. Waits for saved data and the
+ * first sync (otherwise an aged bundled snapshot reads as stale on every
+ * launch), and only bothers people who have the filter switched on.
+ */
+export function reducedNoticeAction(o: {
+  reason: string | null;
+  noticeReason: string | null;
+  ready: boolean;
+  aiMusic: boolean;
+}): "announce" | "clear" | null {
+  if (!o.ready || o.reason === o.noticeReason) return null;
+  if (!o.reason) return "clear";
+  return o.aiMusic ? null : "announce";
+}
+
 type State = {
   data: AiData | null;
   fetchedAt: number;
   /** Reduced-mode reason already announced, so the toast shows once. */
   noticeReason: string | null;
+  /** In-memory: the launch sync has finished (either way). */
+  synced: boolean;
   setData: (data: AiData, at: number) => void;
   setNoticeReason: (r: string | null) => void;
 };
@@ -65,10 +86,15 @@ export const useAiDataStore = create<State>()(
       data: null,
       fetchedAt: 0,
       noticeReason: null,
+      synced: false,
       setData: (data, fetchedAt) => set({ data, fetchedAt }),
       setNoticeReason: (noticeReason) => set({ noticeReason }),
     }),
-    { name: "ytubic-ai-data", storage: createJSONStorage(() => safeIdbStorage) },
+    {
+      name: "ytubic-ai-data",
+      storage: createJSONStorage(() => safeIdbStorage),
+      partialize: ({ data, fetchedAt, noticeReason }) => ({ data, fetchedAt, noticeReason }),
+    },
   ),
 );
 
@@ -107,12 +133,15 @@ async function syncAiData(): Promise<void> {
     if (d) useAiDataStore.getState().setData(d, Date.now());
   } catch {
     // Offline or GitHub unreachable: keep the last good data.
+  } finally {
+    useAiDataStore.setState({ synced: true });
   }
 }
 
 export function useAiDataSync(): void {
   useEffect(() => {
-    void syncAiData();
+    // After hydration, so persisted (older) data can't overwrite a fresh fetch.
+    void Promise.resolve(useAiDataStore.persist.rehydrate()).then(syncAiData);
     const timer = window.setInterval(() => void syncAiData(), SYNC_INTERVAL_MS);
     return () => window.clearInterval(timer);
   }, []);

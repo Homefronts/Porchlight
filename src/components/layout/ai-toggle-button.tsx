@@ -10,9 +10,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { aiDetectionMode, currentAiData, useAiDataStore } from "@/lib/ai/data";
+import {
+  aiDetectionMode,
+  currentAiData,
+  reducedNoticeAction,
+  useAiDataStore,
+} from "@/lib/ai/data";
 import { useSettingsStore } from "@/lib/store/settings";
-import { usePlaybackStore } from "@/lib/store/playback";
+import { allowHeldStart, usePlaybackStore } from "@/lib/store/playback";
 import { cn } from "@/lib/utils";
 
 /** Copy agreed with the user; shown once on first opt-out and in Settings. */
@@ -47,12 +52,13 @@ export function AiToggleButton({ className }: { className?: string }) {
   const setNoticeReason = useAiDataStore((s) => s.setNoticeReason);
   const reason = mode.reduced ? mode.reason : null;
 
+  const synced = useAiDataStore((s) => s.synced);
   // Announce reduced mode once per reason; clear it once healthy again.
   useEffect(() => {
-    if (reason === noticeReason) return;
-    if (mode.reduced) toast.warning(mode.message, { duration: 12_000 });
-    setNoticeReason(reason);
-  }, [reason, noticeReason, mode, setNoticeReason]);
+    const action = reducedNoticeAction({ reason, noticeReason, ready: synced, aiMusic: on });
+    if (action === "announce" && mode.reduced) toast.warning(mode.message, { duration: 12_000 });
+    if (action) setNoticeReason(reason);
+  }, [reason, noticeReason, synced, on, mode, setNoticeReason]);
 
   return (
     <Tooltip>
@@ -115,7 +121,9 @@ const usePlayAnyway = create<{ run: (() => void) | null; set: (run: (() => void)
  */
 export function askPlayAnyway(start: () => void): void {
   usePlayAnyway.getState().set(() => {
+    allowHeldStart();
     start();
+    allowHeldStart(false); // start() may not have gone through setQueue
     usePlaybackStore.setState((s) => ({
       queue: s.queue.map((t, i) => (i === s.index ? { ...t, aiAllowed: true } : t)),
     }));

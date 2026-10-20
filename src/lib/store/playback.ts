@@ -31,6 +31,13 @@ export type QueueTrack = {
 
 export const isHeldAi = (t: QueueTrack): boolean => !t.aiAllowed && isAiBlocked(t);
 
+// One-shot: the next queue start is a held AI track the user chose to
+// play ("Play anyway?"), so setQueue mustn't step past it.
+let heldStartAllowed = false;
+export function allowHeldStart(on = true): void {
+  heldStartAllowed = on;
+}
+
 export type RepeatMode = "off" | "all" | "one";
 
 /**
@@ -249,7 +256,14 @@ const playbackStateCreator: StateCreator<PlaybackState> = (set, get) => ({
 
   setQueue: (tracks, startIndex = 0) => {
     if (tracks.length === 0) return;
-    const i = Math.max(0, Math.min(startIndex, tracks.length - 1));
+    let i = Math.max(0, Math.min(startIndex, tracks.length - 1));
+    if (heldStartAllowed) {
+      tracks = tracks.map((t, k) => (k === i ? { ...t, aiAllowed: true } : t));
+    } else {
+      // AI music off: start on the first track that isn't held back.
+      while (i < tracks.length - 1 && isHeldAi(tracks[i])) i++;
+    }
+    heldStartAllowed = false;
     // Honour an active shuffle: keep the chosen track current and shuffle
     // the upcoming portion, matching setShuffle's semantics.
     let queue = tracks;
@@ -521,7 +535,12 @@ const playbackStateCreator: StateCreator<PlaybackState> = (set, get) => ({
       if (index >= 0) set({ position: 0, pendingSeek: 0 });
       return;
     }
-    const prevIndex = index - 1;
+    let prevIndex = index - 1;
+    while (prevIndex > 0 && isHeldAi(queue[prevIndex])) prevIndex--;
+    if (isHeldAi(queue[prevIndex])) {
+      set({ position: 0, pendingSeek: 0 });
+      return;
+    }
     const track = queue[prevIndex];
     set({
       index: prevIndex,

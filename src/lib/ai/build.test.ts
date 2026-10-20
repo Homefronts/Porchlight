@@ -8,6 +8,7 @@ import {
   parseSpotifyEmbed,
   parseYoutubeBlocklist,
   channelsFromSongSearch,
+  confirmedFromState,
   spotifyStatus,
 } from "./build";
 import type { AiData } from "./match";
@@ -126,5 +127,37 @@ describe("channelsFromSongSearch", () => {
     const m = channelsFromSongSearch(json, "The Velvet Sundown");
     expect([...m.keys()]).toEqual(["UCreal"]);
     expect(m.get("UCreal")).toEqual({ name: "The Velvet Sundown", titles: ["Dust on the Wind", "Other"] });
+  });
+});
+
+describe("review fixes", () => {
+  it("does not confirm on a generic one-word title", () => {
+    expect(decideChannel(["Intro", "Home"], ["Intro"])).toBe("maybe");
+    expect(decideChannel(["Dust on the Wind"], ["Dust on the Wind"])).toBe("ai");
+  });
+
+  it("only publishes confirmations for artists still on a list", () => {
+    const state = {
+      artists: {
+        sp1: { name: "Listed", checkedAt: "", spotifyOk: true, channels: { UC1: { name: "Listed", verdict: "ai" as const } } },
+        sp2: { name: "Delisted", checkedAt: "", spotifyOk: true, channels: { UC2: { name: "Delisted", verdict: "ai" as const } } },
+      },
+    };
+    expect(confirmedFromState(state, new Set(["sp1"]), ["UCyt"])).toEqual({ UC1: "Listed", UCyt: "" });
+  });
+
+  it("keeps previous data when a list could not be downloaded", () => {
+    const prev: AiData = {
+      version: 1,
+      generatedAt: "2026-10-19T00:00:00Z",
+      status: { spotify: "ok", lists: "ok", message: null },
+      confirmed: { UCyt: "" },
+      maybeNames: ["old maybe"],
+      sources: [],
+    };
+    const m = mergeResults(prev, { confirmed: { UC2: "New" }, maybeNames: ["new maybe"], status: { spotify: "ok", lists: "stale", message: null } }, false);
+    expect(m.confirmed).toEqual({ UCyt: "", UC2: "New" });
+    expect(m.maybeNames).toEqual(["new maybe", "old maybe"]);
+    expect(m.status.lists).toBe("stale");
   });
 });
