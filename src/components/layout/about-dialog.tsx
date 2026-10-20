@@ -219,7 +219,7 @@ export function AboutDialog({
             >
               Homefronts
             </button>
-            , adding radio mixes and offline downloads. Built on{" "}
+            , adding radio mixes, offline downloads and an AI music filter. Built on{" "}
             <button
               type="button"
               onClick={link(UPSTREAM_URL)}
@@ -230,6 +230,11 @@ export function AboutDialog({
             by George Shyshov (NUber), who designed and built the app this
             is based on. If you enjoy it, please support the original
             author below.
+          </p>
+          <p className="text-[12.5px] leading-[1.5] text-t4 text-pretty">
+            AI music detection uses community lists by CennoxX
+            (spotify-ai-blocker), gounetmusic (loved-music-ai-artists) and
+            CevvalKoala (CevvalYoutubeAIBlocklist). Thank you!
           </p>
 
           {IS_BETA_PLATFORM && (
