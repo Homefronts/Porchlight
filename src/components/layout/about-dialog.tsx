@@ -31,7 +31,11 @@ import {
 } from "@/components/shared/brand-icons";
 import { cn } from "@/lib/utils";
 
-const REPO_URL = "https://github.com/NUber-dev/YTubic";
+// YTubic Plus lives on the Homefronts fork; the original project and its
+// author keep their credit (and the Support / X / Discord links) below.
+const REPO_URL = "https://github.com/Homefronts/YTubic-";
+const UPSTREAM_URL = "https://github.com/NUber-dev/YTubic";
+const FORK_AUTHOR_URL = "https://github.com/Homefronts";
 const DISCORD_URL = "https://discord.gg/4gccUpZyYH";
 const X_URL = "https://x.com/NUber_ux";
 // Donatello. The button wears a generic Tabler glyph rather than
@@ -172,7 +176,7 @@ export function AboutDialog({
             />
             <div className="flex min-w-0 flex-col gap-[9px]">
               <DialogTitle className="text-[23px] font-bold leading-none tracking-[-0.02em] text-t1">
-                YTubic
+                YTubic <span className="text-acc1">Plus</span>
               </DialogTitle>
               <div className="flex items-center gap-2">
                 <span className="text-[13px] text-t5">
@@ -204,6 +208,29 @@ export function AboutDialog({
             affiliated with, endorsed by, or sponsored by Google or YouTube.
             "YouTube" and "YouTube Music" are trademarks of Google LLC.
           </DialogDescription>
+
+          {/* Fork signature. The original creator's credit stays first-class. */}
+          <p className="text-[13.5px] leading-[1.55] text-t4 text-pretty">
+            <span className="font-semibold text-t2">YTubic Plus</span> by{" "}
+            <button
+              type="button"
+              onClick={link(FORK_AUTHOR_URL)}
+              className="cursor-pointer font-semibold text-acc1 underline-offset-2 hover:underline"
+            >
+              Homefronts
+            </button>
+            , adding radio mixes and offline downloads. Built on{" "}
+            <button
+              type="button"
+              onClick={link(UPSTREAM_URL)}
+              className="cursor-pointer font-semibold text-t2 underline underline-offset-2 hover:text-t1"
+            >
+              YTubic
+            </button>{" "}
+            by George Shyshov (NUber), who designed and built the app this
+            is based on. If you enjoy it, please support the original
+            author below.
+          </p>
 
           {IS_BETA_PLATFORM && (
             <p className="text-[13.5px] leading-[1.55] text-t4 text-pretty">

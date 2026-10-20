@@ -56,6 +56,44 @@ export type WhatsNewEntry = {
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.6.0",
+    date: "October 19, 2026",
+    summary: "YTubic Plus: radio mixes and offline downloads",
+    changes: [
+      {
+        type: "new",
+        title: "Radio button",
+        text: "Start a mix from whatever is playing with the new radio button next to the queue. Click it again to stop and pick your album or playlist back up right where you left it.",
+      },
+      {
+        type: "new",
+        title: "Mood chips",
+        text: "While a mix plays, the queue shows the same chips as YouTube Music (All, Familiar, Discover, Chill and more). Pick one to reshape what's coming up.",
+      },
+      {
+        type: "new",
+        title: "Offline downloads",
+        text: "Download any playlist, album or Liked Songs with the new button in its header, or single songs from the right click menu. Downloaded music plays from your disk, even with no internet.",
+      },
+      {
+        type: "new",
+        title: "Downloads page",
+        text: "Everything you've saved lives under Downloads in the sidebar and opens instantly, online or off.",
+      },
+      {
+        type: "improved",
+        title: "Stays in sync",
+        text: "Downloaded playlists pick up new songs automatically, like Spotify. Songs that fail to download show a yellow warning with the reason and retry on their own.",
+      },
+      {
+        type: "improved",
+        title: "Works offline",
+        text: "Downloads keep playing for 30 days without a connection. Go online once in a while so YTubic can confirm your Music Premium subscription.",
+      },
+    ],
+    note: "YTubic Plus is a community edition by Homefronts, built on YTubic by George Shyshov (NUber). Huge thanks to him for the app this is built on. If you like it, please support the original project!",
+  },
+  {
     version: "0.5.1",
     date: "September 11, 2026",
     summary: "Login fixes",

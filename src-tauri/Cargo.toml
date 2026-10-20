@@ -1,8 +1,8 @@
 [package]
 name = "ytubic"
-version = "0.5.1"
+version = "0.6.0"
 description = "YTubic — fast, responsive YouTube Music desktop client"
-authors = ["George Shyshov"]
+authors = ["George Shyshov", "Homefronts (YTubic Plus)"]
 license = "GPL-3.0-only"
 edition = "2021"
 

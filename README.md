@@ -2,10 +2,16 @@
   <img src="assets/branding/ytubic-icon.svg" alt="YTubic" width="96" />
 </p>
 
-<h1 align="center">YTubic</h1>
+<h1 align="center">YTubic Plus</h1>
 
 <p align="center">
-  A fast, responsive YouTube Music desktop client for Windows, Linux, and macOS.
+  A fast, responsive YouTube Music desktop client for Windows, Linux, and macOS,<br />
+  now with radio mixes and offline downloads.
+</p>
+
+<p align="center">
+  <sub>A community edition by <a href="https://github.com/Homefronts"><b>Homefronts</b></a>,
+  built on <a href="https://github.com/NUber-dev/YTubic"><b>YTubic</b></a> by George Shyshov (NUber).</sub>
 </p>
 
 <p align="center">
@@ -24,6 +30,19 @@
 Built as a reaction to the sluggish webview-wrapper experience — YTubic talks to YouTube's InnerTube API directly, renders its own UI, and caches aggressively, so navigation and playback feel instant.
 
 ![YTubic — artist page with the player and synced lyrics](assets/screenshots/artist-page.jpg)
+
+## What's new in Plus
+
+- **Radio button** — start a mix from whatever is playing, right next to the queue button. Click it again to stop and resume your album or playlist where you left off.
+- **Mood chips** — while a mix plays, the queue shows YouTube Music's chips (All, Familiar, Discover, Chill, …) to reshape what's coming up.
+- **Offline downloads** — a Spotify-style download toggle on every playlist, album and Liked Songs, plus "Download" on single songs. Downloaded playlists stay in sync with new songs automatically.
+- **Downloads page** — everything you've saved, in the sidebar, playable with no internet (for up to 30 days between Premium check-ins).
+- **Own update channel** — Plus updates itself from [this fork's releases](../../releases), so it never gets replaced by an upstream build.
+
+> **All the credit for the app itself goes to [George Shyshov (NUber)](https://github.com/NUber-dev)**,
+> who designed and built YTubic. Plus only adds features on top. If you enjoy it,
+> please [star the original](https://github.com/NUber-dev/YTubic) and
+> [support its author](https://donatello.to/NUber).
 
 ## Features
 
@@ -155,6 +174,8 @@ src-tauri/               # Rust backend (axum stream proxy, cookies, tray)
 
 ## Credits
 
+- **[YTubic](https://github.com/NUber-dev/YTubic) by George Shyshov (NUber)** — the original app; YTubic Plus is a fork of it
+- **[Homefronts](https://github.com/Homefronts)** — YTubic Plus (radio mixes, offline downloads)
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) — audio streaming
 - [LRCLIB](https://lrclib.net) — synced lyrics
 - Musixmatch and Genius — lyrics sources
