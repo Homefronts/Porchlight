@@ -49,8 +49,9 @@ type Props = {
    * scroll) would keep a stale offset and window the wrong rows.
    */
   virtualize?: boolean;
-  /** Row clicks queue only tracks passing this (offline downloads view). */
-  playable?: (t: ShelfItem) => boolean;
+  /** Offline downloads views: the item to queue for a row, or null if it
+   *  can't play. Row clicks queue only mapped rows. */
+  toQueue?: (t: ShelfItem) => ShelfItem | null;
   className?: string;
 };
 
@@ -106,7 +107,7 @@ export function TrackList({
   showPlays = false,
   removal,
   virtualize = true,
-  playable,
+  toQueue,
   className,
 }: Props) {
   const active = usePlaybackStore(currentTrack);
@@ -308,7 +309,7 @@ export function TrackList({
               playing={playing}
               videoSourceSelected={sourcePrefs[t.id]?.selected === "video"}
               removal={removal}
-              playable={playable}
+              toQueue={toQueue}
               selected={selected.has(idx)}
               onSweepStart={onSweepStart}
               onSweepEnter={onSweepEnter}
@@ -388,7 +389,7 @@ export function TrackList({
                 playing={playing}
                 videoSourceSelected={sourcePrefs[t.id]?.selected === "video"}
                 removal={removal}
-                playable={playable}
+                toQueue={toQueue}
                 selected={selected.has(idx)}
                 onSweepStart={onSweepStart}
                 onSweepEnter={onSweepEnter}
@@ -415,7 +416,7 @@ type RowProps = {
   playing: boolean;
   videoSourceSelected: boolean;
   removal?: PlaylistRemovalContext;
-  playable?: (t: ShelfItem) => boolean;
+  toQueue?: (t: ShelfItem) => ShelfItem | null;
   selected: boolean;
   onSweepStart: (idx: number) => void;
   onSweepEnter: (idx: number) => void;
@@ -443,7 +444,7 @@ const TrackRow = memo(function TrackRow({
   playing,
   videoSourceSelected,
   removal,
-  playable,
+  toQueue,
   selected,
   onSweepStart,
   onSweepEnter,
@@ -452,7 +453,7 @@ const TrackRow = memo(function TrackRow({
   const play = () => {
     const store = usePlaybackStore.getState();
     if (isActive) return store.toggle();
-    const r = rowQueue(tracks, idx, playable);
+    const r = rowQueue(tracks, idx, toQueue);
     if (r) store.playShelfItems(r.queue, r.start);
   };
   const row = (

@@ -18,17 +18,25 @@ export function shelfItemToTrack(item: ShelfItem | QueueTrack): QueueTrack | nul
 }
 
 /**
- * Queue for a row click: with a `playable` filter (offline downloads),
- * only rows that pass, starting at the clicked one; null if it doesn't pass.
+ * Queue for a row click. With `toQueue` (offline downloads), each row maps
+ * to the item to queue, or null when it can't play; only playable rows are
+ * queued, starting at the clicked one, and a click on an unplayable row is
+ * refused (null).
  */
 export function rowQueue(
   tracks: ShelfItem[],
   idx: number,
-  playable?: (t: ShelfItem) => boolean,
+  toQueue?: (t: ShelfItem) => ShelfItem | null,
 ): { queue: ShelfItem[]; start: number } | null {
-  if (!playable) return { queue: tracks, start: idx };
-  const clicked = tracks[idx];
-  if (!clicked || !playable(clicked)) return null;
-  const queue = tracks.filter(playable);
-  return { queue, start: queue.indexOf(clicked) };
+  if (!toQueue) return { queue: tracks, start: idx };
+  if (!tracks[idx] || !toQueue(tracks[idx])) return null;
+  const queue: ShelfItem[] = [];
+  let start = 0;
+  tracks.forEach((t, i) => {
+    const q = toQueue(t);
+    if (!q) return;
+    if (i === idx) start = queue.length;
+    queue.push(q);
+  });
+  return { queue, start };
 }

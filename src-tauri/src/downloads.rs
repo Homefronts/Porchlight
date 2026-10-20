@@ -20,16 +20,19 @@ use crate::{fetch_cover_bytes, sanitize_video_id, url_to_filename, ytdlp, YTDLP_
 /// Ref key for a track downloaded on its own (track menu → Download).
 pub const SINGLE: &str = "single";
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum TrackState {
+    #[default]
     Pending,
     Done,
     Failed,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+// `default` on every persisted struct: index files written by older
+// versions must keep loading as fields are added.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
 pub struct DlTrack {
     pub video_id: String,
     /// The frontend's QueueTrack, stored opaquely so offline views can
@@ -40,13 +43,15 @@ pub struct DlTrack {
     pub state: TrackState,
     pub error: Option<String>,
     pub attempts: u8,
+    /// Unix secs before which a failed attempt isn't retried (backoff).
+    pub next_try: u64,
     pub size: u64,
     /// Collection ids (and/or `SINGLE`) that need this file.
     pub refs: BTreeSet<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
 pub struct DlCollection {
     pub id: String,
     /// "playlist" | "album" | "liked"
@@ -57,10 +62,13 @@ pub struct DlCollection {
     pub cover_file: Option<String>,
     pub track_ids: Vec<String>,
     pub synced_at: u64,
+    /// Account the list belongs to (Liked Songs), so another signed-in
+    /// account's sync can't replace it.
+    pub owner: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", default)]
 pub struct Index {
     pub version: u32,
     pub collections: BTreeMap<String, DlCollection>,
@@ -93,6 +101,8 @@ pub struct CollectionInput {
     pub title: String,
     pub subtitle: Option<String>,
     pub cover_url: Option<String>,
+    #[serde(default)]
+    pub owner: Option<String>,
     pub tracks: Vec<TrackInput>,
 }
 
@@ -108,6 +118,7 @@ impl Index {
             state: TrackState::Pending,
             error: None,
             attempts: 0,
+            next_try: 0,
             size: 0,
             refs: BTreeSet::new(),
         });
@@ -118,6 +129,7 @@ impl Index {
         if e.state == TrackState::Failed {
             e.state = TrackState::Pending;
             e.attempts = 0;
+            e.next_try = 0;
             e.error = None;
         }
         e.refs.insert(key.to_string());
@@ -171,6 +183,7 @@ impl Index {
                 cover_url: c.cover_url,
                 track_ids,
                 synced_at: now,
+                owner: c.owner,
             },
         );
         Ok(removed)
@@ -192,6 +205,29 @@ impl Index {
         }
         self.add_ref(t, SINGLE);
         Ok(())
+    }
+
+    /// Next pending track that isn't being fetched and whose backoff is over.
+    pub fn next_pending(&self, now: u64, busy: &BTreeSet<String>) -> Option<String> {
+        self.tracks
+            .values()
+            .find(|t| {
+                t.state == TrackState::Pending && t.next_try <= now && !busy.contains(&t.video_id)
+            })
+            .map(|t| t.video_id.clone())
+    }
+
+    /// Requeue every failed track (back online). Returns whether any changed.
+    pub fn retry_failed(&mut self) -> bool {
+        let mut changed = false;
+        for t in self.tracks.values_mut().filter(|t| t.state == TrackState::Failed) {
+            t.state = TrackState::Pending;
+            t.attempts = 0;
+            t.next_try = 0;
+            t.error = None;
+            changed = true;
+        }
+        changed
     }
 
     pub fn remove_single(&mut self, video_id: &str) -> Vec<String> {
@@ -259,13 +295,17 @@ pub(crate) fn downloaded_track_path(dir: &Path, video_id: &str) -> Option<PathBu
 }
 
 /// Startup repair after a crash or a deleted file: drop anything in
-/// `tracks/` that isn't a finished `.webm` (temp files, stray yt-dlp
-/// output) and requeue any "done" track whose file is gone.
+/// `tracks/` the index doesn't list as a `.webm` (temp files, stray yt-dlp
+/// output, orphans) and requeue any "done" track whose file is gone.
 fn recover(dir: &Path, idx: &mut Index) {
     if let Ok(rd) = std::fs::read_dir(tracks_dir(dir)) {
         for e in rd.flatten() {
             let p = e.path();
-            if p.is_file() && p.extension().is_none_or(|x| x != "webm") {
+            let listed = p.extension().is_some_and(|x| x == "webm")
+                && p.file_stem()
+                    .and_then(|s| s.to_str())
+                    .is_some_and(|id| idx.tracks.contains_key(id));
+            if p.is_file() && !listed {
                 let _ = std::fs::remove_file(p);
             }
         }
@@ -378,12 +418,7 @@ pub fn init(app: &AppHandle, ytdlp_bin: PathBuf, stream_cache_dir: PathBuf, dir:
 async fn claim(st: &DownloadsState, busy: &Mutex<BTreeSet<String>>) -> Option<String> {
     let idx = st.inner.lock().await;
     let mut busy = busy.lock().await;
-    let id = idx
-        .tracks
-        .values()
-        .find(|t| t.state == TrackState::Pending && !busy.contains(&t.video_id))?
-        .video_id
-        .clone();
+    let id = idx.next_pending(now_secs(), &busy)?;
     busy.insert(id.clone());
     Some(id)
 }
@@ -416,6 +451,9 @@ async fn worker(st: Arc<DownloadsState>, ytdlp_bin: PathBuf, stream_cache_dir: P
                 eprintln!("[downloads] {id}: {e}");
                 t.attempts += 1;
                 t.error = Some(e);
+                // 30 s, 60 s: a dropped connection shouldn't burn all
+                // attempts in seconds.
+                t.next_try = now_secs() + 30 * t.attempts as u64;
                 if t.attempts >= MAX_ATTEMPTS {
                     t.state = TrackState::Failed;
                 }
@@ -601,6 +639,18 @@ pub async fn downloads_remove_collection(state: St<'_>, id: String) -> Result<()
     Ok(())
 }
 
+/// Back online (or launch): give every failed track a fresh set of attempts.
+#[tauri::command]
+pub async fn downloads_retry_failed(state: St<'_>) -> Result<(), String> {
+    let mut idx = state.inner.lock().await;
+    if idx.retry_failed() {
+        state.persist(&idx);
+        drop(idx);
+        state.wake.notify_waiters();
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn downloads_add_track(state: St<'_>, track: TrackInput) -> Result<(), String> {
     let mut idx = state.inner.lock().await;
@@ -641,6 +691,7 @@ mod tests {
             title: id.into(),
             subtitle: None,
             cover_url: None,
+            owner: None,
             tracks: ids.iter().map(|i| t(i)).collect(),
         }
     }
@@ -772,6 +823,67 @@ mod tests {
             assert_eq!(r, Err("yt-dlp timed out".to_string()));
             assert!(t0.elapsed() < Duration::from_secs(3));
         });
+    }
+
+    // The index outlives app versions: older files must load as fields
+    // are added (a parse failure would orphan every download).
+    #[test]
+    fn index_missing_newer_fields_still_loads() {
+        let json = r#"{"version":1,"collections":{"P1":{"id":"P1","kind":"playlist","title":"t","trackIds":["a"],"syncedAt":1}},"tracks":{"a":{"videoId":"a","meta":null,"state":"done","refs":["P1"]}}}"#;
+        let idx: Index = serde_json::from_str(json).unwrap();
+        assert_eq!(idx.tracks["a"].state, TrackState::Done);
+        assert_eq!(idx.tracks["a"].attempts, 0);
+        assert_eq!(idx.collections["P1"].owner, None);
+    }
+
+    #[test]
+    fn recover_sweeps_unlisted_files() {
+        let dir = std::env::temp_dir().join(format!("ytubic-dl-sweep-{}", std::process::id()));
+        std::fs::create_dir_all(tracks_dir(&dir)).unwrap();
+        std::fs::write(track_file(&dir, "kept"), b"x").unwrap();
+        std::fs::write(track_file(&dir, "orphan"), b"x").unwrap();
+        let mut idx = Index::default();
+        idx.add_single(t("kept")).unwrap();
+        recover(&dir, &mut idx);
+        assert!(track_file(&dir, "kept").exists());
+        assert!(!track_file(&dir, "orphan").exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn next_pending_waits_out_backoff() {
+        let mut idx = Index::default();
+        idx.add_single(t("a")).unwrap();
+        idx.add_single(t("b")).unwrap();
+        idx.tracks.get_mut("a").unwrap().next_try = 100;
+        let busy = BTreeSet::new();
+        assert_eq!(idx.next_pending(50, &busy).as_deref(), Some("b"));
+        let busy: BTreeSet<String> = ["b".to_string()].into();
+        assert_eq!(idx.next_pending(50, &busy), None);
+        assert_eq!(idx.next_pending(100, &busy).as_deref(), Some("a"));
+    }
+
+    #[test]
+    fn retry_failed_requeues_everything_failed() {
+        let mut idx = Index::default();
+        idx.add_single(t("a")).unwrap();
+        let a = idx.tracks.get_mut("a").unwrap();
+        a.state = TrackState::Failed;
+        a.attempts = 3;
+        a.next_try = 999;
+        assert!(idx.retry_failed());
+        assert_eq!(idx.tracks["a"].state, TrackState::Pending);
+        assert_eq!((idx.tracks["a"].attempts, idx.tracks["a"].next_try), (0, 0));
+        assert!(!idx.retry_failed());
+    }
+
+    #[test]
+    fn collection_keeps_owner() {
+        let mut idx = Index::default();
+        let mut c = coll("LM", &["a"]);
+        c.owner = Some("acct1".into());
+        idx.apply_collection(c, 1).unwrap();
+        assert_eq!(idx.collections["LM"].owner.as_deref(), Some("acct1"));
     }
 
     #[test]

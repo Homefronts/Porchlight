@@ -16,6 +16,7 @@ function tr(videoId: string, state: DlTrack["state"], refs = ["P1"]): DlTrack {
     state,
     error: state === "failed" ? "nope" : null,
     attempts: 0,
+    nextTry: 0,
     size: 0,
     refs,
   };
@@ -33,6 +34,7 @@ const index: DownloadsIndex = {
       coverFile: null,
       trackIds: ["a", "b", "c"],
       syncedAt: 1,
+      owner: null,
     },
   },
   tracks: { a: tr("a", "done"), b: tr("b", "failed"), c: tr("c", "pending") },

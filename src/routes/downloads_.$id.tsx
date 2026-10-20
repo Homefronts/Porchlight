@@ -7,7 +7,7 @@ import { useDownloadsStore, type DlCollection } from "@/lib/downloads";
 import {
   collectionThumbs,
   dlTrackToShelfItem,
-  isDownloaded,
+  toDownloadedQueueItem,
   useCoverBase,
 } from "@/lib/downloads-view";
 import { usePlaybackStore } from "@/lib/store/playback";
@@ -35,7 +35,9 @@ function DownloadedCollectionPage() {
   );
   // Play / Shuffle only queue what's actually on disk.
   const playable = useMemo(
-    () => tracks.filter((t) => tracksById[t.id]?.state === "done"),
+    () => tracks.flatMap((t) => toDownloadedQueueItem(t) ?? []),
+    // tracksById: re-derive as downloads finish.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [tracks, tracksById],
   );
 
@@ -94,7 +96,7 @@ function DownloadedCollectionPage() {
           <CollectionDownloadButton kind={collection.kind} id={collection.id} />
         }
       />
-      <TrackList tracks={tracks} playable={isDownloaded} />
+      <TrackList tracks={tracks} toQueue={toDownloadedQueueItem} />
     </div>
   );
 }

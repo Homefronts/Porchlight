@@ -12,6 +12,15 @@ import {
 } from "@/lib/downloads";
 
 const SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000;
+
+/** The signed-in account (and brand channel), as stored on Liked Songs. */
+async function activeAccountKey(): Promise<string | null> {
+  const accounts = await invoke<
+    { id: string; pageId: string | null; isActive: boolean }[] | undefined
+  >("list_accounts");
+  const a = accounts?.find((x) => x.isActive);
+  return a ? `${a.id}:${a.pageId ?? ""}` : null;
+}
 export const LIKED_ID = "LM";
 
 function widest(thumbs: Thumbnail[]): string | null {
@@ -60,6 +69,8 @@ export async function fetchCollectionInput(
     input = {
       id: kind === "liked" ? LIKED_ID : id,
       kind,
+      // Liked Songs is per account; remember whose this is.
+      owner: kind === "liked" ? await activeAccountKey() : null,
       title: kind === "liked" ? "Liked Songs" : p.title,
       subtitle: p.owner ?? null,
       coverUrl: widest(p.thumbnails),
@@ -89,16 +100,31 @@ export async function syncCollection(id: string): Promise<void> {
   const c = useDownloadsStore.getState().index.collections[id];
   if (!c || offline()) return;
   try {
+    // Another account's likes would replace (and delete) this download.
+    if (c.owner && c.owner !== (await activeAccountKey())) return;
     await downloadCollection(c.kind, c.id);
   } catch (e) {
     console.warn(`[downloads] sync skipped for ${id}:`, e);
   }
 }
 
-async function syncAll(): Promise<void> {
-  for (const id of Object.keys(useDownloadsStore.getState().index.collections)) {
-    await syncCollection(id);
-  }
+let syncing: Promise<void> | null = null;
+
+/**
+ * Re-sync every downloaded collection. Calls while a run is in flight
+ * share it, so wifi flaps or a launch + online burst can't stack runs.
+ */
+export function syncAllDownloads(): Promise<void> {
+  syncing ??= (async () => {
+    // Back online: failed tracks (single songs too) get fresh attempts.
+    await invoke("downloads_retry_failed").catch(() => undefined);
+    for (const id of Object.keys(useDownloadsStore.getState().index.collections)) {
+      await syncCollection(id);
+    }
+  })().finally(() => {
+    syncing = null;
+  });
+  return syncing;
 }
 
 /**
@@ -114,13 +140,13 @@ export function useDownloadsSync(): void {
       if (launched) return;
       if (Object.keys(useDownloadsStore.getState().index.collections).length) {
         launched = true;
-        void syncAll();
+        void syncAllDownloads();
       }
     };
     const unsub = useDownloadsStore.subscribe(launch);
     launch();
-    const timer = window.setInterval(() => void syncAll(), SYNC_INTERVAL_MS);
-    const onOnline = () => void syncAll();
+    const timer = window.setInterval(() => void syncAllDownloads(), SYNC_INTERVAL_MS);
+    const onOnline = () => void syncAllDownloads();
     window.addEventListener("online", onOnline);
     return () => {
       unsub();

@@ -47,8 +47,14 @@ export function dlTrackToShelfItem(t: DlTrack, base?: string): ShelfItem {
   };
 }
 
-/** Row-click filter for offline views: only tracks already on disk. Module
- *  level so TrackRow's memo sees a stable prop. */
-export function isDownloaded(t: ShelfItem): boolean {
-  return useDownloadsStore.getState().index.tracks[t.id]?.state === "done";
+/**
+ * What offline views queue for a row: null unless it's on disk, and with
+ * the track's real artwork instead of the per-launch localhost cover (the
+ * queue is persisted and handed to Discord / OS media controls). Module
+ * level so TrackRow's memo sees a stable prop.
+ */
+export function toDownloadedQueueItem(t: ShelfItem): ShelfItem | null {
+  const dl = useDownloadsStore.getState().index.tracks[t.id];
+  if (dl?.state !== "done") return null;
+  return { ...t, thumbnails: dl.meta.thumbnails };
 }

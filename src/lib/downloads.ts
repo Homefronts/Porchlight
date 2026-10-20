@@ -18,6 +18,8 @@ export type DlTrack = {
   state: "pending" | "done" | "failed";
   error: string | null;
   attempts: number;
+  /** Unix secs before which a failed attempt isn't retried. */
+  nextTry: number;
   size: number;
   /** Collection ids and/or "single". */
   refs: string[];
@@ -32,6 +34,8 @@ export type DlCollection = {
   coverFile: string | null;
   trackIds: string[];
   syncedAt: number;
+  /** Account (id:pageId) a Liked Songs download belongs to. */
+  owner: string | null;
 };
 
 export type DownloadsIndex = {
@@ -52,6 +56,7 @@ export type CollectionInput = {
   title: string;
   subtitle: string | null;
   coverUrl: string | null;
+  owner?: string | null;
   tracks: TrackInput[];
 };
 

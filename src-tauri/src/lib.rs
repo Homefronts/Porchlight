@@ -3934,7 +3934,10 @@ async fn prefetch_handler(
         format!("p:{video_id}")
     };
     let final_path = target_dir.join(format!("{video_id}.webm"));
-    if final_path.exists() {
+    // Already downloaded: the stream handler serves that copy.
+    if final_path.exists()
+        || downloads::downloaded_track_path(&srv.downloads_dir, &video_id).is_some()
+    {
         return StatusCode::OK;
     }
     let state = {
@@ -4212,6 +4215,7 @@ pub fn run() {
             downloads::downloads_set_collection,
             downloads::downloads_remove_collection,
             downloads::downloads_add_track,
+            downloads::downloads_retry_failed,
             downloads::downloads_remove_track,
             start_login,
             get_cookie_header,
@@ -4521,6 +4525,40 @@ mod tests {
                 .unwrap();
             assert_eq!(resp.status(), StatusCode::OK);
             assert_eq!(resp.headers()["content-type"], "audio/webm");
+            let _ = std::fs::remove_dir_all(&root);
+        });
+    }
+
+    // Prefetching a downloaded track must not re-download it into the cache.
+    #[test]
+    fn prefetch_skips_downloaded_track() {
+        use super::{prefetch_handler, StreamServer};
+        use std::collections::HashMap;
+        use std::sync::Arc;
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let root = std::env::temp_dir().join(format!("ytubic-prefetch-{}", std::process::id()));
+            let dl = root.join("downloads");
+            std::fs::create_dir_all(dl.join("tracks")).unwrap();
+            std::fs::write(dl.join("tracks").join("abc123").with_extension("webm"), vec![0u8; 40 * 1024]).unwrap();
+            let downloads = Arc::new(tokio::sync::Mutex::new(HashMap::new()));
+            let server = StreamServer {
+                cache_dir: root.join("stream"),
+                ephemeral_dir: root.join("eph"),
+                cover_dir: root.join("covers"),
+                downloads: downloads.clone(),
+                ytdlp_bin: root.join("no-such-yt-dlp"),
+                downloads_dir: dl,
+            };
+            let app: Router = Router::new()
+                .route("/prefetch/:video_id", get(prefetch_handler))
+                .with_state(server);
+            let resp = app
+                .oneshot(Request::builder().uri("/prefetch/abc123").body(Body::empty()).unwrap())
+                .await
+                .unwrap();
+            assert_eq!(resp.status(), StatusCode::OK);
+            assert!(downloads.lock().await.is_empty(), "no cache download spawned");
             let _ = std::fs::remove_dir_all(&root);
         });
     }
