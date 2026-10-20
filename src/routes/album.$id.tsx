@@ -9,6 +9,7 @@ import { TrackList } from "@/components/shared/track-list";
 import { JumpToCurrentButton } from "@/components/shared/jump-to-current-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePlaybackStore } from "@/lib/store/playback";
+import { useInLibrary } from "@/lib/ai/use-in-library";
 
 export const Route = createFileRoute("/album/$id")({
   component: AlbumPageView,
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/album/$id")({
 
 function AlbumPageView() {
   const { id } = Route.useParams();
+  const inLibrary = useInLibrary("album", id);
   const { data, isLoading, error } = useQuery({
     queryKey: ["album", id],
     queryFn: () => fetchAlbum(id),
@@ -112,7 +114,11 @@ function AlbumPageView() {
 
       <JumpToCurrentButton tracks={tracksWithCover} />
 
-      <TrackList tracks={tracksWithCover} hideThumbnails />
+      <TrackList
+        tracks={tracksWithCover}
+        hideThumbnails
+        aiMode={inLibrary ? "hold" : "hide"}
+      />
     </div>
   );
 }

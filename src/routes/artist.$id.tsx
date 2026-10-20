@@ -31,6 +31,7 @@ import type {
   ShelfMore,
   WatchTarget,
 } from "@/lib/innertube/types";
+import { useAiBlocked } from "@/lib/ai/use-ai";
 
 export const Route = createFileRoute("/artist/$id")({
   component: ArtistPageView,
@@ -43,6 +44,7 @@ export const Route = createFileRoute("/artist/$id")({
 
 function ArtistPageView() {
   const { id } = Route.useParams();
+  const aiBlocked = useAiBlocked({ artists: [{ id, name: "" }] });
   const { data, isLoading, error } = useQuery({
     queryKey: ["artist", id],
     queryFn: () => fetchArtist(id),
@@ -80,7 +82,14 @@ function ArtistPageView() {
         actions={<ArtistActions artist={data} />}
       />
 
-      {data.shelves.map((shelf) => {
+      {aiBlocked ? (
+        <div className="rounded-lg border border-border/60 bg-surface p-4 text-sm text-muted-foreground">
+          This artist is marked as AI, so their music is hidden while AI
+          music is turned off. Use the AI button in the top bar to show it.
+        </div>
+      ) : null}
+
+      {aiBlocked ? null : data.shelves.map((shelf) => {
         // Only pass an action when the shelf actually has a More target —
         // a truthy-but-empty element would hide the shelf's subtitle slot.
         const more = shelf.more ? (

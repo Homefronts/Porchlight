@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   IconAdjustmentsFilled,
+  IconRobotOff,
   IconCheck,
   IconChevronDown,
   IconCircleFilled,
@@ -29,6 +30,13 @@ import {
 } from "@/lib/store/playback-settings";
 import { canSelectOutputDevice } from "@/lib/audio-graph";
 import { cn } from "@/lib/utils";
+import { useSettingsStore } from "@/lib/store/settings";
+import {
+  AI_ACCURACY_TEXT,
+  AI_ACCURACY_TITLE,
+  setAiMusic,
+  useAiDetectionMode,
+} from "@/components/layout/ai-toggle-button";
 
 /**
  * Sound and playback behaviour, per the design handoff. Every control
@@ -51,6 +59,9 @@ export function PlaybackTab() {
       <BackButtonGroup />
       <Group>
         <ResumeRow />
+      </Group>
+      <Group>
+        <AiMusicRow />
       </Group>
     </TabPane>
   );
@@ -154,6 +165,30 @@ function StepButton({
 /* ------------------------------------------------------------------ */
 /* Loudness, mono                                                      */
 /* ------------------------------------------------------------------ */
+
+function AiMusicRow() {
+  const on = useSettingsStore((s) => s.aiMusic);
+  const mode = useAiDetectionMode();
+  return (
+    <SettingRow
+      icon={IconRobotOff}
+      title="AI Music"
+      description={
+        <>
+          Off hides AI-generated songs everywhere except your library, where
+          they're skipped unless you choose to play them. {AI_ACCURACY_TITLE}{" "}
+          {AI_ACCURACY_TEXT}
+          {mode.reduced ? (
+            <span className="mt-1.5 block font-medium text-amber-600 dark:text-amber-400">
+              {mode.message}
+            </span>
+          ) : null}
+        </>
+      }
+      control={<Switch checked={on} onCheckedChange={setAiMusic} />}
+    />
+  );
+}
 
 function NormalizeRow() {
   const on = usePlaybackSettings((s) => s.normalizeVolume);

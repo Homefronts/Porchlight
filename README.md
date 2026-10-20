@@ -175,7 +175,8 @@ src-tauri/               # Rust backend (axum stream proxy, cookies, tray)
 ## Credits
 
 - **[YTubic](https://github.com/NUber-dev/YTubic) by George Shyshov (NUber)** — the original app; YTubic Plus is a fork of it
-- **[Homefronts](https://github.com/Homefronts)** — YTubic Plus (radio mixes, offline downloads)
+- **[Homefronts](https://github.com/Homefronts)** — YTubic Plus (radio mixes, offline downloads, AI music filter)
+- AI music detection uses community lists: [spotify-ai-blocker](https://github.com/CennoxX/spotify-ai-blocker) by CennoxX (MIT), [loved-music-ai-artists](https://github.com/gounetmusic/loved-music-ai-artists) by gounetmusic (CC BY 4.0) and [CevvalYoutubeAIBlocklist](https://github.com/cevvalkoala/CevvalYoutubeAIBlocklist) by CevvalKoala (Unlicense)
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) — audio streaming
 - [LRCLIB](https://lrclib.net) — synced lyrics
 - Musixmatch and Genius — lyrics sources

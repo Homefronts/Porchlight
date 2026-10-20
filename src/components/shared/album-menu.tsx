@@ -36,6 +36,7 @@ import { universalShareUrl } from "@/lib/deep-link";
 import { fetchRadio } from "@/lib/innertube/radio";
 import { usePlaybackStore } from "@/lib/store/playback";
 import type { AlbumPage, ShelfItem } from "@/lib/innertube/types";
+import { isAiBlocked } from "@/lib/ai/use-ai";
 
 // Album rows carry no per-track thumbnail (the cover lives at the album
 // level), so backfill it before queuing — otherwise the player card and
@@ -120,7 +121,10 @@ export function useAlbumMenuController(albumId: string, album?: AlbumPage) {
       const radio = await fetchRadio(seed.id);
       usePlaybackStore
         .getState()
-        .playShelfItems([seed, ...radio.filter((t) => t.id !== seed.id)], 0);
+        .playShelfItems(
+          [seed, ...radio.filter((t) => t.id !== seed.id && !isAiBlocked(t))],
+          0,
+        );
     } catch {
       void play(false);
     }

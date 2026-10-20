@@ -63,6 +63,12 @@ type State = {
    *  scrobbling and off by default: an opt-in, since people often keep their
    *  likes intentionally different per platform. See `lib/lastfm.ts`. */
   lastfmLoveSync: boolean;
+  /** Show AI-generated music. Off hides confirmed AI outside the library
+   *  and holds it back inside it (see `lib/ai/`). On by default, so the
+   *  filter is opt-in. */
+  aiMusic: boolean;
+  /** The one-time "pretty good, but not perfect" note was shown. */
+  aiNoticeSeen: boolean;
   setCloseAction: (v: CloseButtonAction) => void;
   setCacheAutoClean: (v: CacheAutoCleanPeriod) => void;
   markCacheCleaned: () => void;
@@ -76,6 +82,8 @@ type State = {
   setLastfmEnabled: (v: boolean) => void;
   setLastfmLoveSync: (v: boolean) => void;
   setLastfmAvatar: (v: string | null) => void;
+  setAiMusic: (v: boolean) => void;
+  markAiNoticeSeen: () => void;
   /** Store the account returned by the connect flow and enable scrobbling. */
   setLastfmSession: (username: string, sessionKey: string) => void;
   /** Forget the connected account and stop scrobbling. */
@@ -106,6 +114,8 @@ export const useSettingsStore = create<State>()(
       lastfmUsername: null,
       lastfmAvatar: null,
       lastfmLoveSync: false,
+      aiMusic: true,
+      aiNoticeSeen: false,
       setCloseAction: (closeAction) => set({ closeAction }),
       setCacheAutoClean: (cacheAutoClean) => set({ cacheAutoClean }),
       markCacheCleaned: () => set({ lastCacheCleanAt: Date.now() }),
@@ -121,6 +131,8 @@ export const useSettingsStore = create<State>()(
       setLastfmEnabled: (lastfmEnabled) => set({ lastfmEnabled }),
       setLastfmLoveSync: (lastfmLoveSync) => set({ lastfmLoveSync }),
       setLastfmAvatar: (lastfmAvatar) => set({ lastfmAvatar }),
+      setAiMusic: (aiMusic) => set({ aiMusic }),
+      markAiNoticeSeen: () => set({ aiNoticeSeen: true }),
       setLastfmSession: (lastfmUsername, lastfmSessionKey) =>
         set({ lastfmUsername, lastfmSessionKey, lastfmEnabled: true }),
       clearLastfmSession: () =>

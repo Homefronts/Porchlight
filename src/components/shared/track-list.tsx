@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -27,6 +28,9 @@ import { usePlaybackStore, currentTrack } from "@/lib/store/playback";
 import { useTrackSourceStore } from "@/lib/store/track-source";
 import type { ShelfItem } from "@/lib/innertube/types";
 import { ExplicitBadge } from "@/components/shared/explicit-badge";
+import { AiTag } from "@/components/shared/ai-badge";
+import { useAiBlocked, useAiFilter } from "@/lib/ai/use-ai";
+import { askPlayAnyway } from "@/components/layout/ai-toggle-button";
 
 type Props = {
   tracks: ShelfItem[];
@@ -52,6 +56,9 @@ type Props = {
   /** Offline downloads views: the item to queue for a row, or null if it
    *  can't play. Row clicks queue only mapped rows. */
   toQueue?: (t: ShelfItem) => ShelfItem | null;
+  /** With AI music off: "hide" drops confirmed AI rows (catalog pages);
+   *  "hold" keeps them, greyed and skipped (the user's library). */
+  aiMode?: "hide" | "hold";
   className?: string;
 };
 
@@ -101,15 +108,22 @@ function VideoSourceBadge() {
 }
 
 export function TrackList({
-  tracks,
+  tracks: allTracks,
   hideThumbnails = false,
   hideAlbum = false,
   showPlays = false,
   removal,
   virtualize = true,
   toQueue,
+  aiMode = "hide",
   className,
 }: Props) {
+  const aiFilter = useAiFilter();
+  // Memoised: the virtualizer and selection effects key on identity.
+  const tracks = useMemo(
+    () => (aiMode === "hide" ? aiFilter(allTracks) : allTracks),
+    [aiMode, aiFilter, allTracks],
+  );
   const active = usePlaybackStore(currentTrack);
   const playing = usePlaybackStore((s) => s.playing);
   const sourcePrefs = useTrackSourceStore((s) => s.byVideoId);
@@ -450,11 +464,14 @@ const TrackRow = memo(function TrackRow({
   onSweepEnter,
   onPlainClick,
 }: RowProps) {
+  const held = useAiBlocked(t);
   const play = () => {
     const store = usePlaybackStore.getState();
     if (isActive) return store.toggle();
     const r = rowQueue(tracks, idx, toQueue);
-    if (r) store.playShelfItems(r.queue, r.start);
+    if (!r) return;
+    if (held) askPlayAnyway(() => store.playShelfItems(r.queue, r.start));
+    else store.playShelfItems(r.queue, r.start);
   };
   const row = (
     <li
@@ -475,6 +492,8 @@ const TrackRow = memo(function TrackRow({
           : isActive
             ? "bg-black/10 dark:bg-black/25"
             : "hover:bg-accent/60",
+        // Held-back AI (library, AI music off): visible but skipped.
+        held && !isActive && "opacity-45",
       )}
       onPointerDown={(e) => {
         if (e.button !== 0) return;
@@ -570,6 +589,7 @@ const TrackRow = memo(function TrackRow({
             {t.title}
           </span>
           {t.explicit ? <ExplicitBadge /> : null}
+          <AiTag item={t} />
           {videoSourceSelected ? <VideoSourceBadge /> : null}
           <TrackDownloadStatus videoId={t.id} />
         </div>

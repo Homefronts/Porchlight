@@ -17,8 +17,12 @@ import {
   IconPlayerTrackNextFilled,
   IconPlaylist,
   IconPlus,
+  IconFlag,
+  IconRobot,
+  IconRobotOff,
   IconThumbDownFilled,
 } from "@tabler/icons-react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   IconHeartOffFilled,
   IconPlaylistAddFilled,
@@ -80,6 +84,12 @@ import { toggleDisliked, toggleLiked } from "@/lib/like-actions";
 import { useSettingsStore } from "@/lib/store/settings";
 import { usePlaybackStore } from "@/lib/store/playback";
 import type { ShelfItem } from "@/lib/innertube/types";
+import { isAiBlocked, useAiBlocked, useAiClass } from "@/lib/ai/use-ai";
+import { useAiOverridesStore } from "@/lib/ai/overrides";
+import { askPlayAnyway } from "@/components/layout/ai-toggle-button";
+
+// The community list most other AI blockers build on takes reports here.
+const AI_REPORT_URL = "https://github.com/CennoxX/spotify-ai-blocker/issues/new/choose";
 
 type TrackContext = { tracks: ShelfItem[]; index: number };
 
@@ -274,6 +284,14 @@ export function TrackMenuItems({
   const singleDownload = !!dlTrack?.refs.includes(SINGLE_REF);
   // With thumbs on every row the rating items would only repeat them.
   const thumbs = useSettingsStore((s) => s.ratingButtons === "both");
+  // AI: overrides are per artist channel, so they need an id.
+  const aiCls = useAiClass(item);
+  const aiHeld = useAiBlocked(item);
+  const aiArtist = item.artists?.find((a) => a.id);
+  const aiOverride = useAiOverridesStore((s) =>
+    aiArtist?.id ? s.byChannel[aiArtist.id] : undefined,
+  );
+  const setAiOverride = useAiOverridesStore((s) => s.set);
   const {
     isLiked,
     playlists,
@@ -299,6 +317,19 @@ export function TrackMenuItems({
         <IconPlayerPlayFilled />
         Play
       </Item>
+      {aiHeld ? (
+        <Item
+          onSelect={() =>
+            askPlayAnyway(() => {
+              if (context) store().playShelfItems(context.tracks, context.index);
+              else store().playNow(item);
+            })
+          }
+        >
+          <IconRobot />
+          Play anyway
+        </Item>
+      ) : null}
       <Item onSelect={() => store().enqueueNext(item)}>
         <IconPlayerTrackNextFilled />
         Play next
@@ -311,7 +342,7 @@ export function TrackMenuItems({
         onSelect={async () => {
           try {
             const radio = await fetchRadio(item.id);
-            const rest = radio.filter((t) => t.id !== item.id);
+            const rest = radio.filter((t) => t.id !== item.id && !isAiBlocked(t));
             store().playShelfItems([item, ...rest], 0);
           } catch {
             store().playNow(item);
@@ -424,6 +455,34 @@ export function TrackMenuItems({
           Go to album
         </Item>
       )}
+
+      <Separator />
+
+      {aiArtist?.id ? (
+        aiCls === "ai" ? (
+          <Item onSelect={() => setAiOverride(aiArtist.id!, "not-ai")}>
+            <IconRobotOff />
+            Not AI
+          </Item>
+        ) : (
+          <Item onSelect={() => setAiOverride(aiArtist.id!, "ai")}>
+            <IconRobot />
+            Mark artist as AI
+          </Item>
+        )
+      ) : null}
+      {aiArtist?.id && aiOverride ? (
+        <Item onSelect={() => setAiOverride(aiArtist.id!, null)}>
+          <IconRobot />
+          Reset AI marking
+        </Item>
+      ) : null}
+      {aiCls !== "ai" ? (
+        <Item onSelect={() => void openUrl(AI_REPORT_URL)}>
+          <IconFlag />
+          Report AI artist to the community list
+        </Item>
+      ) : null}
 
       <Separator />
 

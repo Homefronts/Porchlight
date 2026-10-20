@@ -11,9 +11,12 @@ import { shelfItemToTrack } from "@/lib/queue-track";
 import { isFloatingPlayerWindow } from "@/lib/floating-player";
 import { usePlaybackSettings } from "./playback-settings";
 import { safeLocalStorage } from "./safe-storage";
+import { isAiBlocked } from "@/lib/ai/use-ai";
 
 export type QueueTrack = {
   videoId: string;
+  /** Played on purpose ("Play anyway?") although AI music is off. */
+  aiAllowed?: true;
   title: string;
   subtitle?: string;
   artists?: { id?: string; name: string }[];
@@ -25,6 +28,15 @@ export type QueueTrack = {
   /** Original duration from browse responses, may be undefined until /player resolves. */
   duration?: number;
 };
+
+export const isHeldAi = (t: QueueTrack): boolean => !t.aiAllowed && isAiBlocked(t);
+
+// One-shot: the next queue start is a held AI track the user chose to
+// play ("Play anyway?"), so setQueue mustn't step past it.
+let heldStartAllowed = false;
+export function allowHeldStart(on = true): void {
+  heldStartAllowed = on;
+}
 
 export type RepeatMode = "off" | "all" | "one";
 
@@ -244,7 +256,14 @@ const playbackStateCreator: StateCreator<PlaybackState> = (set, get) => ({
 
   setQueue: (tracks, startIndex = 0) => {
     if (tracks.length === 0) return;
-    const i = Math.max(0, Math.min(startIndex, tracks.length - 1));
+    let i = Math.max(0, Math.min(startIndex, tracks.length - 1));
+    if (heldStartAllowed) {
+      tracks = tracks.map((t, k) => (k === i ? { ...t, aiAllowed: true } : t));
+    } else {
+      // AI music off: start on the first track that isn't held back.
+      while (i < tracks.length - 1 && isHeldAi(tracks[i])) i++;
+    }
+    heldStartAllowed = false;
     // Honour an active shuffle: keep the chosen track current and shuffle
     // the upcoming portion, matching setShuffle's semantics.
     let queue = tracks;
@@ -468,6 +487,25 @@ const playbackStateCreator: StateCreator<PlaybackState> = (set, get) => ({
       nextQueue = shuffle && queue.length > 1 ? fisherYates(queue) : queue;
       nextIndex = 0;
     }
+    // AI music switched off: step over confirmed AI the user didn't ask
+    // for. Bounded by the queue length so an all-AI queue stops instead
+    // of spinning under repeat-all.
+    for (let steps = 0; isHeldAi(nextQueue[nextIndex]); steps++) {
+      nextIndex++;
+      if (nextIndex >= nextQueue.length) {
+        if (repeat !== "all") nextIndex = -1;
+        else nextIndex = 0;
+      }
+      if (nextIndex < 0 || steps >= nextQueue.length) {
+        set({ playing: false, position: 0 });
+        return;
+      }
+    }
+    // Wrapped back onto the playing slot: restart it in place (see above).
+    if (nextQueue === queue && nextIndex === index) {
+      set({ position: 0, pendingSeek: 0, playing: true });
+      return;
+    }
     const track = nextQueue[nextIndex];
     set({
       queue: nextQueue,
@@ -497,7 +535,12 @@ const playbackStateCreator: StateCreator<PlaybackState> = (set, get) => ({
       if (index >= 0) set({ position: 0, pendingSeek: 0 });
       return;
     }
-    const prevIndex = index - 1;
+    let prevIndex = index - 1;
+    while (prevIndex > 0 && isHeldAi(queue[prevIndex])) prevIndex--;
+    if (isHeldAi(queue[prevIndex])) {
+      set({ position: 0, pendingSeek: 0 });
+      return;
+    }
     const track = queue[prevIndex];
     set({
       index: prevIndex,

@@ -32,6 +32,7 @@ import { useLastfmScrobbler } from "@/lib/lastfm-scrobbler";
 import { useYtdlpSetup } from "@/lib/ytdlp";
 import { useDownloadsBridge } from "@/lib/downloads";
 import { useDownloadsSync } from "@/lib/downloads-sync";
+import { useAiDataSync } from "@/lib/ai/data";
 import { useUpdateStartupCheck } from "@/lib/updater";
 import { useDeepLinks } from "@/lib/use-deep-links";
 import { useWhatsNewOnUpdate } from "@/lib/store/whats-new";
@@ -98,6 +99,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   useYtdlpSetup();
   useDownloadsBridge();
   useDownloadsSync();
+  useAiDataSync();
   useUpdateStartupCheck();
   useWhatsNewOnUpdate();
   useDeepLinks();

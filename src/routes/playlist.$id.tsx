@@ -46,6 +46,7 @@ import {
   usePlaylistSortStore,
   type PlaylistSortMode,
 } from "@/lib/store/playlist-sort";
+import { useInLibrary } from "@/lib/ai/use-in-library";
 
 export const Route = createFileRoute("/playlist/$id")({
   component: PlaylistPageView,
@@ -73,6 +74,7 @@ type AnyPage = PlaylistFirstPage | PlaylistNextPage;
 function PlaylistPageView() {
   const { id } = Route.useParams();
   const { view, t, a, aid, img, from } = Route.useSearch();
+  const inLibrary = useInLibrary("playlist", id);
   const isArtistTopSongs = view === "top-songs";
   const openedFromArtist = from === "artist";
 
@@ -410,6 +412,7 @@ function PlaylistPageView() {
           tracks={visibleTracks}
           showPlays={isArtistTopSongs}
           removal={removal}
+          aiMode={inLibrary || header.isEditable ? "hold" : "hide"}
         />
       )}
 

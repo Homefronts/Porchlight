@@ -190,7 +190,7 @@ function LikedSongsView() {
 
   return (
     <div className="flex flex-col gap-4">
-      <TrackList tracks={tracks} />
+      <TrackList tracks={tracks} aiMode="hold" />
       {query.hasNextPage && (
         <div
           ref={sentinelRef}
