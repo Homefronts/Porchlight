@@ -25,6 +25,7 @@ use tower_http::cors::CorsLayer;
 use tower_http::services::ServeFile;
 
 mod appid;
+mod downloads;
 mod discord;
 mod lastfm;
 mod media;
@@ -61,7 +62,7 @@ async fn write_atomic(path: &std::path::Path, bytes: &[u8]) -> std::io::Result<(
     tokio::fs::rename(&tmp, path).await
 }
 
-fn sanitize_video_id(id: &str) -> bool {
+pub(crate) fn sanitize_video_id(id: &str) -> bool {
     !id.is_empty()
         && id.len() < 32
         && id
@@ -3240,6 +3241,9 @@ struct StreamServer {
     /// `ytdlp::program` so a mid-session download takes effect
     /// immediately.
     ytdlp_bin: PathBuf,
+    /// Offline downloads (`app_data_dir()/downloads`). A downloaded track
+    /// is served from here before the caches or yt-dlp are consulted.
+    downloads_dir: PathBuf,
 }
 
 /// Read the `ephemeral` query flag from a stream/prefetch request.
@@ -3260,7 +3264,7 @@ fn is_ephemeral(req: &Request) -> bool {
 /// Hash a URL into a stable hex filename. Uses Rust's stdlib
 /// SipHash13 (DefaultHasher) — not cryptographic, but for cache-key
 /// purposes only and keeps the dependency footprint small.
-fn url_to_filename(url: &str) -> String {
+pub(crate) fn url_to_filename(url: &str) -> String {
     use std::hash::{Hash, Hasher};
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     url.hash(&mut hasher);
@@ -3308,7 +3312,7 @@ fn check_cover_url(url: &str) -> Result<(), String> {
 
 /// Fetch cover bytes from an allowlisted CDN. Shared by the disk cache
 /// and the user-facing "Download cover" action.
-async fn fetch_cover_bytes(url: &str) -> Result<Vec<u8>, String> {
+pub(crate) async fn fetch_cover_bytes(url: &str) -> Result<Vec<u8>, String> {
     check_cover_url(url)?;
     let resp = reqwest::Client::builder()
         .timeout(Duration::from_secs(10))
@@ -3536,6 +3540,30 @@ async fn get_stream_base_url(state: tauri::State<'_, StreamServerState>) -> Resu
     }
 }
 
+/// yt-dlp audio selection + resilience flags, shared by the stream cache and
+/// offline downloads (callers add `-o <dest>` and the URL).
+pub(crate) const YTDLP_AUDIO_ARGS: &[&str] = &[
+    "-f",
+    "bestaudio[ext=webm][protocol^=http]/bestaudio[protocol^=http]/bestaudio",
+    "--no-playlist",
+    "--no-warnings",
+    "--no-part",
+    "-q",
+    // YouTube regularly hands out a signed media URL that then 403s
+    // on the very first byte-range request (token/pot desync or
+    // per-URL throttling). Left alone this surfaces as a one-off
+    // "download failed" that a manual re-click fixes. Retrying the
+    // data download and the extractor a few times clears the vast
+    // majority of these inside a single spawn, before the handler
+    // ever returns 502 to the audio element.
+    "--retries",
+    "5",
+    "--extractor-retries",
+    "3",
+    "--socket-timeout",
+    "15",
+];
+
 /// Spawn a yt-dlp downloader that writes into the shared memory buffer
 /// AND to a `<videoId>.part` file on disk. On successful exit, renames
 /// .part → .webm. Updates `state.complete` + pings `notify` on every
@@ -3560,29 +3588,7 @@ fn spawn_downloader(
         let _ = tokio::fs::remove_file(&part_path).await; // clean stale
 
         let mut cmd = TokioCommand::new(ytdlp::program(&srv.ytdlp_bin));
-        cmd.args([
-            "-f",
-            "bestaudio[ext=webm][protocol^=http]/bestaudio[protocol^=http]/bestaudio",
-            "--no-playlist",
-            "--no-warnings",
-            "--no-part",
-            "-q",
-            // YouTube regularly hands out a signed media URL that then 403s
-            // on the very first byte-range request (token/pot desync or
-            // per-URL throttling). Left alone this surfaces as a one-off
-            // "download failed" that a manual re-click fixes. Retrying the
-            // data download and the extractor a few times clears the vast
-            // majority of these inside a single spawn, before the handler
-            // ever returns 502 to the audio element.
-            "--retries",
-            "5",
-            "--extractor-retries",
-            "3",
-            "--socket-timeout",
-            "15",
-            "-o",
-            "-",
-        ]);
+        cmd.args(YTDLP_AUDIO_ARGS).args(["-o", "-"]);
         cmd.arg(&url);
         // Windows: suppress the console window for the child yt-dlp.exe
         // (see resolve_stream_ytdlp for rationale).
@@ -3739,7 +3745,10 @@ async fn stream_handler(
     } else {
         format!("p:{video_id}")
     };
-    let final_path = target_dir.join(format!("{video_id}.webm"));
+    // A downloaded copy wins over both caches (and works offline), so the
+    // download block below is skipped for it.
+    let final_path = downloads::downloaded_track_path(&srv.downloads_dir, &video_id)
+        .unwrap_or_else(|| target_dir.join(format!("{video_id}.webm")));
 
     // If the full file isn't on disk yet, start (or attach to) the
     // download and block until it completes. Attempting to progressively
@@ -3875,7 +3884,11 @@ async fn cover_serve_handler(
     {
         return (StatusCode::BAD_REQUEST, "invalid filename").into_response();
     }
-    let path = srv.cover_dir.join(&filename);
+    let mut path = srv.cover_dir.join(&filename);
+    if !path.exists() {
+        // Covers saved with offline downloads live outside the cache.
+        path = srv.downloads_dir.join("covers").join(&filename);
+    }
     if !path.exists() {
         return (StatusCode::NOT_FOUND, "not cached").into_response();
     }
@@ -3967,6 +3980,7 @@ async fn start_stream_server(
     ephemeral_dir: PathBuf,
     cover_dir: PathBuf,
     ytdlp_bin: PathBuf,
+    downloads_dir: PathBuf,
 ) {
     if let Err(e) = tokio::fs::create_dir_all(&cache_dir).await {
         eprintln!("[stream-server] mkdir {cache_dir:?}: {e}");
@@ -4003,6 +4017,7 @@ async fn start_stream_server(
         cover_dir,
         downloads: Arc::new(Mutex::new(HashMap::new())),
         ytdlp_bin,
+        downloads_dir,
     };
 
     // Per-launch token as an unguessable path prefix. Baked into the base
@@ -4193,6 +4208,11 @@ pub fn run() {
             check_ytdlp_update,
             resolve_stream_ytdlp,
             get_stream_base_url,
+            downloads::downloads_index,
+            downloads::downloads_set_collection,
+            downloads::downloads_remove_collection,
+            downloads::downloads_add_track,
+            downloads::downloads_remove_track,
             start_login,
             get_cookie_header,
             get_auth_context,
@@ -4308,6 +4328,19 @@ pub fn run() {
             eprintln!("[stream-server] ephemeral dir: {ephemeral_dir:?}");
             eprintln!("[stream-server] cover dir: {cover_dir:?}");
             let ytdlp_bin = ytdlp::managed_path(&handle);
+            // Offline downloads live in app data, never the cache root, so
+            // cache cleanup and OS cache wipes can't touch them.
+            let downloads_dir = app
+                .path()
+                .app_data_dir()
+                .map(|d| d.join("downloads"))
+                .unwrap_or_else(|_| cache_root.join("downloads"));
+            downloads::init(
+                app.handle(),
+                ytdlp_bin.clone(),
+                cache_dir.clone(),
+                downloads_dir.clone(),
+            );
             tauri::async_runtime::spawn(async move {
                 migrate_plaintext_cookies(&handle).await;
                 migrate_to_accounts_layout(&handle).await;
@@ -4315,7 +4348,15 @@ pub fn run() {
                 // email-based dedup before the UI reads the list.
                 dedup_accounts_by_identity(&handle).await;
                 cleanup_login_artifacts(&handle).await;
-                start_stream_server(port, token, cache_dir, ephemeral_dir, cover_dir, ytdlp_bin)
+                start_stream_server(
+                    port,
+                    token,
+                    cache_dir,
+                    ephemeral_dir,
+                    cover_dir,
+                    ytdlp_bin,
+                    downloads_dir,
+                )
                     .await;
             });
             // Subscribe to resume-from-sleep before the loop starts, so a
@@ -4445,6 +4486,42 @@ mod tests {
                 StatusCode::NOT_FOUND,
                 "no token must not reach the handler"
             );
+        });
+    }
+
+    // Offline downloads must be served from disk without ever reaching
+    // yt-dlp (ytdlp_bin points nowhere, so a spawn would 502).
+    #[test]
+    fn stream_serves_downloaded_file_first() {
+        use super::{stream_handler, StreamServer};
+        use std::collections::HashMap;
+        use std::sync::Arc;
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let root = std::env::temp_dir().join(format!("ytubic-stream-{}", std::process::id()));
+            let dl = root.join("downloads");
+            std::fs::create_dir_all(dl.join("tracks")).unwrap();
+            let mut bytes = vec![0x1A, 0x45, 0xDF, 0xA3];
+            bytes.resize(40 * 1024, 0);
+            std::fs::write(dl.join("tracks").join("abc123").with_extension("webm"), &bytes).unwrap();
+            let server = StreamServer {
+                cache_dir: root.join("stream"),
+                ephemeral_dir: root.join("eph"),
+                cover_dir: root.join("covers"),
+                downloads: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
+                ytdlp_bin: root.join("no-such-yt-dlp"),
+                downloads_dir: dl,
+            };
+            let app: Router = Router::new()
+                .route("/stream/:video_id", get(stream_handler))
+                .with_state(server);
+            let resp = app
+                .oneshot(Request::builder().uri("/stream/abc123?ephemeral=1").body(Body::empty()).unwrap())
+                .await
+                .unwrap();
+            assert_eq!(resp.status(), StatusCode::OK);
+            assert_eq!(resp.headers()["content-type"], "audio/webm");
+            let _ = std::fs::remove_dir_all(&root);
         });
     }
 
