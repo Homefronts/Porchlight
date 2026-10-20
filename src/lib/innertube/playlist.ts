@@ -434,16 +434,27 @@ export async function fetchPlaylistContinuation(
  * list (e.g. the liked-songs membership cache used to decide whether a
  * track shows a filled thumb-up), not for UI rendering of long lists.
  */
-export async function fetchPlaylist(id: string): Promise<PlaylistPage> {
-  const first = await fetchPlaylistFirstPage(id);
-  const tracks = [...first.tracks];
+/**
+ * Walk continuations after the first page, deduping by id and stopping
+ * when a page adds nothing new. Lenient mode keeps whatever loaded when a
+ * continuation fails; `strict` rethrows instead, for callers that act on
+ * absence (download sync deletes tracks missing from the list).
+ */
+export async function collectAllPages(
+  firstTracks: ShelfItem[],
+  firstToken: string | undefined,
+  next: (token: string) => Promise<PlaylistNextPage>,
+  strict = false,
+): Promise<ShelfItem[]> {
+  const tracks = [...firstTracks];
   const seenIds = new Set(tracks.map((t) => t.id));
-  let token = first.continuationToken;
+  let token = firstToken;
   for (let i = 0; token && i < 200; i++) {
     let page: PlaylistNextPage;
     try {
-      page = await fetchPlaylistContinuation(token);
+      page = await next(token);
     } catch (e) {
+      if (strict) throw e;
       if (import.meta.env.DEV) {
         console.debug("[playlist] continuation failed:", e);
       }
@@ -459,6 +470,20 @@ export async function fetchPlaylist(id: string): Promise<PlaylistPage> {
     if (tracks.length === before) break;
     token = page.continuationToken;
   }
+  return tracks;
+}
+
+export async function fetchPlaylist(
+  id: string,
+  opts?: { strict?: boolean },
+): Promise<PlaylistPage> {
+  const first = await fetchPlaylistFirstPage(id);
+  const tracks = await collectAllPages(
+    first.tracks,
+    first.continuationToken,
+    fetchPlaylistContinuation,
+    opts?.strict,
+  );
   if (import.meta.env.DEV) {
     console.debug("[playlist] full-load parsed:", id, "tracks=", tracks.length);
   }

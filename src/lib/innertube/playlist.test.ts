@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  collectAllPages,
   detectEditable,
   extractShuffleEndpoint,
   extractSuggestions,
@@ -205,5 +206,19 @@ describe("extractSuggestions", () => {
       { nextContinuationData: { continuation: "next-token" } },
     ];
     expect(extractSuggestions(r)).toBeUndefined();
+  });
+});
+
+describe("collectAllPages", () => {
+  const song = (id: string) => ({ kind: "song" as const, id, title: id, thumbnails: [] });
+
+  it("strict rethrows a continuation failure; lenient keeps what it has", async () => {
+    const next = async (token: string) => {
+      if (token === "t1") return { tracks: [song("b")], continuationToken: "t2" };
+      throw new Error("500");
+    };
+    await expect(collectAllPages([song("a")], "t1", next, true)).rejects.toThrow("500");
+    const lenient = await collectAllPages([song("a")], "t1", next);
+    expect(lenient.map((t) => t.id)).toEqual(["a", "b"]);
   });
 });
