@@ -148,8 +148,10 @@ a substring, and the job leaves out names shorter than 4 characters, so short
 or common names don't get mass-tagged. My call: any credited artist counts,
 since collaborations with AI acts are still AI songs.
 
-**The switch.** A small **"AI" toggle button in the top bar, right next to
-the search box** (decided by the user). One click flips it, and its state
+**The switch.** A small **"AI" toggle button in the top bar, on the right,
+just left of the window controls, so it's visible on every page** (decided
+by the user). YTubic has no search box in the top bar; search is its own
+page. One click flips it, and its state
 is obvious: struck through when AI music is off. Its tooltip says "AI music
 hidden · click to show" or "AI music shown · click to hide". It defaults to
 **on** (shown), so nothing changes for anyone until they flip it. Settings →
