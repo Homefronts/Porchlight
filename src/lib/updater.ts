@@ -204,18 +204,25 @@ async function runMockDownload(version: string): Promise<void> {
   store.setReady();
 }
 
+const RECHECK_MS = 6 * 60 * 60 * 1000;
+
 /**
- * Mount once in AppShell: quiet update check shortly after launch.
- * Delayed a few seconds so it never competes with first paint, feed
- * loading, or the yt-dlp bootstrap for attention/bandwidth. Skipped
- * entirely with automatic updates off; About still checks on open.
+ * Mount once in AppShell: quiet update check shortly after launch, then
+ * every 6 hours, so one failed check (or an app left open for days)
+ * doesn't miss a release. Delayed a few seconds so it never competes
+ * with first paint, feed loading, or the yt-dlp bootstrap. Skipped with
+ * automatic updates off; About still checks on open.
  */
 export function useUpdateStartupCheck(): void {
   useEffect(() => {
-    if (!useSettingsStore.getState().autoUpdate) return;
-    const t = window.setTimeout(() => {
-      void checkForUpdates({ silent: true });
-    }, 5000);
-    return () => window.clearTimeout(t);
+    const run = () => {
+      if (useSettingsStore.getState().autoUpdate) void checkForUpdates({ silent: true });
+    };
+    const t = window.setTimeout(run, 5000);
+    const i = window.setInterval(run, RECHECK_MS);
+    return () => {
+      window.clearTimeout(t);
+      window.clearInterval(i);
+    };
   }, []);
 }

@@ -56,6 +56,33 @@ export type WhatsNewEntry = {
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.7.1",
+    date: "October 20, 2026",
+    summary: "Steadier updates",
+    changes: [
+      {
+        type: "new",
+        title: "Check for Updates",
+        text: "Settings > General has a Check now button that tells you if you're up to date, or why a check failed.",
+      },
+      {
+        type: "improved",
+        title: "Update checks",
+        text: "While the app is open it looks for updates every 6 hours, so one missed check no longer means waiting for a restart.",
+      },
+      {
+        type: "improved",
+        title: "AI filter",
+        text: "With AI music off, channels copying a known AI act's name (like \"Artist Music\") are hidden too, and albums and home feed picks by AI artists are now filtered.",
+      },
+      {
+        type: "improved",
+        title: "Version label",
+        text: "Settings now shows YTubic Plus and the version you're running.",
+      },
+    ],
+  },
+  {
     version: "0.7.0",
     date: "October 20, 2026",
     summary: "An AI music filter",
