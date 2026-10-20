@@ -25,7 +25,8 @@ export function isAiBlocked(item: HasArtists): boolean {
 /** Hook form of `isAiBlocked`, re-rendering on any input change. */
 export function useAiBlocked(item: HasArtists): boolean {
   const on = useSettingsStore((s) => s.aiMusic);
-  return !on && useAiClass(item) === "ai";
+  const cls = useAiClass(item); // always call: hooks must not sit behind `&&`
+  return !on && cls === "ai";
 }
 
 /** `filterAiItems` bound to the current data, overrides and switch. */
