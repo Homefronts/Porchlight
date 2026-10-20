@@ -173,6 +173,10 @@ vitest (node env, `src/**/*.test.ts`), `@tauri-apps/plugin-http`
 - [ ] **Steps:**
   - The button uses `NAV_BTN_CLS` sizing. Its "AI" glyph is struck through when `aiMusic === false`. The tooltip reads "AI music hidden · click to show" or "AI music shown · click to hide". It shows a small amber dot when reduced.
   - On the first transition into reduced mode, show one `toast()` with the spec copy. Remember the reason shown in the persisted store so it isn't repeated, and show it again only if the reason changes.
+  - **Accuracy notice:** the first time `aiMusic` goes from true to false (from
+    either control), open a small dialog with the spec's verbatim "pretty
+    good, but not perfect" copy and an "OK" button. Persist `aiNoticeSeen` in
+    settings. Show the same copy permanently under the Settings switch.
   - `pnpm build`, a manual check, then commit `feat(ai): top-bar toggle`.
 
 ### Task 7: Hide AI outside the library

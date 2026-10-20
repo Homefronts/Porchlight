@@ -158,6 +158,15 @@ hidden · click to show" or "AI music shown · click to hide". It defaults to
 Playback mirrors the same setting and holds the reduced-mode status line. In
 reduced mode the top-bar button also shows a small warning dot.
 
+**Accuracy notice** (requested by the user). The first time the user turns AI
+music off, a small one-time dialog explains the limits; the same text sits
+permanently under the switch in Settings → Playback:
+
+> **AI filtering is pretty good, but not perfect.** We detect AI music using
+> community-run lists checked against Spotify. New or unlisted AI artists can
+> still slip through. If you spot one, right-click the song and choose **Mark
+> artist as AI**, and it'll be hidden from then on.
+
 **The tag.** A small "AI" chip next to the title, built like
 `src/components/shared/explicit-badge.tsx` and placed wherever that badge
 appears: track rows, shelf cards, the queue, the player bar. "AI?" uses the
