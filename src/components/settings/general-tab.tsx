@@ -8,6 +8,7 @@ import {
   IconBellFilled,
   IconBoltFilled,
   IconCircleArrowDownFilled,
+  IconCircleCheckFilled,
   IconLoader2,
   IconLogin,
   IconSquareXFilled,
@@ -135,6 +136,14 @@ function BehaviorGroup() {
     if (enabled) void checkForUpdates({ silent: true });
   };
 
+  // The launch check is silent, so this is where a failed check shows
+  // its real error instead of a false "Up to date".
+  const [checking, setChecking] = useState(false);
+  const checkNow = () => {
+    setChecking(true);
+    void checkForUpdates({ silent: false }).finally(() => setChecking(false));
+  };
+
   const qc = useQueryClient();
   const autostart = useQuery({
     queryKey: ["autostart"],
@@ -207,6 +216,17 @@ function BehaviorGroup() {
             onCheckedChange={toggleAutoUpdate}
             aria-label="Automatic Updates"
           />
+        }
+      />
+      <SettingRow
+        icon={IconCircleCheckFilled}
+        title="Check for Updates"
+        description="Look for a new version now."
+        control={
+          <Button size="sm" variant="secondary" onClick={checkNow} disabled={checking}>
+            {checking ? <IconLoader2 className="size-4 animate-spin" /> : null}
+            Check now
+          </Button>
         }
       />
     </Group>
