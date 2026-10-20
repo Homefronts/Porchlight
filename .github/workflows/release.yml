@@ -14,6 +14,9 @@ on:
   push:
     tags:
       - "v*"
+  # Manual run against a tag ref (gh workflow run Release --ref vX.Y.Z):
+  # forks ignore tag pushes until Actions is enabled from the web UI.
+  workflow_dispatch:
 
 jobs:
   build:
