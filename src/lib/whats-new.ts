@@ -56,6 +56,34 @@ export type WhatsNewEntry = {
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.7.0",
+    date: "October 20, 2026",
+    summary: "An AI music filter",
+    changes: [
+      {
+        type: "new",
+        title: "AI music switch",
+        text: "A new AI button in the top bar turns AI-generated music off. It's hidden from search, home, mixes and artist pages, and skipped in your library, where you can still choose Play anyway.",
+      },
+      {
+        type: "new",
+        title: "AI tags",
+        text: "Songs by known AI artists carry an AI tag wherever they appear. AI? marks an artist who only shares a name with a known AI act, and is never hidden.",
+      },
+      {
+        type: "new",
+        title: "Your own calls",
+        text: "Right-click a song to mark its artist as AI or Not AI, or to report an AI artist to the community list.",
+      },
+      {
+        type: "improved",
+        title: "Community powered",
+        text: "Detection uses community lists checked against Spotify, refreshed every day. It's pretty good, but not perfect: new AI artists can slip through.",
+      },
+    ],
+    note: "Thanks to CennoxX, gounetmusic and CevvalKoala, whose community lists make the AI filter possible.",
+  },
+  {
     version: "0.6.0",
     date: "October 19, 2026",
     summary: "YTubic Plus: radio mixes and offline downloads",
