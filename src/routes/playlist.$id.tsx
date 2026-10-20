@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { CollectionDownloadButton } from "@/components/shared/download-button";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { AlertCircleIcon, RefreshCwIcon } from "lucide-react";
@@ -330,8 +331,14 @@ function PlaylistPageView() {
         }
         onShuffle={openedFromArtist ? undefined : () => void shufflePlaylist()}
         actions={
-          isArtistTopSongs || openedFromArtist ? null : isLikedSongs ? null : (
+          isArtistTopSongs || openedFromArtist ? null : isLikedSongs ? (
+            <CollectionDownloadButton kind="liked" id="LM" />
+          ) : (
             <>
+              <CollectionDownloadButton
+                kind="playlist"
+                id={id.startsWith("VL") ? id.slice(2) : id}
+              />
               {/* One link for everyone: the share page opens the playlist in
                   YTubic when it's installed and falls back to YouTube Music
                   when it isn't. The YTM fallback wants the bare list id, so

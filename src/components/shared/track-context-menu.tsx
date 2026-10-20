@@ -9,6 +9,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MoreHorizontalIcon } from "lucide-react";
 import {
   IconDiscFilled,
+  IconDownload,
+  IconDownloadOff,
   IconHeartFilled,
   IconLoader2,
   IconPlayerPlayFilled,
@@ -59,6 +61,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getLikedIdsSet } from "@/components/shared/like-buttons";
 import { fetchRadio } from "@/lib/innertube/radio";
+import {
+  SINGLE_REF,
+  downloadTrack,
+  type DlTrack,
+  removeTrackDownload,
+  useDownloadsStore,
+} from "@/lib/downloads";
 import { fetchLikedSongs } from "@/lib/innertube/library";
 import {
   addToPlaylist,
@@ -257,6 +266,12 @@ export function TrackMenuItems({
 }) {
   const store = usePlaybackStore.getState;
   const { Item, Separator, Sub, SubTrigger, SubContent } = primitives;
+  // Collection-only downloads are removed from the collection's toggle.
+  const dlTrack = useDownloadsStore(
+    (s): DlTrack | undefined => s.index.tracks[item.id],
+  );
+  const dlState = dlTrack?.state ?? "none";
+  const singleDownload = !!dlTrack?.refs.includes(SINGLE_REF);
   // With thumbs on every row the rating items would only repeat them.
   const thumbs = useSettingsStore((s) => s.ratingButtons === "both");
   const {
@@ -306,6 +321,23 @@ export function TrackMenuItems({
         <IconRadioFilled />
         Start radio
       </Item>
+      {dlState === "none" ? (
+        <Item
+          onSelect={() =>
+            void downloadTrack(item).catch((e) =>
+              toast.error(`Download failed: ${String(e)}`),
+            )
+          }
+        >
+          <IconDownload />
+          Download
+        </Item>
+      ) : singleDownload ? (
+        <Item onSelect={() => void removeTrackDownload(item.id)}>
+          <IconDownloadOff />
+          Remove download
+        </Item>
+      ) : null}
 
       <Separator />
 

@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { CollectionDownloadButton } from "@/components/shared/download-button";
 import { useQuery } from "@tanstack/react-query";
 import { AlertCircleIcon } from "lucide-react";
 import { fetchAlbum } from "@/lib/innertube/album";
@@ -87,13 +88,16 @@ function AlbumPageView() {
         onShuffle={() => {
           if (tracksWithCover.length > 0) {
             const start = Math.floor(Math.random() * tracksWithCover.length);
-            usePlaybackStore
-              .getState()
-              .playShelfItems(tracksWithCover, start);
+            usePlaybackStore.getState().playShelfItems(tracksWithCover, start);
             usePlaybackStore.getState().setShuffle(true);
           }
         }}
-        actions={<AlbumMoreMenu album={data} />}
+        actions={
+          <>
+            <CollectionDownloadButton kind="album" id={id} />
+            <AlbumMoreMenu album={data} />
+          </>
+        }
       />
       {subtitleParts.length > 0 ? (
         <p className="-mt-4 flex flex-wrap items-center gap-1 text-sm text-muted-foreground">

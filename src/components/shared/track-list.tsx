@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { TrackDownloadStatus } from "@/components/shared/download-button";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { CheckIcon, PlayIcon, PauseIcon, Volume2Icon } from "lucide-react";
 import { Link } from "@tanstack/react-router";
@@ -559,6 +560,7 @@ const TrackRow = memo(function TrackRow({
           </span>
           {t.explicit ? <ExplicitBadge /> : null}
           {videoSourceSelected ? <VideoSourceBadge /> : null}
+          <TrackDownloadStatus videoId={t.id} />
         </div>
       </div>
 
