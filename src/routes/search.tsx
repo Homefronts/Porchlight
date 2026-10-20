@@ -43,6 +43,7 @@ import type {
   ShelfItem,
   TopResultAction,
 } from "@/lib/innertube/types";
+import { useAiFilter } from "@/lib/ai/use-ai";
 
 type SearchParams = {
   q?: string;
@@ -293,7 +294,10 @@ const ALL_SECTIONS: {
 ];
 
 function AllResults({ data }: { data: SearchResults }) {
-  const { topResult, query } = data;
+  const aiFilter = useAiFilter();
+  const { query } = data;
+  const topResult =
+    data.topResult && aiFilter([data.topResult]).length ? data.topResult : undefined;
 
   // Per-type items from the single "all" response — the instant first paint.
   const fallback = useMemo(() => {
@@ -550,9 +554,10 @@ function FilterResults({
   data: SearchResults;
   filter: SearchFilter;
 }) {
+  const aiFilter = useAiFilter();
   const items = useMemo(
-    () => data.shelves.flatMap((s) => s.items),
-    [data.shelves],
+    () => aiFilter(data.shelves.flatMap((s) => s.items)),
+    [data.shelves, aiFilter],
   );
 
   if (items.length === 0) return <NoResults query={data.query} />;
@@ -664,7 +669,7 @@ function LibraryResults({
       </p>
     );
   }
-  return <TrackList tracks={state.matches} />;
+  return <TrackList tracks={state.matches} aiMode="hold" />;
 }
 
 function LibrarySignInHint() {

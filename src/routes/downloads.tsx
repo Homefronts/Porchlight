@@ -63,7 +63,7 @@ function DownloadsPage() {
       {singles.length > 0 ? (
         <section className="flex flex-col gap-2">
           <h2 className="text-xl font-semibold">Songs</h2>
-          <TrackList tracks={singles} toQueue={toDownloadedQueueItem} />
+          <TrackList tracks={singles} toQueue={toDownloadedQueueItem} aiMode="hold" />
         </section>
       ) : null}
     </div>

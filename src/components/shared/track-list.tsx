@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -28,6 +29,7 @@ import { useTrackSourceStore } from "@/lib/store/track-source";
 import type { ShelfItem } from "@/lib/innertube/types";
 import { ExplicitBadge } from "@/components/shared/explicit-badge";
 import { AiTag } from "@/components/shared/ai-badge";
+import { useAiFilter } from "@/lib/ai/use-ai";
 
 type Props = {
   tracks: ShelfItem[];
@@ -53,6 +55,9 @@ type Props = {
   /** Offline downloads views: the item to queue for a row, or null if it
    *  can't play. Row clicks queue only mapped rows. */
   toQueue?: (t: ShelfItem) => ShelfItem | null;
+  /** With AI music off: "hide" drops confirmed AI rows (catalog pages);
+   *  "hold" keeps them, greyed and skipped (the user's library). */
+  aiMode?: "hide" | "hold";
   className?: string;
 };
 
@@ -102,15 +107,22 @@ function VideoSourceBadge() {
 }
 
 export function TrackList({
-  tracks,
+  tracks: allTracks,
   hideThumbnails = false,
   hideAlbum = false,
   showPlays = false,
   removal,
   virtualize = true,
   toQueue,
+  aiMode = "hide",
   className,
 }: Props) {
+  const aiFilter = useAiFilter();
+  // Memoised: the virtualizer and selection effects key on identity.
+  const tracks = useMemo(
+    () => (aiMode === "hide" ? aiFilter(allTracks) : allTracks),
+    [aiMode, aiFilter, allTracks],
+  );
   const active = usePlaybackStore(currentTrack);
   const playing = usePlaybackStore((s) => s.playing);
   const sourcePrefs = useTrackSourceStore((s) => s.byVideoId);

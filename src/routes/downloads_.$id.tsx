@@ -96,7 +96,7 @@ function DownloadedCollectionPage() {
           <CollectionDownloadButton kind={collection.kind} id={collection.id} />
         }
       />
-      <TrackList tracks={tracks} toQueue={toDownloadedQueueItem} />
+      <TrackList tracks={tracks} toQueue={toDownloadedQueueItem} aiMode="hold" />
     </div>
   );
 }

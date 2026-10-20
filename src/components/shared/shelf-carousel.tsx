@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { ShelfCard } from "@/components/shared/shelf-card";
 import { cn } from "@/lib/utils";
+import { useAiFilter } from "@/lib/ai/use-ai";
 import type { Shelf } from "@/lib/innertube/types";
 
 type Props = {
@@ -11,6 +12,7 @@ type Props = {
 
 export function ShelfCarousel({ shelf, action }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const items = useAiFilter()(shelf.items);
 
   // Make the carousel scroll horizontally with:
   //  - horizontal wheel / trackpad / scrollbar (native, via overflow-x)
@@ -114,6 +116,8 @@ export function ShelfCarousel({ shelf, action }: Props) {
     };
   }, []);
 
+  // A shelf that was all AI is dropped rather than shown empty.
+  if (items.length === 0 && shelf.items.length > 0) return null;
   return (
     <section className="shelf-hover-scrollbar flex flex-col gap-3">
       <div className="flex items-baseline justify-between gap-3 px-1">
@@ -133,7 +137,7 @@ export function ShelfCarousel({ shelf, action }: Props) {
         ref={scrollRef}
         className="shelf-scroll shelf-edge-fade flex min-w-0 gap-2 overflow-x-auto overflow-y-hidden pb-1"
       >
-        {shelf.items.map((item) => {
+        {items.map((item) => {
           // Video covers keep the cover height equal to a square (album)
           // card by widening the slot to 16/9 — preserves the video
           // aspect without making the row visually uneven.
