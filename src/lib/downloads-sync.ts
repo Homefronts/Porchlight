@@ -33,11 +33,12 @@ export async function fetchCollectionInput(
   if (kind === "album") {
     const a = await fetchAlbum(id);
     const cover = widest(a.thumbnails);
-    // Album rows carry no artwork of their own; give them the album's so
-    // offline views have a cover.
+    // Album rows carry no artwork or artists of their own; give them the
+    // album's so offline views have a cover and linkable artists.
     const tracks = a.tracks.flatMap((t): TrackInput[] => {
       const input = trackToInput({
         ...t,
+        artists: t.artists?.length ? t.artists : a.artists,
         thumbnails: t.thumbnails.length ? t.thumbnails : a.thumbnails,
         album: t.album ?? a.title,
         albumId: t.albumId ?? a.id,

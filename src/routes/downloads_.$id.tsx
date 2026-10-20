@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { EntityHeader } from "@/components/shared/entity-header";
 import { CollectionDownloadButton } from "@/components/shared/download-button";
 import { TrackList } from "@/components/shared/track-list";
@@ -38,6 +38,15 @@ function DownloadedCollectionPage() {
     [tracks, tracksById],
   );
 
+  // Albums store their artists on each track (see fetchCollectionInput);
+  // link them like the online album page does.
+  const albumArtists =
+    collection?.kind === "album"
+      ? (tracksById[collection.trackIds[0]]?.meta.artists ?? []).filter(
+          (a) => a.id,
+        )
+      : [];
+
   if (!collection) {
     return (
       <p className="px-6 pt-6 text-sm text-muted-foreground">
@@ -57,7 +66,26 @@ function DownloadedCollectionPage() {
     <div className="flex flex-col gap-4 px-6 pb-6">
       <EntityHeader
         title={collection.title}
-        subtitle={collection.subtitle ?? undefined}
+        subtitle={
+          albumArtists.length ? (
+            <span className="inline-flex flex-wrap gap-1">
+              {albumArtists.map((a, i) => (
+                <span key={a.id}>
+                  <Link
+                    to="/artist/$id"
+                    params={{ id: a.id! }}
+                    className="hover:text-foreground hover:underline"
+                  >
+                    {a.name}
+                  </Link>
+                  {i < albumArtists.length - 1 ? "," : ""}
+                </span>
+              ))}
+            </span>
+          ) : (
+            (collection.subtitle ?? undefined)
+          )
+        }
         thumbnails={collectionThumbs(collection, base)}
         onPlay={() => play(false)}
         onShuffle={() => play(true)}

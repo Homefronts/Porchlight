@@ -4,7 +4,8 @@ const invoke = vi.fn(async () => undefined);
 vi.mock("@tauri-apps/api/core", () => ({ invoke }));
 const fetchPlaylist = vi.fn();
 vi.mock("@/lib/innertube/playlist", () => ({ fetchPlaylist }));
-vi.mock("@/lib/innertube/album", () => ({ fetchAlbum: vi.fn() }));
+const fetchAlbum = vi.fn();
+vi.mock("@/lib/innertube/album", () => ({ fetchAlbum }));
 
 const { useDownloadsStore } = await import("@/lib/downloads");
 const { fetchCollectionInput, syncCollection } = await import("@/lib/downloads-sync");
@@ -52,6 +53,19 @@ describe("downloads sync", () => {
         input: expect.objectContaining({ id: "P1", kind: "playlist" }),
       }),
     );
+  });
+
+  it("album tracks inherit the album's linked artists", async () => {
+    const artists = [{ id: "UC1", name: "Band" }];
+    fetchAlbum.mockResolvedValue({
+      id: "MPRE1",
+      title: "Record",
+      artists,
+      thumbnails: [],
+      tracks: [{ kind: "song", id: "s1", title: "One", thumbnails: [] }],
+    });
+    const input = await fetchCollectionInput("album", "MPRE1");
+    expect(input.tracks[0].meta.artists).toEqual(artists);
   });
 
   it("fetchCollectionInput rejects an empty list", async () => {
