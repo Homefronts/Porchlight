@@ -14,6 +14,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { usePremiumGateDialog } from "@/lib/store/premium-gate";
 import { usePremiumStore } from "@/lib/store/premium";
+import { useDownloadsStore } from "@/lib/downloads";
+import { currentTrack, usePlaybackStore } from "@/lib/store/playback";
 import { authLoggedInQuery } from "@/lib/store/auth-queries";
 
 const PREMIUM_URL = "https://music.youtube.com/music_premium";
@@ -44,8 +46,33 @@ export function PremiumGateDialog() {
     if (open && premiumOk) setOpen(false);
   }, [open, premiumOk, setOpen]);
 
+  // A downloaded track only reaches the gate once the 30-day offline
+  // grant has run out (or Premium lapsed): ask for a check-in, not an upsell.
+  const currentId = usePlaybackStore((s) => currentTrack(s)?.videoId);
+  const downloaded = useDownloadsStore(
+    (s) => !!currentId && s.index.tracks[currentId]?.state === "done",
+  );
+  const needsCheckIn = downloaded && status !== "free";
+
   const signedOut = loggedIn.data === false;
-  const checking = !signedOut && status === null;
+  const checking = !needsCheckIn && !signedOut && status === null;
+
+  if (needsCheckIn) {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Connect to the internet to keep using downloads</DialogTitle>
+            <DialogDescription>
+              YTubic checks your Music Premium subscription at least once
+              every 30 days. Go online for a moment and your downloads will
+              play again.
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
