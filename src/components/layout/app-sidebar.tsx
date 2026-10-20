@@ -17,6 +17,7 @@ import {
   IconSearchFilled,
   IconBookmarks,
   IconBookmarksFilled,
+  IconDownload,
   IconSettings,
   IconPlaylist,
   IconPinFilled,
@@ -109,6 +110,13 @@ const NAV_ITEMS = [
     label: "Library",
     icon: IconBookmarks,
     iconOn: IconBookmarksFilled,
+  },
+  // Tabler has no filled download glyph, so the outline stays when active.
+  {
+    to: "/downloads",
+    label: "Downloads",
+    icon: IconDownload,
+    iconOn: IconDownload,
   },
 ] as const;
 
