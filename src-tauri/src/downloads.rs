@@ -243,6 +243,11 @@ fn track_file(dir: &Path, video_id: &str) -> PathBuf {
     tracks_dir(dir).join(format!("{video_id}.webm"))
 }
 
+/// Not `.part`: yt-dlp strips that suffix from `-o` and writes `<id>`.
+fn temp_track_file(dir: &Path, video_id: &str) -> PathBuf {
+    track_file(dir, video_id).with_extension("tmp")
+}
+
 /// The downloaded file for `video_id`, if there is one. Used by the stream
 /// server to serve downloads before the cache or yt-dlp.
 pub(crate) fn downloaded_track_path(dir: &Path, video_id: &str) -> Option<PathBuf> {
@@ -253,13 +258,15 @@ pub(crate) fn downloaded_track_path(dir: &Path, video_id: &str) -> Option<PathBu
     p.is_file().then_some(p)
 }
 
-/// Startup repair after a crash or a deleted file: drop `.part` debris and
-/// requeue any "done" track whose file is gone.
+/// Startup repair after a crash or a deleted file: drop anything in
+/// `tracks/` that isn't a finished `.webm` (temp files, stray yt-dlp
+/// output) and requeue any "done" track whose file is gone.
 fn recover(dir: &Path, idx: &mut Index) {
     if let Ok(rd) = std::fs::read_dir(tracks_dir(dir)) {
         for e in rd.flatten() {
-            if e.path().extension().is_some_and(|x| x == "part") {
-                let _ = std::fs::remove_file(e.path());
+            let p = e.path();
+            if p.is_file() && p.extension().is_none_or(|x| x != "webm") {
+                let _ = std::fs::remove_file(p);
             }
         }
     }
@@ -429,7 +436,7 @@ async fn fetch_track(
     stream_cache_dir: &Path,
 ) -> Result<u64, String> {
     let dest = track_file(dir, video_id);
-    let part = dest.with_extension("part");
+    let part = temp_track_file(dir, video_id);
     let cached = stream_cache_dir.join(format!("{video_id}.webm"));
     let cached_len = tokio::fs::metadata(&cached).await.map(|m| m.len()).unwrap_or(0);
     if cached_len >= MIN_AUDIO_BYTES {
@@ -699,15 +706,27 @@ mod tests {
     fn stale_part_files_are_not_done() {
         let dir = std::env::temp_dir().join(format!("ytubic-dl-rec-{}", std::process::id()));
         std::fs::create_dir_all(tracks_dir(&dir)).unwrap();
-        std::fs::write(tracks_dir(&dir).join("a.part"), b"half").unwrap();
+        std::fs::write(temp_track_file(&dir, "a"), b"half").unwrap();
+        // Debris from the old `.part` naming, which yt-dlp silently stripped.
+        std::fs::write(tracks_dir(&dir).join("b"), b"orphan").unwrap();
         let mut idx = Index::default();
         idx.apply_collection(coll("P1", &["a"]), 1).unwrap();
         idx.tracks.get_mut("a").unwrap().state = TrackState::Done;
         recover(&dir, &mut idx);
-        assert!(!tracks_dir(&dir).join("a.part").exists());
+        assert!(!temp_track_file(&dir, "a").exists());
+        assert!(!tracks_dir(&dir).join("b").exists());
         assert_eq!(idx.tracks["a"].state, TrackState::Pending);
         assert!(downloaded_track_path(&dir, "a").is_none());
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    // yt-dlp strips a trailing ".part" from `-o` (it's its own temp
+    // suffix), so a `.part` temp name never appears on disk.
+    #[test]
+    fn temp_name_survives_ytdlp() {
+        let p = temp_track_file(Path::new("x"), "abc");
+        assert_ne!(p.extension().and_then(|e| e.to_str()), Some("part"));
+        assert_ne!(p, track_file(Path::new("x"), "abc"));
     }
 
     #[test]
