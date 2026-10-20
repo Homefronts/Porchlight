@@ -147,5 +147,7 @@ export function usePremiumStatusSync(): void {
     }
     if (premium.data === undefined) return;
     usePremiumStore.getState().setStatus(premium.data);
-  }, [loggedIn.data, premium.data]);
+    // dataUpdatedAt: a refetch that re-confirms "premium" keeps the same
+    // data reference, but must still restamp the offline grant.
+  }, [loggedIn.data, premium.data, premium.dataUpdatedAt]);
 }

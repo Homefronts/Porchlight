@@ -16,3 +16,19 @@ export function shelfItemToTrack(item: ShelfItem | QueueTrack): QueueTrack | nul
     duration: item.duration,
   };
 }
+
+/**
+ * Queue for a row click: with a `playable` filter (offline downloads),
+ * only rows that pass, starting at the clicked one; null if it doesn't pass.
+ */
+export function rowQueue(
+  tracks: ShelfItem[],
+  idx: number,
+  playable?: (t: ShelfItem) => boolean,
+): { queue: ShelfItem[]; start: number } | null {
+  if (!playable) return { queue: tracks, start: idx };
+  const clicked = tracks[idx];
+  if (!clicked || !playable(clicked)) return null;
+  const queue = tracks.filter(playable);
+  return { queue, start: queue.indexOf(clicked) };
+}

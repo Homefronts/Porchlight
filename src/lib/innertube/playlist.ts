@@ -467,9 +467,15 @@ export async function collectAllPages(
         tracks.push(t);
       }
     }
-    if (tracks.length === before) break;
+    if (tracks.length === before) {
+      // An unparseable or all-duplicate page mid-list: lenient callers keep
+      // what loaded, strict ones must not mistake it for the end.
+      if (strict) throw new Error("playlist page added no tracks");
+      break;
+    }
     token = page.continuationToken;
   }
+  if (strict && token) throw new Error("playlist too long to load fully");
   return tracks;
 }
 

@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { TrackDownloadStatus } from "@/components/shared/download-button";
+import { rowQueue } from "@/lib/queue-track";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { CheckIcon, PlayIcon, PauseIcon, Volume2Icon } from "lucide-react";
 import { Link } from "@tanstack/react-router";
@@ -48,6 +49,8 @@ type Props = {
    * scroll) would keep a stale offset and window the wrong rows.
    */
   virtualize?: boolean;
+  /** Row clicks queue only tracks passing this (offline downloads view). */
+  playable?: (t: ShelfItem) => boolean;
   className?: string;
 };
 
@@ -103,6 +106,7 @@ export function TrackList({
   showPlays = false,
   removal,
   virtualize = true,
+  playable,
   className,
 }: Props) {
   const active = usePlaybackStore(currentTrack);
@@ -304,6 +308,7 @@ export function TrackList({
               playing={playing}
               videoSourceSelected={sourcePrefs[t.id]?.selected === "video"}
               removal={removal}
+              playable={playable}
               selected={selected.has(idx)}
               onSweepStart={onSweepStart}
               onSweepEnter={onSweepEnter}
@@ -383,6 +388,7 @@ export function TrackList({
                 playing={playing}
                 videoSourceSelected={sourcePrefs[t.id]?.selected === "video"}
                 removal={removal}
+                playable={playable}
                 selected={selected.has(idx)}
                 onSweepStart={onSweepStart}
                 onSweepEnter={onSweepEnter}
@@ -409,6 +415,7 @@ type RowProps = {
   playing: boolean;
   videoSourceSelected: boolean;
   removal?: PlaylistRemovalContext;
+  playable?: (t: ShelfItem) => boolean;
   selected: boolean;
   onSweepStart: (idx: number) => void;
   onSweepEnter: (idx: number) => void;
@@ -436,11 +443,18 @@ const TrackRow = memo(function TrackRow({
   playing,
   videoSourceSelected,
   removal,
+  playable,
   selected,
   onSweepStart,
   onSweepEnter,
   onPlainClick,
 }: RowProps) {
+  const play = () => {
+    const store = usePlaybackStore.getState();
+    if (isActive) return store.toggle();
+    const r = rowQueue(tracks, idx, playable);
+    if (r) store.playShelfItems(r.queue, r.start);
+  };
   const row = (
     <li
       data-videoid={t.id}
@@ -471,16 +485,12 @@ const TrackRow = memo(function TrackRow({
         // Selection is handled on the pointer events above.
         if (e.shiftKey || e.ctrlKey || e.metaKey) return;
         onPlainClick(idx);
-        const store = usePlaybackStore.getState();
-        if (isActive) store.toggle();
-        else store.playShelfItems(tracks, idx);
+        play();
       }}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          const store = usePlaybackStore.getState();
-          if (isActive) store.toggle();
-          else store.playShelfItems(tracks, idx);
+          play();
         }
       }}
       tabIndex={0}

@@ -12,6 +12,7 @@ import {
 import {
   collectionThumbs,
   dlTrackToShelfItem,
+  isDownloaded,
   useCoverBase,
 } from "@/lib/downloads-view";
 
@@ -62,7 +63,7 @@ function DownloadsPage() {
       {singles.length > 0 ? (
         <section className="flex flex-col gap-2">
           <h2 className="text-xl font-semibold">Songs</h2>
-          <TrackList tracks={singles} />
+          <TrackList tracks={singles} playable={isDownloaded} />
         </section>
       ) : null}
     </div>

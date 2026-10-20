@@ -160,6 +160,11 @@ function compactPersistedQueue(
   return queue.slice(start, start + MAX_PERSISTED_QUEUE_TRACKS);
 }
 
+/** Same cap as the queue: a mix started from a huge playlist must not blow the storage quota. */
+export function persistedRadio(radio?: RadioMix): RadioMix | undefined {
+  return radio && { ...radio, resume: radio.resume.slice(0, MAX_PERSISTED_QUEUE_TRACKS) };
+}
+
 function persistedQueueIndex(queue: QueueTrack[], index: number): number {
   if (queue.length <= MAX_PERSISTED_QUEUE_TRACKS) return index;
   const safeIndex = Math.max(0, Math.min(index, queue.length - 1));
@@ -574,7 +579,7 @@ export const usePlaybackStore = isFloatingPlayerWindow()
           repeat: s.repeat,
           autoRadio: s.autoRadio,
           queueContinuation: s.queueContinuation,
-          radio: s.radio,
+          radio: persistedRadio(s.radio),
           volume: s.volume,
           muted: s.muted,
           position: s.position,

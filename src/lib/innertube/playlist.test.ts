@@ -221,4 +221,10 @@ describe("collectAllPages", () => {
     const lenient = await collectAllPages([song("a")], "t1", next);
     expect(lenient.map((t) => t.id)).toEqual(["a", "b"]);
   });
+
+  it("strict rejects a page that adds nothing while more pages remain", async () => {
+    const next = async () => ({ tracks: [], continuationToken: "t2" });
+    await expect(collectAllPages([song("a")], "t1", next, true)).rejects.toThrow();
+    expect((await collectAllPages([song("a")], "t1", next)).length).toBe(1);
+  });
 });

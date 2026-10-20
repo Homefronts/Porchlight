@@ -7,6 +7,7 @@ import { useDownloadsStore, type DlCollection } from "@/lib/downloads";
 import {
   collectionThumbs,
   dlTrackToShelfItem,
+  isDownloaded,
   useCoverBase,
 } from "@/lib/downloads-view";
 import { usePlaybackStore } from "@/lib/store/playback";
@@ -93,7 +94,7 @@ function DownloadedCollectionPage() {
           <CollectionDownloadButton kind={collection.kind} id={collection.id} />
         }
       />
-      <TrackList tracks={tracks} />
+      <TrackList tracks={tracks} playable={isDownloaded} />
     </div>
   );
 }

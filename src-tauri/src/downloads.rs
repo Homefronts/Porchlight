@@ -453,20 +453,10 @@ async fn fetch_track(
             .stderr(Stdio::piped());
         #[cfg(windows)]
         cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
-        let mut child = cmd.spawn().map_err(|e| format!("spawn yt-dlp: {e}"))?;
-        let mut stderr = String::new();
-        if let Some(mut s) = child.stderr.take() {
-            let _ = s.read_to_string(&mut stderr).await;
-        }
         // Generous cap: a wedged extractor must not hold a worker forever.
-        let status = tokio::time::timeout(Duration::from_secs(600), child.wait())
-            .await
-            .map_err(|_| "yt-dlp timed out".to_string())?
-            .map_err(|e| format!("yt-dlp: {e}"))?;
-        if !status.success() {
+        if let Err(e) = run_capped(cmd, Duration::from_secs(600)).await {
             let _ = tokio::fs::remove_file(&part).await;
-            let last = stderr.lines().rev().find(|l| !l.trim().is_empty()).unwrap_or("yt-dlp failed");
-            return Err(last.chars().take(200).collect());
+            return Err(e);
         }
     }
     let size = tokio::fs::metadata(&part).await.map(|m| m.len()).unwrap_or(0);
@@ -478,6 +468,36 @@ async fn fetch_track(
         .await
         .map_err(|e| format!("rename: {e}"))?;
     Ok(size)
+}
+
+/// Run a child to completion within `limit`; on failure, the last stderr
+/// line (≤ 200 chars) is the error.
+async fn run_capped(mut cmd: TokioCommand, limit: Duration) -> Result<(), String> {
+    // Dropped on timeout → killed, so it can't keep writing the temp file
+    // under the next attempt.
+    cmd.kill_on_drop(true);
+    let mut child = cmd.spawn().map_err(|e| format!("spawn yt-dlp: {e}"))?;
+    let mut stderr = String::new();
+    let mut pipe = child.stderr.take();
+    // One cap over both: reading stderr alone blocks until the child exits.
+    let status = tokio::time::timeout(limit, async {
+        if let Some(s) = pipe.as_mut() {
+            let _ = s.read_to_string(&mut stderr).await;
+        }
+        child.wait().await
+    })
+    .await
+    .map_err(|_| "yt-dlp timed out".to_string())?
+    .map_err(|e| format!("yt-dlp: {e}"))?;
+    if status.success() {
+        return Ok(());
+    }
+    let last = stderr
+        .lines()
+        .rev()
+        .find(|l| !l.trim().is_empty())
+        .unwrap_or("yt-dlp failed");
+    Err(last.chars().take(200).collect())
 }
 
 /// Fetch covers for entries that have a URL but no local file yet. A
@@ -727,6 +747,31 @@ mod tests {
         let p = temp_track_file(Path::new("x"), "abc");
         assert_ne!(p.extension().and_then(|e| e.to_str()), Some("part"));
         assert_ne!(p, track_file(Path::new("x"), "abc"));
+    }
+
+    // A wedged yt-dlp must hit the cap even while it holds stderr open.
+    #[test]
+    fn run_capped_times_out_a_hung_child() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            #[cfg(windows)]
+            let mut cmd = {
+                let mut c = TokioCommand::new("ping");
+                c.args(["-n", "6", "127.0.0.1"]);
+                c
+            };
+            #[cfg(not(windows))]
+            let mut cmd = {
+                let mut c = TokioCommand::new("sleep");
+                c.arg("5");
+                c
+            };
+            cmd.stdout(Stdio::null()).stderr(Stdio::piped());
+            let t0 = std::time::Instant::now();
+            let r = run_capped(cmd, Duration::from_millis(500)).await;
+            assert_eq!(r, Err("yt-dlp timed out".to_string()));
+            assert!(t0.elapsed() < Duration::from_secs(3));
+        });
     }
 
     #[test]

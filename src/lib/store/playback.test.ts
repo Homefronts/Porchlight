@@ -19,7 +19,7 @@ const mem = new Map<string, string>();
   },
 };
 
-const { usePlaybackStore } = await import("@/lib/store/playback");
+const { usePlaybackStore, persistedRadio } = await import("@/lib/store/playback");
 const { usePlaybackSettings } = await import("@/lib/store/playback-settings");
 
 function track(videoId: string): QueueTrack {
@@ -307,6 +307,14 @@ describe("radio mix", () => {
     expect(s().index).toBe(3);
     expect(s().queueContinuation).toBe("album-tok");
     expect(s().radio).toBeUndefined();
+  });
+
+  it("persists at most 300 resume tracks", () => {
+    const resume = Array.from({ length: 1000 }, (_, i) => track(`t${i}`));
+    const saved = persistedRadio({ chips, chip: 0, resume });
+    expect(saved?.resume.length).toBe(300);
+    expect(saved?.resume[0].videoId).toBe("t0");
+    expect(persistedRadio(undefined)).toBeUndefined();
   });
 
   it("is cleared when the queue is replaced", () => {

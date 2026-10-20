@@ -3,6 +3,7 @@ import type { ShelfItem, Thumbnail } from "@/lib/innertube/types";
 import { getStreamBaseUrl } from "@/lib/stream";
 import {
   downloadedCoverUrl,
+  useDownloadsStore,
   type DlCollection,
   type DlTrack,
 } from "@/lib/downloads";
@@ -44,4 +45,10 @@ export function dlTrackToShelfItem(t: DlTrack, base?: string): ShelfItem {
     duration: t.meta.duration,
     thumbnails: local.length ? local : t.meta.thumbnails,
   };
+}
+
+/** Row-click filter for offline views: only tracks already on disk. Module
+ *  level so TrackRow's memo sees a stable prop. */
+export function isDownloaded(t: ShelfItem): boolean {
+  return useDownloadsStore.getState().index.tracks[t.id]?.state === "done";
 }
