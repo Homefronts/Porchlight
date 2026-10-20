@@ -274,3 +274,45 @@ describe("playback prev()", () => {
     expect(usePlaybackStore.getState().pendingSeek).toBe(0);
   });
 });
+
+describe("radio mix", () => {
+  const ids = (q: QueueTrack[]) => q.map((t) => t.videoId).join(",");
+  const chips = [
+    { label: "All", playlistId: "RDAMVMb" },
+    { label: "Chill", playlistId: "RDATx" },
+  ];
+
+  it("replaces Up next, then turning it off resumes the album after the seed", () => {
+    setup({
+      queue: [track("a1"), track("a2"), track("a3"), track("a4")],
+      index: 2,
+      queueContinuation: "album-tok",
+      radio: undefined,
+    });
+    const s = () => usePlaybackStore.getState();
+    s().setRadio([track("a3"), track("r1"), track("r2")], chips, 0, "radio-tok");
+    expect(ids(s().queue)).toBe("a1,a2,a3,r1,r2");
+    expect(s().index).toBe(2);
+    expect(s().queueContinuation).toBe("radio-tok");
+
+    // Chip switch keeps the original resume point.
+    s().setRadio([track("c1")], chips, 1, "chip-tok");
+    expect(ids(s().queue)).toBe("a1,a2,a3,c1");
+    expect(s().radio?.chip).toBe(1);
+
+    // Mix plays on a track, then off: current keeps its slot, album resumes at a4.
+    s().next();
+    s().stopRadio();
+    expect(ids(s().queue)).toBe("a1,a2,a3,c1,a4");
+    expect(s().index).toBe(3);
+    expect(s().queueContinuation).toBe("album-tok");
+    expect(s().radio).toBeUndefined();
+  });
+
+  it("is cleared when the queue is replaced", () => {
+    setup({ queue: [track("a")], index: 0, radio: undefined });
+    usePlaybackStore.getState().setRadio([track("r")], chips, 0);
+    usePlaybackStore.getState().playNow(track("z"));
+    expect(usePlaybackStore.getState().radio).toBeUndefined();
+  });
+});

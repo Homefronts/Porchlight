@@ -66,6 +66,53 @@ export async function fetchRadio(videoId: string): Promise<ShelfItem[]> {
   return tracks;
 }
 
+/** One of the mood chips above a YTM radio queue (All, Popular, Chill…). */
+export type RadioChip = { label: string; playlistId: string; params?: string };
+
+export type RadioStation = WatchQueuePage & { chips: RadioChip[] };
+
+/**
+ * The chip cloud YTM shows above a radio queue. Each chip's endpoint is a
+ * /next request (its own `RDAT…` playlist + params) that returns the same
+ * station reshaped. Only the initial radio response carries the cloud;
+ * a chip's own response comes back without it.
+ */
+function parseChips(json: YtNode): RadioChip[] {
+  const chips: RadioChip[] = [];
+  for (const c of (json?.contents?.singleColumnMusicWatchNextResultsRenderer
+    ?.tabbedRenderer?.watchNextTabbedResultsRenderer?.tabs?.[0]?.tabRenderer
+    ?.content?.musicQueueRenderer?.subHeaderChipCloud?.chipCloudRenderer
+    ?.chips as YtNode[] | undefined) ?? []) {
+    const chip = c.chipCloudChipRenderer;
+    const label: string | undefined = chip?.text?.runs?.[0]?.text;
+    const ep =
+      chip?.navigationEndpoint?.queueUpdateCommand?.fetchContentsCommand
+        ?.watchEndpoint;
+    if (label && ep?.playlistId) {
+      chips.push({ label, playlistId: ep.playlistId, params: ep.params });
+    }
+  }
+  return chips;
+}
+
+/**
+ * A radio seeded on `videoId`, with its mood chips and continuation (the
+ * station is endless — the audio engine drains the continuation as the
+ * queue nears its end). With `chip`, fetches that chip's take on it.
+ */
+export async function fetchRadioStation(
+  videoId: string,
+  chip?: RadioChip,
+): Promise<RadioStation> {
+  const json = await rawNext({
+    videoId,
+    playlistId: chip?.playlistId ?? `RDAMVM${videoId}`,
+    ...(chip?.params ? { params: chip.params } : {}),
+    isAudioOnly: true,
+  });
+  return { ...parsePanel(json), chips: parseChips(json) };
+}
+
 /**
  * Build a play queue from a watch-playlist id — the kind the search
  * top-result card's Shuffle / Play button hands us: an artist shuffle

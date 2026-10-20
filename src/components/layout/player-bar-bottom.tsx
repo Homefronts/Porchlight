@@ -30,7 +30,10 @@ import { ArtworkOutline } from "@/components/shared/artwork-outline";
 import { Thumbnail } from "@/components/shared/thumbnail";
 import { LikeDislikeButtons } from "@/components/shared/like-buttons";
 import { ArtistLinks } from "@/components/shared/artist-links";
-import { QueuePopover } from "@/components/layout/queue-panel";
+import {
+  QueuePopover,
+  RadioToggleButton,
+} from "@/components/layout/queue-panel";
 import { openFullscreen } from "@/lib/store/fullscreen";
 import {
   LyricsBody,
@@ -264,6 +267,7 @@ export function PlayerBarBottom() {
           {track ? <LikeDislikeButtons videoId={track.videoId} track={track} /> : null}
           <LyricsPopover state={lyricsState} />
           <QueuePopover />
+          <RadioToggleButton />
           <VolumeControl direction="vertical" />
           <PlayerMoreMenu track={track} />
         </div>

@@ -22,7 +22,11 @@ import {
   IconVolume2Filled,
   IconVolume3Filled,
 } from "@/components/shared/filled-icons";
-import { QueueBody, QueueToggleButton } from "@/components/layout/queue-panel";
+import {
+  QueueBody,
+  QueueToggleButton,
+  RadioToggleButton,
+} from "@/components/layout/queue-panel";
 import {
   LyricsBody,
   LyricsSourceButton,
@@ -782,6 +786,7 @@ export function PlayerBar({
             open={queueOpen}
             onToggle={() => setQueueOpen((v) => !v)}
           />
+          <RadioToggleButton />
           <VolumeControl compact={compactControls} />
         </div>
         <div className="flex items-center gap-1">

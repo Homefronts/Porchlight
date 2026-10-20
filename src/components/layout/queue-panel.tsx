@@ -6,6 +6,7 @@ import { PlayIcon, PauseIcon } from "lucide-react";
 import {
   IconBroadcast,
   IconPlaylist,
+  IconRadio,
   IconTrashFilled,
   IconX,
 } from "@tabler/icons-react";
@@ -30,6 +31,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArtworkOutline } from "@/components/shared/artwork-outline";
 import { Thumbnail } from "@/components/shared/thumbnail";
 import { usePlaybackStore, currentTrack } from "@/lib/store/playback";
+import { isFloatingPlayerWindow } from "@/lib/floating-player";
+import { pickRadioChip, toggleRadioMix } from "@/lib/radio-mix";
 import { cn } from "@/lib/utils";
 
 function formatDuration(seconds?: number): string {
@@ -68,12 +71,13 @@ const QUEUE_SCROLL = cn(
  * Popover anchored to the queue button (bottom-bar variant).
  */
 export function QueueBody({ onClose }: { onClose?: () => void }) {
-  const { queue, index, playing, autoRadio } = usePlaybackStore(
+  const { queue, index, playing, autoRadio, radio } = usePlaybackStore(
     useShallow((s) => ({
       queue: s.queue,
       index: s.index,
       playing: s.playing,
       autoRadio: s.autoRadio,
+      radio: s.radio,
     })),
   );
   const active = usePlaybackStore(currentTrack);
@@ -174,6 +178,10 @@ export function QueueBody({ onClose }: { onClose?: () => void }) {
           )}
         </div>
       </header>
+
+      {tab === "queue" && radio && radio.chips.length > 1 && (
+        <RadioChips labels={radio.chips.map((c) => c.label)} active={radio.chip} />
+      )}
 
       <ScrollArea className={QUEUE_SCROLL}>
         {/* Sections space themselves; the old hard-coded spacer between
@@ -354,6 +362,78 @@ export function QueueToggleButton({
         </Button>
       </TooltipTrigger>
       <TooltipContent>Queue</TooltipContent>
+    </Tooltip>
+  );
+}
+
+/**
+ * Mood chips (All, Popular, Chill…) for a running radio mix, same look as
+ * the search filter chips. One scrolling row; the wheel scrolls it sideways.
+ */
+function RadioChips({ labels, active }: { labels: string[]; active: number }) {
+  const [pending, setPending] = useState<number | null>(null);
+  return (
+    <div
+      className="shrink-0 overflow-x-auto border-b border-w055 px-2.5 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      onWheel={(e) => (e.currentTarget.scrollLeft += e.deltaY)}
+    >
+      <div className="flex w-max gap-1.5">
+        {labels.map((label, i) => (
+          <button
+            key={label}
+            type="button"
+            aria-pressed={i === active}
+            disabled={pending !== null}
+            onClick={() => {
+              setPending(i);
+              void pickRadioChip(i).finally(() => setPending(null));
+            }}
+            className={cn(
+              "cursor-pointer rounded-full border px-3 py-0.5 text-[13px] font-medium transition-colors disabled:cursor-default",
+              i === active
+                ? "border-transparent bg-foreground text-background"
+                : "border-input bg-transparent text-foreground hover:bg-black/5 dark:bg-input/30 dark:hover:bg-white/15",
+              pending === i && "opacity-60",
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Radio on/off for the player's button cluster. On: "Up next" becomes a
+ * mix seeded on the current track. Off: the album/playlist it replaced
+ * comes back. Hidden in the floating window, whose store mirror doesn't
+ * carry the mix state.
+ */
+export function RadioToggleButton() {
+  const on = usePlaybackStore((s) => !!s.radio);
+  const hasTrack = usePlaybackStore((s) => s.index >= 0);
+  const [busy, setBusy] = useState(false);
+  if (isFloatingPlayerWindow()) return null;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={on ? "Stop radio" : "Start radio"}
+          aria-pressed={on}
+          disabled={!hasTrack || busy}
+          onClick={() => {
+            setBusy(true);
+            void toggleRadioMix().finally(() => setBusy(false));
+          }}
+          className={cn(playerIconButton, on && playerIconButtonOn)}
+        >
+          <IconRadio />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{on ? "Stop radio" : "Start radio"}</TooltipContent>
     </Tooltip>
   );
 }

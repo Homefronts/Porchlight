@@ -6,6 +6,7 @@ import {
 } from "zustand/middleware";
 import { emit } from "@tauri-apps/api/event";
 import type { ShelfItem, Thumbnail } from "@/lib/innertube/types";
+import type { RadioChip } from "@/lib/innertube/radio";
 import { isFloatingPlayerWindow } from "@/lib/floating-player";
 import { usePlaybackSettings } from "./playback-settings";
 import { safeLocalStorage } from "./safe-storage";
@@ -25,6 +26,18 @@ export type QueueTrack = {
 };
 
 export type RepeatMode = "off" | "all" | "one";
+
+/**
+ * A mix started from the player's radio button. `resume` is the "Up next"
+ * it replaced (plus that source's own continuation), restored when the mix
+ * is turned off so the album/playlist picks up where it was left.
+ */
+export type RadioMix = {
+  chips: RadioChip[];
+  chip: number;
+  resume: QueueTrack[];
+  resumeContinuation?: string;
+};
 
 export type LoadStatus = "idle" | "loading" | "ready" | "error";
 
@@ -71,6 +84,9 @@ export type PlaybackState = {
    */
   queueContinuation?: string;
 
+  /** Set while a radio-button mix owns "Up next". */
+  radio?: RadioMix;
+
   // Actions — queue
   playNow: (track: QueueTrack | ShelfItem, extras?: QueueTrack[]) => void;
   setQueue: (tracks: QueueTrack[], startIndex?: number) => void;
@@ -86,6 +102,18 @@ export type PlaybackState = {
   stopPlayback: () => void;
   setAutoRadio: (on: boolean) => void;
   setQueueContinuation: (token?: string) => void;
+  /**
+   * Swap "Up next" for a radio mix (or a different chip of the running
+   * one). The current track keeps playing at the same index.
+   */
+  setRadio: (
+    tracks: (QueueTrack | ShelfItem)[],
+    chips: RadioChip[],
+    chip: number,
+    continuation?: string,
+  ) => void;
+  /** End the mix: current track keeps playing, the old "Up next" returns. */
+  stopRadio: () => void;
 
   // Actions — transport
   toggle: () => void;
@@ -219,6 +247,7 @@ const playbackStateCreator: StateCreator<PlaybackState> = (set, get) => ({
       playing: true,
       error: undefined,
       queueContinuation: undefined,
+      radio: undefined,
     });
   },
 
@@ -241,6 +270,7 @@ const playbackStateCreator: StateCreator<PlaybackState> = (set, get) => ({
       playing: true,
       error: undefined,
       queueContinuation: undefined,
+      radio: undefined,
     });
   },
 
@@ -354,6 +384,7 @@ const playbackStateCreator: StateCreator<PlaybackState> = (set, get) => ({
       queue: s.index >= 0 ? s.queue.slice(0, s.index + 1) : [],
       queueContinuation: undefined,
       radioEpoch: s.radioEpoch + 1,
+      radio: undefined,
     }));
   },
 
@@ -367,12 +398,51 @@ const playbackStateCreator: StateCreator<PlaybackState> = (set, get) => ({
       position: 0,
       duration: 0,
       queueContinuation: undefined,
+      radio: undefined,
     });
   },
 
   setAutoRadio: (on) => set({ autoRadio: on }),
 
   setQueueContinuation: (token) => set({ queueContinuation: token }),
+
+  setRadio: (tracks, chips, chip, continuation) => {
+    set((s) => {
+      if (s.index < 0) return s;
+      const current = s.queue[s.index];
+      const upcoming: QueueTrack[] = [];
+      for (const t of tracks) {
+        const m = shelfItemToTrack(t);
+        if (m && m.videoId !== current.videoId) upcoming.push(m);
+      }
+      return {
+        queue: [...s.queue.slice(0, s.index + 1), ...upcoming],
+        queueContinuation: continuation,
+        // Switching chips keeps what the *first* mix replaced.
+        radio: {
+          chips,
+          chip,
+          resume: s.radio?.resume ?? s.queue.slice(s.index + 1),
+          resumeContinuation: s.radio
+            ? s.radio.resumeContinuation
+            : s.queueContinuation,
+        },
+      };
+    });
+  },
+
+  stopRadio: () => {
+    set((s) => {
+      if (!s.radio) return s;
+      // Mix tracks already played stay in history; the current one keeps
+      // its index so the engine doesn't restart it.
+      return {
+        queue: [...s.queue.slice(0, s.index + 1), ...s.radio.resume],
+        queueContinuation: s.radio.resumeContinuation,
+        radio: undefined,
+      };
+    });
+  },
 
   toggle: () => {
     const { queue, playing } = get();
@@ -518,6 +588,7 @@ export const usePlaybackStore = isFloatingPlayerWindow()
           repeat: s.repeat,
           autoRadio: s.autoRadio,
           queueContinuation: s.queueContinuation,
+          radio: s.radio,
           volume: s.volume,
           muted: s.muted,
           position: s.position,
