@@ -23,7 +23,11 @@ import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { AiNoticeDialog, AiToggleButton } from "@/components/layout/ai-toggle-button";
+import {
+  AiNoticeDialog,
+  AiToggleButton,
+  PlayAnywayDialog,
+} from "@/components/layout/ai-toggle-button";
 import { useFullscreenStore } from "@/lib/store/fullscreen";
 import {
   DropdownMenu,
@@ -282,6 +286,7 @@ export function TopBar() {
       <ReportIssueDialog open={reportOpen} onOpenChange={setReportOpen} />
       <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />
       <AiNoticeDialog />
+      <PlayAnywayDialog />
     </>
   );
 }

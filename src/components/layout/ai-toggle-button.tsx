@@ -12,6 +12,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { aiDetectionMode, currentAiData, useAiDataStore } from "@/lib/ai/data";
 import { useSettingsStore } from "@/lib/store/settings";
+import { usePlaybackStore } from "@/lib/store/playback";
 import { cn } from "@/lib/utils";
 
 /** Copy agreed with the user; shown once on first opt-out and in Settings. */
@@ -97,6 +98,55 @@ export function AiNoticeDialog() {
         </DialogHeader>
         <div className="flex justify-end">
           <Button onClick={() => setOpen(false)}>OK</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+const usePlayAnyway = create<{ run: (() => void) | null; set: (run: (() => void) | null) => void }>()(
+  (set) => ({ run: null, set: (run) => set({ run }) }),
+);
+
+/**
+ * Ask before playing a held-back AI song from the library. `start` begins
+ * playback with the song current; it's then marked so `next()` and the
+ * player don't treat it as held.
+ */
+export function askPlayAnyway(start: () => void): void {
+  usePlayAnyway.getState().set(() => {
+    start();
+    usePlaybackStore.setState((s) => ({
+      queue: s.queue.map((t, i) => (i === s.index ? { ...t, aiAllowed: true } : t)),
+    }));
+  });
+}
+
+/** Mounted once (top bar). */
+export function PlayAnywayDialog() {
+  const { run, set } = usePlayAnyway();
+  return (
+    <Dialog open={!!run} onOpenChange={(o) => !o && set(null)}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>AI music is off. Play anyway?</DialogTitle>
+          <DialogDescription>
+            This song is marked as AI-generated. Playing it won't change your
+            setting.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => set(null)}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              run?.();
+              set(null);
+            }}
+          >
+            Play anyway
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

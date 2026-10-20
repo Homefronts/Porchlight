@@ -12,6 +12,8 @@ import type { PlaybackState, QueueTrack } from "@/lib/store/playback";
 const mem = new Map<string, string>();
 (globalThis as unknown as { window: unknown }).window = {
   location: { search: "?floating-player" },
+  // Stores sync across windows via "storage" events.
+  addEventListener: () => {},
   localStorage: {
     getItem: (k: string) => mem.get(k) ?? null,
     setItem: (k: string, v: string) => void mem.set(k, v),
@@ -322,5 +324,67 @@ describe("radio mix", () => {
     usePlaybackStore.getState().setRadio([track("r")], chips, 0);
     usePlaybackStore.getState().playNow(track("z"));
     expect(usePlaybackStore.getState().radio).toBeUndefined();
+  });
+});
+
+describe("next() and AI music", () => {
+  const ai = (id: string, allowed = false): QueueTrack => ({
+    ...track(id),
+    artists: [{ id: "UCai", name: "Robot" }],
+    ...(allowed ? { aiAllowed: true as const } : {}),
+  });
+
+  beforeEach(async () => {
+    const { useAiDataStore } = await import("@/lib/ai/data");
+    const { useSettingsStore } = await import("@/lib/store/settings");
+    useAiDataStore.getState().setData(
+      {
+        version: 1,
+        generatedAt: new Date().toISOString(),
+        status: { spotify: "ok", lists: "ok", message: null },
+        confirmed: { UCai: "Robot" },
+        maybeNames: [],
+        sources: [],
+      },
+      Date.now(),
+    );
+    useSettingsStore.getState().setAiMusic(false);
+    setup({});
+  });
+
+  it("next() skips held AI tracks", () => {
+    setup({ queue: [track("a"), ai("b"), ai("c"), track("d")], index: 0 });
+    usePlaybackStore.getState().next();
+    expect(usePlaybackStore.getState().index).toBe(3);
+  });
+
+  it("next() plays an aiAllowed AI track", () => {
+    setup({ queue: [track("a"), ai("b", true)], index: 0 });
+    usePlaybackStore.getState().next();
+    expect(usePlaybackStore.getState().index).toBe(1);
+  });
+
+  it("next() with only held tracks left stops", () => {
+    setup({ queue: [track("a"), ai("b"), ai("c")], index: 0 });
+    usePlaybackStore.getState().next();
+    expect(usePlaybackStore.getState().index).toBe(0);
+    expect(usePlaybackStore.getState().playing).toBe(false);
+  });
+
+  it("next() under repeat-all wraps past held tracks without looping forever", () => {
+    setup({ queue: [track("a"), ai("b")], index: 0, repeat: "all" });
+    usePlaybackStore.getState().next();
+    expect(usePlaybackStore.getState().index).toBe(0);
+    setup({ queue: [ai("x"), ai("y")], index: 0, repeat: "all" });
+    usePlaybackStore.getState().next();
+    expect(usePlaybackStore.getState().playing).toBe(false);
+  });
+
+  it("plays everything while AI music is on", async () => {
+    const { useSettingsStore } = await import("@/lib/store/settings");
+    useSettingsStore.getState().setAiMusic(true);
+    setup({ queue: [track("a"), ai("b")], index: 0 });
+    usePlaybackStore.getState().next();
+    expect(usePlaybackStore.getState().index).toBe(1);
   });
 });

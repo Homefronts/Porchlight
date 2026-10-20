@@ -29,7 +29,8 @@ import { useTrackSourceStore } from "@/lib/store/track-source";
 import type { ShelfItem } from "@/lib/innertube/types";
 import { ExplicitBadge } from "@/components/shared/explicit-badge";
 import { AiTag } from "@/components/shared/ai-badge";
-import { useAiFilter } from "@/lib/ai/use-ai";
+import { useAiBlocked, useAiFilter } from "@/lib/ai/use-ai";
+import { askPlayAnyway } from "@/components/layout/ai-toggle-button";
 
 type Props = {
   tracks: ShelfItem[];
@@ -463,11 +464,14 @@ const TrackRow = memo(function TrackRow({
   onSweepEnter,
   onPlainClick,
 }: RowProps) {
+  const held = useAiBlocked(t);
   const play = () => {
     const store = usePlaybackStore.getState();
     if (isActive) return store.toggle();
     const r = rowQueue(tracks, idx, toQueue);
-    if (r) store.playShelfItems(r.queue, r.start);
+    if (!r) return;
+    if (held) askPlayAnyway(() => store.playShelfItems(r.queue, r.start));
+    else store.playShelfItems(r.queue, r.start);
   };
   const row = (
     <li
@@ -488,6 +492,8 @@ const TrackRow = memo(function TrackRow({
           : isActive
             ? "bg-black/10 dark:bg-black/25"
             : "hover:bg-accent/60",
+        // Held-back AI (library, AI music off): visible but skipped.
+        held && !isActive && "opacity-45",
       )}
       onPointerDown={(e) => {
         if (e.button !== 0) return;

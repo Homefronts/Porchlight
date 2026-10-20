@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { AiTag } from "@/components/shared/ai-badge";
+import { useAiBlocked } from "@/lib/ai/use-ai";
+import { askPlayAnyway } from "@/components/layout/ai-toggle-button";
 // Transport glyphs stay Lucide, as everywhere else in the player; the
 // chrome around them is Tabler.
 import { PlayIcon, PauseIcon } from "lucide-react";
@@ -518,7 +520,8 @@ function QueueRow({
     title: string;
     subtitle?: string;
     thumbnails: any[];
-    artists?: { name: string }[];
+    artists?: { id?: string; name: string }[];
+    aiAllowed?: true;
     duration?: number;
   };
   active?: boolean;
@@ -535,6 +538,9 @@ function QueueRow({
 }) {
   const subtitle =
     track.artists?.map((a) => a.name).join(", ") ?? track.subtitle ?? "";
+  // Held-back AI (AI music off): greyed, skipped, playable on request.
+  const held = useAiBlocked(track) && !track.aiAllowed;
+  const activate = held && !active ? () => askPlayAnyway(onActivate) : onActivate;
 
   // Pick which thumbnail-overlay icon to show. For non-active rows the
   // overlay only appears on hover (Play). For the active row the
@@ -556,11 +562,11 @@ function QueueRow({
       role="button"
       tabIndex={0}
       draggable={draggable}
-      onClick={onActivate}
+      onClick={activate}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          onActivate();
+          activate();
         }
       }}
       onDragStart={(e) => {
@@ -591,6 +597,7 @@ function QueueRow({
         "focus-visible:ring-[3px] focus-visible:ring-[rgba(var(--acc1rgb),0.18)]",
         active ? "bg-w070" : "hover:bg-w050",
         isDragging && "opacity-40",
+        held && !active && !isDragging && "opacity-45",
         isDropTarget &&
           "before:pointer-events-none before:absolute before:inset-x-1 before:-top-px before:h-0.5 before:rounded-full before:bg-acc1",
       )}

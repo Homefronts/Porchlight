@@ -11,7 +11,7 @@ import { toggleLiked } from "@/lib/like-actions";
 import { fetchRadio, fetchWatchQueueContinuation } from "@/lib/innertube/radio";
 import { prefetchStream, saveTrackMeta, streamUrlFor } from "@/lib/stream";
 import { AudioGraph, canSelectOutputDevice } from "@/lib/audio-graph";
-import { usePlaybackStore, type QueueTrack } from "@/lib/store/playback";
+import { isHeldAi, usePlaybackStore, type QueueTrack } from "@/lib/store/playback";
 import { eqGains, usePlaybackSettings } from "@/lib/store/playback-settings";
 import { playbackAllowed, usePlaybackAllowed } from "@/lib/store/premium";
 import { useSettingsStore } from "@/lib/store/settings";
@@ -19,6 +19,8 @@ import { openPremiumGate } from "@/lib/store/premium-gate";
 import { resolveStreamId, useTrackSourceStore } from "@/lib/store/track-source";
 import { pickThumbnail } from "@/components/shared/thumbnail";
 import { IS_MAC } from "@/lib/platform";
+import { isAiBlocked } from "@/lib/ai/use-ai";
+import { refillFiltered } from "@/lib/ai/filter";
 
 /**
  * AudioEngine binds the playback store to a singleton HTMLAudioElement and
@@ -213,6 +215,8 @@ export function useAudioEngine() {
       if (!s.playing || s.repeat === "one" || nextIndex >= s.queue.length) {
         return;
       }
+      // A held AI track is skipped by next() on `ended`; don't fade into it.
+      if (isHeldAi(s.queue[nextIndex])) return;
       const dur = el.duration;
       if (!Number.isFinite(dur) || dur <= 0) return;
       const remaining = dur - el.currentTime;
@@ -890,16 +894,25 @@ export function useAudioEngine() {
     continuationFetchingRef.current = true;
     const token = queueContinuation;
     fetchWatchQueueContinuation(token)
-      .then((page) => {
+      .then(async (page) => {
+        const seen = new Set(usePlaybackStore.getState().queue.map((t) => t.videoId));
+        const unseen = page.tracks.filter((t) => !seen.has(t.id));
+        // AI music off: drop confirmed AI and follow up to 3 more pages so
+        // an AI-heavy mix doesn't run dry.
+        const kept = await refillFiltered(
+          unseen,
+          unseen.length > 0 ? page.continuationToken : undefined,
+          async (t) => {
+            const p = await fetchWatchQueueContinuation(t);
+            return { tracks: p.tracks, continuation: p.continuationToken };
+          },
+          (t) => !isAiBlocked(t) && !seen.has(t.id),
+        );
         const s = usePlaybackStore.getState();
         // Stale guard: the queue was replaced while the fetch was in flight.
         if (s.queueContinuation !== token) return;
-        const seen = new Set(s.queue.map((t) => t.videoId));
-        const fresh = page.tracks.filter((t) => !seen.has(t.id));
-        if (fresh.length) s.appendToQueue(fresh);
-        s.setQueueContinuation(
-          fresh.length > 0 ? page.continuationToken : undefined,
-        );
+        if (kept.tracks.length) s.appendToQueue(kept.tracks);
+        s.setQueueContinuation(kept.tracks.length > 0 ? kept.continuation : undefined);
       })
       .catch(() => {
         // Fail open: drop the token so auto-radio (if on) can take over at
@@ -934,7 +947,7 @@ export function useAudioEngine() {
         const s = usePlaybackStore.getState();
         const cur = s.index >= 0 ? s.queue[s.index]?.videoId : undefined;
         if (cur !== seedVideoId || s.index < s.queue.length - 1) return;
-        const rest = tracks.filter((t) => t.id !== seedVideoId);
+        const rest = tracks.filter((t) => t.id !== seedVideoId && !isAiBlocked(t));
         if (rest.length) s.appendToQueue(rest);
       })
       .catch(() => {
