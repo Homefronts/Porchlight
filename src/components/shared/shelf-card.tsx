@@ -59,6 +59,7 @@ import {
   usePinnedPlaylistsStore,
 } from "@/lib/store/pinned-playlists";
 import { ExplicitBadge } from "@/components/shared/explicit-badge";
+import { AiTag } from "@/components/shared/ai-badge";
 import type { ShelfItem } from "@/lib/innertube/types";
 
 type Props = {
@@ -240,6 +241,7 @@ export function ShelfCard({ item, className }: Props) {
         >
           <span className="truncate text-sm font-medium">{item.title}</span>
           {item.explicit ? <ExplicitBadge /> : null}
+          <AiTag item={item} />
         </div>
         {subtitle ? (
           <span

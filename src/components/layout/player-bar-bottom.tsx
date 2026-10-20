@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { AiTag } from "@/components/shared/ai-badge";
 import {
   PlayIcon,
   PauseIcon,
@@ -182,8 +183,11 @@ export function PlayerBarBottom() {
             </div>
           </PlayerCoverMenu>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="truncate text-base font-semibold leading-tight">
-              {track?.title ?? "Nothing playing"}
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span className="truncate text-base font-semibold leading-tight">
+                {track?.title ?? "Nothing playing"}
+              </span>
+              {track ? <AiTag item={track} /> : null}
             </span>
             {track ? (
               <ArtistLinks

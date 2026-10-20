@@ -33,6 +33,7 @@ import {
   useLyricsView,
 } from "@/components/layout/lyrics-view";
 import { useEffect, useRef, useState } from "react";
+import { AiTag } from "@/components/shared/ai-badge";
 import { AnimatePresence, motion } from "motion/react";
 import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
@@ -639,8 +640,11 @@ export function PlayerBar({
             centres against the whole two-line block, per the design. */}
         <div className="flex items-center gap-2">
           <div className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate text-base font-medium">
-              {track?.title ?? "Nothing playing"}
+            <span className="flex min-w-0 items-center gap-1.5">
+              <span className="truncate text-base font-medium">
+                {track?.title ?? "Nothing playing"}
+              </span>
+              {track ? <AiTag item={track} /> : null}
             </span>
             {track ? (
               <span className="truncate text-sm text-muted-foreground">

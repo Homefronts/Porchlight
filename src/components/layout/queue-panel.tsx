@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useShallow } from "zustand/react/shallow";
+import { AiTag } from "@/components/shared/ai-badge";
 // Transport glyphs stay Lucide, as everywhere else in the player; the
 // chrome around them is Tabler.
 import { PlayIcon, PauseIcon } from "lucide-react";
@@ -632,13 +633,16 @@ function QueueRow({
       </div>
 
       <div className="flex min-w-0 flex-col text-left">
-        <span
-          className={cn(
-            "truncate text-[13.5px]",
-            active ? "font-semibold text-acc1" : "font-medium text-t2",
-          )}
-        >
-          {track.title}
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span
+            className={cn(
+              "truncate text-[13.5px]",
+              active ? "font-semibold text-acc1" : "font-medium text-t2",
+            )}
+          >
+            {track.title}
+          </span>
+          <AiTag item={track} />
         </span>
         <span className="truncate text-[12px] leading-snug text-t6">
           {subtitle}

@@ -27,6 +27,7 @@ import { usePlaybackStore, currentTrack } from "@/lib/store/playback";
 import { useTrackSourceStore } from "@/lib/store/track-source";
 import type { ShelfItem } from "@/lib/innertube/types";
 import { ExplicitBadge } from "@/components/shared/explicit-badge";
+import { AiTag } from "@/components/shared/ai-badge";
 
 type Props = {
   tracks: ShelfItem[];
@@ -570,6 +571,7 @@ const TrackRow = memo(function TrackRow({
             {t.title}
           </span>
           {t.explicit ? <ExplicitBadge /> : null}
+          <AiTag item={t} />
           {videoSourceSelected ? <VideoSourceBadge /> : null}
           <TrackDownloadStatus videoId={t.id} />
         </div>
