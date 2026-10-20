@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   classifyArtists,
   indexAiData,
+  isLookalike,
   normalizeName,
   normalizeTitle,
   type AiData,
@@ -60,5 +61,25 @@ describe("classifyArtists", () => {
   it("is null for no artists", () => {
     expect(classifyArtists(undefined, idx, {})).toBeNull();
     expect(classifyArtists([], idx, {})).toBeNull();
+  });
+});
+
+describe("isLookalike", () => {
+  const idx = indexAiData(data({ UC1: "Cain Walker", UC2: "Nova" }));
+  const one = (name: string, id = "UCx") => [{ id, name }];
+  it("matches the exact name and name + suffix on other channels", () => {
+    expect(isLookalike(one("CAIN WALKER"), idx, {})).toBe(true);
+    expect(isLookalike(one("Cain Walker Music"), idx, {})).toBe(true);
+    expect(isLookalike(one("Cain Walker Sounds"), idx, {})).toBe(true);
+  });
+  it("ignores short, common names and unrelated names", () => {
+    expect(isLookalike(one("Nova"), idx, {})).toBe(false);
+    expect(isLookalike(one("Cain Walkerton"), idx, {})).toBe(false);
+  });
+  it("respects Not AI overrides", () => {
+    expect(isLookalike(one("Cain Walker Music", "UCm"), idx, { UCm: "not-ai" })).toBe(false);
+  });
+  it("tags suffix look-alikes as maybe", () => {
+    expect(classifyArtists(one("Cain Walker Music"), idx, {})).toBe("maybe");
   });
 });

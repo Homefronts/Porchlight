@@ -19,7 +19,7 @@ import { openPremiumGate } from "@/lib/store/premium-gate";
 import { resolveStreamId, useTrackSourceStore } from "@/lib/store/track-source";
 import { pickThumbnail } from "@/components/shared/thumbnail";
 import { IS_MAC } from "@/lib/platform";
-import { isAiBlocked } from "@/lib/ai/use-ai";
+import { isAiHidden } from "@/lib/ai/use-ai";
 import { refillFiltered } from "@/lib/ai/filter";
 
 /**
@@ -906,7 +906,7 @@ export function useAudioEngine() {
             const p = await fetchWatchQueueContinuation(t);
             return { tracks: p.tracks, continuation: p.continuationToken };
           },
-          (t) => !isAiBlocked(t) && !seen.has(t.id),
+          (t) => !isAiHidden(t) && !seen.has(t.id),
         );
         const s = usePlaybackStore.getState();
         // Stale guard: the queue was replaced while the fetch was in flight.
@@ -947,7 +947,7 @@ export function useAudioEngine() {
         const s = usePlaybackStore.getState();
         const cur = s.index >= 0 ? s.queue[s.index]?.videoId : undefined;
         if (cur !== seedVideoId || s.index < s.queue.length - 1) return;
-        const rest = tracks.filter((t) => t.id !== seedVideoId && !isAiBlocked(t));
+        const rest = tracks.filter((t) => t.id !== seedVideoId && !isAiHidden(t));
         if (rest.length) s.appendToQueue(rest);
       })
       .catch(() => {

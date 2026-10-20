@@ -4,7 +4,7 @@ import type { AiIndex } from "./match";
 
 const idx: AiIndex = {
   confirmed: new Set(["UCai"]),
-  confirmedNames: new Set(["robot"]),
+  confirmedNames: new Set(["robot", "cain walker"]),
   maybe: new Set(["namesake"]),
 };
 
@@ -31,6 +31,17 @@ describe("filterAiItems", () => {
   });
   it("respects Not AI overrides", () => {
     expect(filterAiItems(items, idx, { UCai: "not-ai" }, true)).toHaveLength(6);
+  });
+});
+
+describe("filterAiItems look-alikes", () => {
+  it("hides copycat songs and artist cards of distinctive AI names", () => {
+    const items = [
+      song("c1", "UCcopy", "Cain Walker Music"),
+      { kind: "artist", id: "UCcopy2", title: "CAIN WALKER" },
+      song("ok", "UCreal", "Robot"), // short name: tagged only, never hidden
+    ];
+    expect(filterAiItems(items, idx, {}, true).map((i) => i.id)).toEqual(["ok"]);
   });
 });
 

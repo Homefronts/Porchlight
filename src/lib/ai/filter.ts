@@ -1,15 +1,17 @@
-import { classifyArtists, type AiIndex, type AiOverrides } from "./match";
+import { classifyArtists, isLookalike, type AiIndex, type AiOverrides } from "./match";
 
 type Filterable = {
   kind?: string;
   id?: string;
+  title?: string;
   artists?: { id?: string; name: string }[];
 };
 
 /**
  * Drops confirmed AI (songs, albums by AI artists, and AI artist cards)
- * when `hiding`. "AI?" and rows without artist ids always stay. Returns
- * the same array when nothing is hidden, so memoised lists stay stable.
+ * and copycat channels using an AI act's name, when `hiding`. Other "AI?"
+ * rows stay. Returns the same array when nothing is hidden, so memoised
+ * lists stay stable.
  */
 export function filterAiItems<T extends Filterable>(
   items: T[],
@@ -19,8 +21,8 @@ export function filterAiItems<T extends Filterable>(
 ): T[] {
   if (!hiding) return items;
   const out = items.filter((i) => {
-    const artists = i.kind === "artist" && i.id ? [{ id: i.id, name: "" }] : i.artists;
-    return classifyArtists(artists, idx, overrides) !== "ai";
+    const artists = i.kind === "artist" && i.id ? [{ id: i.id, name: i.title ?? "" }] : i.artists;
+    return classifyArtists(artists, idx, overrides) !== "ai" && !isLookalike(artists, idx, overrides);
   });
   return out.length === items.length ? items : out;
 }

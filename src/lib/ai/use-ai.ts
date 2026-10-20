@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useSettingsStore } from "@/lib/store/settings";
 import { currentAiIndex, useAiIndex } from "./data";
-import { classifyArtists, type AiClass } from "./match";
+import { classifyArtists, isLookalike, type AiClass } from "./match";
 import { filterAiItems } from "./filter";
 import { useAiOverridesStore } from "./overrides";
 
@@ -20,6 +20,12 @@ export function aiClassNow(item: HasArtists): AiClass {
 /** Confirmed AI while the user has AI music switched off. */
 export function isAiBlocked(item: HasArtists): boolean {
   return !useSettingsStore.getState().aiMusic && aiClassNow(item) === "ai";
+}
+
+/** `isAiBlocked` plus copycat channels: what mixes and radio drop. */
+export function isAiHidden(item: HasArtists): boolean {
+  if (useSettingsStore.getState().aiMusic) return false;
+  return isAiBlocked(item) || isLookalike(item.artists, currentAiIndex(), useAiOverridesStore.getState().byChannel);
 }
 
 /** Hook form of `isAiBlocked`, re-rendering on any input change. */

@@ -72,7 +72,27 @@ export function classifyArtists(
     if (o === "ai" || (a.id && idx.confirmed.has(a.id))) return "ai";
     const n = normalizeName(a.name);
     // A name alone never confirms: a real artist can share it.
-    if (idx.maybe.has(n) || idx.confirmedNames.has(n)) result = "maybe";
+    if (idx.maybe.has(n) || idx.confirmedNames.has(lookalikeBase(n))) result = "maybe";
   }
   return result;
+}
+
+const COPYCAT_SUFFIX = /\s(music|sounds?|songs|official|tv|band|vevo|records)$/;
+const lookalikeBase = (n: string) => n.replace(COPYCAT_SUFFIX, "");
+
+/**
+ * Another channel using a confirmed AI act's name, bare or with a suffix
+ * ("Cain Walker Music"). Only distinctive names count (two+ words or 8+
+ * letters), so a real "Aurora" never vanishes because an AI act shares it.
+ */
+export function isLookalike(
+  artists: { id?: string; name: string }[] | undefined,
+  idx: AiIndex,
+  overrides: AiOverrides,
+): boolean {
+  return (artists ?? []).some((a) => {
+    if (a.id && overrides[a.id] === "not-ai") return false;
+    const b = lookalikeBase(normalizeName(a.name));
+    return (b.includes(" ") || b.length >= 8) && idx.confirmedNames.has(b);
+  });
 }
