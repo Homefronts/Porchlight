@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { mapShelfWrapper, splitSetCookieHeader, type YtNode } from "./shared";
+import {
+  mapResponsiveListItem,
+  mapShelfWrapper,
+  mapTwoRowItem,
+  splitSetCookieHeader,
+  type YtNode,
+} from "./shared";
 
 // Fallback splitter for runtimes without Headers.getSetCookie. The
 // tricky part is NOT splitting on the comma inside an Expires date.
@@ -122,5 +128,52 @@ describe("mapShelfWrapper more endpoint", () => {
       },
     };
     expect(mapShelfWrapper(wrapper, 0).more).toBeUndefined();
+  });
+});
+
+describe("artist ids on cards (AI filter needs them)", () => {
+  const artistRun = (id: string, text: string) => ({
+    text,
+    navigationEndpoint: {
+      browseEndpoint: {
+        browseId: id,
+        browseEndpointContextSupportedConfigs: {
+          browseEndpointContextMusicConfig: { pageType: "MUSIC_PAGE_TYPE_ARTIST" },
+        },
+      },
+    },
+  });
+  const albumNav = {
+    browseEndpoint: {
+      browseId: "MPREb_x",
+      browseEndpointContextSupportedConfigs: {
+        browseEndpointContextMusicConfig: { pageType: "MUSIC_PAGE_TYPE_ALBUM" },
+      },
+    },
+  };
+
+  it("mapTwoRowItem keeps subtitle artists", () => {
+    const item = mapTwoRowItem({
+      title: { runs: [{ text: "Freedom" }] },
+      subtitle: { runs: [{ text: "Album • " }, artistRun("UCai", "Robot")] },
+      navigationEndpoint: albumNav,
+    });
+    expect(item?.artists).toEqual([{ id: "UCai", name: "Robot" }]);
+  });
+
+  it("mapResponsiveListItem keeps artists on album rows", () => {
+    const item = mapResponsiveListItem({
+      flexColumns: [
+        { musicResponsiveListItemFlexColumnRenderer: { text: { runs: [{ text: "Freedom" }] } } },
+        {
+          musicResponsiveListItemFlexColumnRenderer: {
+            text: { runs: [{ text: "Album" }, { text: " • " }, artistRun("UCai", "Robot")] },
+          },
+        },
+      ],
+      navigationEndpoint: albumNav,
+    });
+    expect(item?.kind).toBe("album");
+    expect(item?.artists).toEqual([{ id: "UCai", name: "Robot" }]);
   });
 });

@@ -793,6 +793,7 @@ export function mapTwoRowItem(raw: YtNode): ShelfItem | null {
     title,
     subtitle: subtitle || undefined,
     thumbnails,
+    artists: artists.length ? artists : undefined,
     round,
     explicit: readExplicit(raw) || undefined,
     playableVideoId,
@@ -960,6 +961,7 @@ export function mapResponsiveListItem(raw: YtNode): ShelfItem | null {
       title,
       subtitle: subtitleText || undefined,
       thumbnails,
+      artists: artists.length ? artists : undefined,
       round: kind === "artist",
       explicit: explicit || undefined,
     };
