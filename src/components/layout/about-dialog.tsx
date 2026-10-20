@@ -33,7 +33,7 @@ import { cn } from "@/lib/utils";
 
 // YTubic Plus lives on the Homefronts fork; the original project and its
 // author keep their credit (and the Support / X / Discord links) below.
-const REPO_URL = "https://github.com/Homefronts/YTubic-";
+const REPO_URL = "https://github.com/Homefronts/YTubic-Plus";
 const UPSTREAM_URL = "https://github.com/NUber-dev/YTubic";
 const FORK_AUTHOR_URL = "https://github.com/Homefronts";
 const DISCORD_URL = "https://discord.gg/4gccUpZyYH";

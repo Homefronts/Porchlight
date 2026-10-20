@@ -13,7 +13,7 @@ import snapshot from "./snapshot.json";
  * launch. Classification is purely in-memory: no request per song.
  */
 export const AI_DATA_URL =
-  "https://raw.githubusercontent.com/Homefronts/YTubic-/ai-data/ai-artists.json";
+  "https://raw.githubusercontent.com/Homefronts/YTubic-Plus/ai-data/ai-artists.json";
 
 const SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const STALE_MS = 7 * 24 * 60 * 60 * 1000;

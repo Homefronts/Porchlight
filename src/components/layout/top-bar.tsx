@@ -358,7 +358,7 @@ function ThemeSubMenu() {
   );
 }
 
-const REPO_ISSUES_URL = "https://github.com/Homefronts/YTubic-/issues/new";
+const REPO_ISSUES_URL = "https://github.com/Homefronts/YTubic-Plus/issues/new";
 
 /**
  * Feedback form that hands off to GitHub: Submit opens a prefilled
