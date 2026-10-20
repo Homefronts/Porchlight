@@ -14,8 +14,9 @@ on:
   push:
     tags:
       - "v*"
-  # Manual run against a tag ref (gh workflow run Release --ref vX.Y.Z):
-  # forks ignore tag pushes until Actions is enabled from the web UI.
+  # Manual run against a tag ref (gh workflow run Release --ref vX.Y.Z).
+  # Only for re-running: a tag push already starts this workflow, and a
+  # second run builds and uploads macOS twice.
   workflow_dispatch:
 
 jobs:
