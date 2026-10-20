@@ -109,7 +109,7 @@ export function SettingsDialog() {
           </nav>
           <div className="mt-auto flex flex-col gap-[3px] px-2">
             <span className="text-[11.5px] text-t9">
-              {version ? `YTubic v${version}` : "YTubic"}
+              {version ? `YTubic Plus ${version}` : "YTubic Plus"}
             </span>
             <span className="text-[11.5px] text-t10">
               {phase === "ready"
