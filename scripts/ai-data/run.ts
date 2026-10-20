@@ -51,7 +51,7 @@ const SOURCES = [
 const SMOKE = ["The Velvet Sundown", "Xania Monet", "Breaking Rust"];
 const MAX_PER_RUN = 2000;
 const RECHECK_DAYS = 14;
-const SPOTIFY_DELAY_MS = 1500;
+const SPOTIFY_DELAY_MS = 1000;
 // Mirrors WEB_REMIX_CLIENT_VERSION in src/lib/innertube/shared.ts.
 const YTM_CLIENT = { clientName: "WEB_REMIX", clientVersion: "1.20260510.02.00", hl: "en", gl: "US" };
 const SONGS_FILTER = "EgWKAQIIAWoQEAkQBRAKEAMQBBAQEBUQEQ==";
@@ -148,27 +148,28 @@ async function main() {
     const name = spotifyArtists.get(id)!;
     let tracks: string[] | null = null;
     attempted++;
-    try {
-      const sp = parseSpotifyEmbed(await text(`https://open.spotify.com/embed/artist/${id}`, { headers: { "User-Agent": UA } }));
-      if (sp) {
-        tracks = sp.tracks;
-        parsedAny = true;
-      } else failed++;
-    } catch {
-      failed++;
-    }
+    // Spotify and YouTube Music are independent: fetch both at once.
+    const [spRes, ytRes] = await Promise.allSettled([
+      text(`https://open.spotify.com/embed/artist/${id}`, { headers: { "User-Agent": UA } }),
+      ytmSongSearch(name),
+    ]);
+    const sp = spRes.status === "fulfilled" ? parseSpotifyEmbed(spRes.value) : null;
+    if (sp) {
+      tracks = sp.tracks;
+      parsedAny = true;
+    } else failed++;
     // Stop early rather than hammer a source that is clearly blocking us.
     if (attempted >= 20 && failed / attempted > 0.8) {
       console.warn("spotify failing; stopping early");
       break;
     }
     let channels: ArtistState["channels"] = state.artists[id]?.channels ?? {};
-    try {
-      const found = channelsFromSongSearch(await ytmSongSearch(name), name);
+    if (ytRes.status === "fulfilled") {
+      const found = channelsFromSongSearch(ytRes.value, name);
       channels = {};
       for (const [cid, c] of found) channels[cid] = { name: c.name, verdict: decideChannel(tracks, c.titles) };
-    } catch (e) {
-      console.warn(`ytm failed for ${name}: ${e}`);
+    } else {
+      console.warn(`ytm failed for ${name}: ${ytRes.reason}`);
     }
     // Search results vary run to run, and Spotify can fail: a channel
     // confirmed earlier is only downgraded by fresh evidence against it
