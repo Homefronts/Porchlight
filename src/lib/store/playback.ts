@@ -7,6 +7,7 @@ import {
 import { emit } from "@tauri-apps/api/event";
 import type { ShelfItem, Thumbnail } from "@/lib/innertube/types";
 import type { RadioChip } from "@/lib/innertube/radio";
+import { shelfItemToTrack } from "@/lib/queue-track";
 import { isFloatingPlayerWindow } from "@/lib/floating-player";
 import { usePlaybackSettings } from "./playback-settings";
 import { safeLocalStorage } from "./safe-storage";
@@ -136,21 +137,6 @@ export type PlaybackState = {
   setShuffle: (on: boolean) => void;
   cycleRepeat: () => void;
 };
-
-function shelfItemToTrack(item: ShelfItem | QueueTrack): QueueTrack | null {
-  if ("videoId" in item) return item;
-  if (item.kind !== "song" && item.kind !== "video") return null;
-  return {
-    videoId: item.id,
-    title: item.title,
-    subtitle: item.subtitle,
-    artists: item.artists,
-    album: item.album,
-    albumId: item.albumId,
-    thumbnails: item.thumbnails,
-    duration: item.duration,
-  };
-}
 
 function fisherYates<T>(arr: readonly T[]): T[] {
   const result = arr.slice();
