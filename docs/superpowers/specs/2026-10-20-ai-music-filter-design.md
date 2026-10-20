@@ -148,9 +148,13 @@ a substring, and the job leaves out names shorter than 4 characters, so short
 or common names don't get mass-tagged. My call: any credited artist counts,
 since collaborations with AI acts are still AI songs.
 
-**The switch.** Settings → Playback: "AI music" toggle, default **on** (show
-AI music), so nothing changes for anyone until they turn it off. The status
-line for reduced mode sits under it.
+**The switch.** A small **"AI" toggle button in the top bar, right next to
+the search box** (decided by the user). One click flips it, and its state
+is obvious: struck through when AI music is off. Its tooltip says "AI music
+hidden · click to show" or "AI music shown · click to hide". It defaults to
+**on** (shown), so nothing changes for anyone until they flip it. Settings →
+Playback mirrors the same setting and holds the reduced-mode status line. In
+reduced mode the top-bar button also shows a small warning dot.
 
 **The tag.** A small "AI" chip next to the title, built like
 `src/components/shared/explicit-badge.tsx` and placed wherever that badge
@@ -229,7 +233,6 @@ without an app release.
 - Default: AI music **on** (opt-in filtering).
 - The Spotify and YouTube work runs in a daily GitHub job, not in the app.
 - A song counts as AI if **any** credited artist is AI.
-- The switch lives under Settings → Playback.
 
 ## Left to the builder
 
