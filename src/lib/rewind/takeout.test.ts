@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { deflateRawSync } from "node:zlib";
-import { findWatchHistory, parseTakeout } from "./takeout";
+import { findWatchHistory, parseHistory, parseTakeout } from "./takeout";
 
 const iso = (d: Date) => d.toISOString();
 const at = (day: number, sec = 0) => new Date(2026, 1, day, 12, 0, sec);
@@ -41,6 +41,45 @@ describe("parseTakeout", () => {
   });
 });
 
+/** One entry laid out as in Takeout's default HTML export (October 2026). */
+const cell = (header: string, body: string) =>
+  `<div class="outer-cell mdl-cell mdl-cell--12-col mdl-shadow--2dp"><div class="mdl-grid"><div class="header-cell mdl-cell mdl-cell--12-col"><p class="mdl-typography--title">${header}<br></p></div><div class="content-cell mdl-cell mdl-cell--6-col mdl-typography--body-1">${body}<br></div><div class="content-cell mdl-cell mdl-cell--12-col mdl-typography--caption"><b>Products:</b><br>&emsp;YouTube<br></div></div></div>`;
+const song = (id: string, title: string, date: string) =>
+  cell(
+    "YouTube Music",
+    `Watched <a href="https://music.youtube.com/watch?v=${id}">${title}</a><br><a href="https://www.youtube.com/channel/UCx">Tom &amp; Jerry - Topic</a><br>${date}`,
+  );
+
+describe("parseHistory", () => {
+  it("reads Takeout's HTML export", () => {
+    const html = `<html><body><div class="mdl-grid">${[
+      song("b", "Rock &amp; Roll", "Feb 5, 2026, 3:10:00\u202fPM EST"),
+      song("a", "Don&#39;t Stop", "Feb 5, 2026, 3:00:00\u202fPM EST"),
+      cell("YouTube", `Watched <a href="https://www.youtube.com/watch?v=v">A video</a><br><a href="https://www.youtube.com/channel/UCv">Vlogger</a><br>Feb 5, 2026, 2:00:00\u202fPM EST`),
+      cell("YouTube Music", "Watched a video that has been removed<br>Feb 5, 2026, 1:00:00\u202fPM EST"),
+      song("old", "Last Year", "Dec 30, 2025, 1:00:00\u202fPM EST"),
+    ].join("")}</div></body></html>`;
+    const ps = parseHistory(html, "2026-Q1");
+    expect(ps).toEqual([
+      expect.objectContaining({ videoId: "a", title: "Don't Stop", startedAt: Date.parse("2026-02-05T20:00:00Z"), artists: [{ id: "UCx", name: "Tom & Jerry" }] }),
+      expect.objectContaining({ videoId: "b", title: "Rock & Roll" }),
+    ]);
+  });
+
+  it("reads a date in a zone the parser doesn't know as local time", () => {
+    const ps = parseHistory(song("a", "Song", "5 Feb 2026, 15:00:00 CET"), "2026-Q1");
+    expect(ps).toEqual([expect.objectContaining({ startedAt: new Date(2026, 1, 5, 15).getTime() })]);
+  });
+
+  it("says so when an HTML export's dates can't be read", () => {
+    expect(parseHistory(song("a", "Song", "5 февр. 2026 г., 15:00:00 MSK"), "2026-Q1")).toEqual({ error: "html" });
+  });
+
+  it("still reads JSON", () => {
+    expect(parseHistory(JSON.stringify([entry("a", at(3))]), "2026-Q1")).toEqual([expect.objectContaining({ videoId: "a" })]);
+  });
+});
+
 /** A one-file zip, deflated, as Takeout makes them. */
 function zip(name: string, text: string): Uint8Array {
   const data = Buffer.from(text);
@@ -72,15 +111,18 @@ function zip(name: string, text: string): Uint8Array {
 describe("findWatchHistory", () => {
   it("reads watch-history.json out of a Takeout zip", async () => {
     const bytes = zip("Takeout/YouTube and YouTube Music/history/watch-history.json", "[1,2]");
-    expect(await findWatchHistory(bytes, "takeout.zip")).toEqual({ json: "[1,2]" });
+    expect(await findWatchHistory(bytes)).toEqual({ text: "[1,2]" });
+  });
+  it("reads watch-history.html out of a Takeout zip", async () => {
+    const bytes = zip("Takeout/YouTube and YouTube Music/history/watch-history.html", "<html>");
+    expect(await findWatchHistory(bytes)).toEqual({ text: "<html>" });
   });
   it("finds the history in a non-English export by its content", async () => {
     const json = JSON.stringify([{ titleUrl: "https://music.youtube.com/watch?v=a", time: "2026-02-01T00:00:00Z" }]);
     const bytes = zip("Takeout/YouTube und YouTube Music/Verlauf/Wiedergabeverlauf.json", json);
-    expect(await findWatchHistory(bytes, "takeout-20261020.zip")).toEqual({ json });
+    expect(await findWatchHistory(bytes)).toEqual({ text: json });
   });
-  it("takes a bare JSON file and rejects the HTML export", async () => {
-    expect(await findWatchHistory(new TextEncoder().encode("[]"), "watch-history.json")).toEqual({ json: "[]" });
-    expect(await findWatchHistory(new TextEncoder().encode("<html>"), "watch-history.html")).toEqual({ error: "html" });
+  it("takes a bare file", async () => {
+    expect(await findWatchHistory(new TextEncoder().encode("[]"))).toEqual({ text: "[]" });
   });
 });

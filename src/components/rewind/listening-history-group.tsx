@@ -10,7 +10,7 @@ import { importTakeout } from "@/lib/rewind/takeout";
 import { useSettingsStore } from "@/lib/store/settings";
 
 const IMPORT_ERRORS = {
-  html: "That's the HTML export. In Google Takeout, choose JSON for your YouTube history and try again.",
+  html: "Couldn't read the dates in that HTML export. In Google Takeout, choose JSON for your YouTube history and try again.",
   invalid: "That file doesn't look like a Google Takeout watch history.",
   empty: "No YouTube Music plays from this quarter in that file.",
   cancelled: "Import cancelled.",
@@ -52,7 +52,7 @@ export function ListeningHistoryGroup() {
       <SettingRow
         icon={IconFileImport}
         title="Import past listening"
-        description="Add this quarter's plays from a Google Takeout export (YouTube history, JSON). Read on this computer only."
+        description="Add this quarter's plays from a Google Takeout export of your YouTube history. Read on this computer only."
         control={
           importing ? (
             <Button size="sm" variant="secondary" onClick={() => importing.abort()}>

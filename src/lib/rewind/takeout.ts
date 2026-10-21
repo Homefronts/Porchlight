@@ -53,6 +53,46 @@ export function parseTakeout(json: unknown, q: QuarterId): Play[] {
   });
 }
 
+// One entry of Takeout's default HTML export: header, linked title, linked channel, date.
+const HTML_ENTRY =
+  /mdl-typography--title">([^<]*)<br><\/p><\/div><div class="content-cell[^"]*">[^<]*<a href="([^"]+)">([^<]*)<\/a><br>(?:<a href="([^"]*)">([^<]*)<\/a><br>)?([^<]+)<br>/g;
+
+const decode = (s: string) =>
+  s.replace(/&(amp|lt|gt|quot|#39|#(\d+));/g, (_, n: string, code?: string) =>
+    code ? String.fromCodePoint(Number(code)) : ({ amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'" })[n]!,
+  );
+
+/** "Oct 20, 2026, 5:02:51 PM EDT". Zones the parser doesn't know (BST, CEST) are read as local time. */
+function htmlTime(s: string): number {
+  const t = s.replace(/[\u202f\u00a0]/g, " ").trim();
+  return Date.parse(t) || Date.parse(t.replace(/\s\S+$/, ""));
+}
+
+// shortcut: dates are read by the browser's parser, so English exports work and other
+// languages mostly don't (they get the "choose JSON" message); add per-locale months if asked.
+function htmlEntries(html: string): Entry[] {
+  const out: Entry[] = [];
+  for (const [, header, titleUrl, title, url, name, date] of html.matchAll(HTML_ENTRY)) {
+    const t = htmlTime(date);
+    if (!t) continue;
+    out.push({
+      header: decode(header),
+      title: decode(title),
+      titleUrl: decode(titleUrl),
+      subtitles: name ? [{ name: decode(name), url }] : [],
+      time: new Date(t).toISOString(),
+    });
+  }
+  return out;
+}
+
+/** This quarter's plays from the history file's text, JSON or HTML. */
+export function parseHistory(text: string, q: QuarterId): Play[] | { error: "html" } {
+  if (!text.trimStart().startsWith("<")) return parseTakeout(JSON.parse(text), q);
+  const entries = htmlEntries(text);
+  return entries.length ? parseTakeout(entries, q) : { error: "html" };
+}
+
 const HISTORY = /watch-history\.(json|html)$/i;
 
 /** A Takeout watch history, whatever the export's language calls the file. */
@@ -72,7 +112,7 @@ async function inflate(data: Uint8Array): Promise<Uint8Array> {
 
 // shortcut: plain zip only (no zip64), fine for a history-only Takeout export;
 // add zip64 if users pick a full export over 4 GB.
-async function fromZip(b: Uint8Array): Promise<Uint8Array | "html" | null> {
+async function fromZip(b: Uint8Array): Promise<Uint8Array | null> {
   const v = new DataView(b.buffer, b.byteOffset, b.byteLength);
   let eocd = -1;
   for (let i = b.length - 22; i >= Math.max(0, b.length - 65_557); i--) {
@@ -84,7 +124,6 @@ async function fromZip(b: Uint8Array): Promise<Uint8Array | "html" | null> {
   if (eocd < 0) return null;
   let p = v.getUint32(eocd + 16, true);
   const count = v.getUint16(eocd + 10, true);
-  let html = false;
   const candidates: (() => Promise<Uint8Array>)[] = [];
   for (let n = 0; n < count && v.getUint32(p, true) === 0x02014b50; n++) {
     const method = v.getUint16(p + 10, true);
@@ -99,9 +138,7 @@ async function fromZip(b: Uint8Array): Promise<Uint8Array | "html" | null> {
       const raw = b.subarray(start, start + size);
       return method === 8 ? inflate(raw) : Promise.resolve(raw);
     };
-    const m = name.match(HISTORY);
-    if (m?.[1].toLowerCase() === "html") html = true;
-    else if (m) return read();
+    if (HISTORY.test(name)) return read();
     // Non-English exports name the file in their language: keep YouTube JSONs to sniff.
     else if (/youtube/i.test(name) && name.toLowerCase().endsWith(".json")) candidates.push(read);
   }
@@ -109,19 +146,15 @@ async function fromZip(b: Uint8Array): Promise<Uint8Array | "html" | null> {
     const data = await read();
     if (looksLikeHistory(new TextDecoder().decode(data))) return data;
   }
-  return html ? "html" : null;
+  return null;
 }
 
-/** The watch history JSON text from a Takeout .zip or a bare file. */
-export async function findWatchHistory(
-  bytes: Uint8Array,
-  fileName: string,
-): Promise<{ json: string } | { error: "html" | "invalid" }> {
+/** The watch history text (JSON or HTML) from a Takeout .zip or a bare file. */
+export async function findWatchHistory(bytes: Uint8Array): Promise<{ text: string } | { error: "invalid" }> {
   const isZip = bytes[0] === 0x50 && bytes[1] === 0x4b;
   const found = isZip ? await fromZip(bytes).catch(() => null) : bytes;
-  if (found === "html" || (!isZip && /\.html?$/i.test(fileName))) return { error: "html" };
   if (!found) return { error: "invalid" };
-  return { json: new TextDecoder().decode(found) };
+  return { text: new TextDecoder().decode(found) };
 }
 
 export type ImportResult = { added: number } | { error: "html" | "invalid" | "empty" | "cancelled" };
@@ -138,7 +171,7 @@ export async function importTakeout(file: File, signal?: AbortSignal): Promise<I
       signal?.addEventListener("abort", () => reject(new DOMException("cancelled", "AbortError")));
       worker.onmessage = (e) => resolve(e.data);
       worker.onerror = () => resolve({ error: "invalid" });
-      worker.postMessage({ bytes, name: file.name, quarter }, [bytes]);
+      worker.postMessage({ bytes, quarter }, [bytes]);
     });
     if (res.error) return { error: res.error };
     if (!res.plays?.length) return { error: "empty" };

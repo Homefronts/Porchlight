@@ -58,10 +58,11 @@ Rewind must not change that.
   - **Only the current quarter is imported** (the user asked for "only this
     quarter"). Older entries in the file are ignored, so an import never creates
     rewinds for past quarters and only feeds the next one.
-  - Format (my call): Takeout's **JSON** watch history (`watch-history.json`), picked
-    directly or inside the Takeout `.zip`. The import instructions tell the user to
-    choose JSON in Takeout (it defaults to HTML); an HTML file gets a clear "export
-    as JSON" message rather than a second parser.
+  - Format: Takeout's watch history, **HTML (Takeout's default) or JSON**, picked
+    directly or inside the Takeout `.zip`. JSON-only was the first call, but the
+    user's first real export was HTML, so everyone would have hit that wall. HTML
+    dates are read by the browser's date parser (English works; a language it
+    can't read gets an "export as JSON" message).
   - Skips (my call): Takeout logs every play start with no length. An entry followed
     by the next one less than 30 seconds later counts as a skip and is dropped,
     matching the logged-play bar as closely as the data allows.
