@@ -18,7 +18,7 @@ vi.mock("./log", () => ({ rewindLog: { append } }));
 
 import { usePlaybackStore, type QueueTrack } from "@/lib/store/playback";
 import { useSettingsStore } from "@/lib/store/settings";
-import { useRewindLogger } from "./use-rewind-logger";
+import { PENDING_KEY, recoverPendingPlay, useRewindLogger } from "./use-rewind-logger";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -36,7 +36,8 @@ beforeEach(() => {
   vi.useFakeTimers();
   append.mockClear();
   useSettingsStore.setState({ rewindHistory: true });
-  usePlaybackStore.setState({ queue: [track("a"), track("b")], index: 0, playing: false, position: 0, duration: 200 });
+  localStorage.removeItem("ytubic-rewind-pending");
+  usePlaybackStore.setState({ queue: [track("a"), track("b")], index: 0, playing: false, position: 0, duration: 200, status: "ready" });
   root = createRoot(document.createElement("div"));
   act(() => root.render(createElement(() => (useRewindLogger(), null))));
 });
@@ -87,4 +88,36 @@ it("logs a replay of the same song from the start as a new play", () => {
   set({ index: 1 });
   expect(append).toHaveBeenCalledTimes(2);
   expect(append.mock.calls[1][0]).toMatchObject({ videoId: "a", playedSec: 30 });
+});
+
+it("dates a play from when playback starts, not when the track was queued", () => {
+  vi.advanceTimersByTime(3 * 3600_000); // restored paused at launch, played later
+  const later = Date.now();
+  set({ playing: true });
+  vi.advanceTimersByTime(60_000);
+  set({ index: 1 });
+  expect(append.mock.calls[0][0]).toMatchObject({ videoId: "a", startedAt: later });
+});
+
+it("doesn't count time spent loading", () => {
+  set({ playing: true, status: "loading" });
+  vi.advanceTimersByTime(60_000);
+  set({ status: "ready" });
+  vi.advanceTimersByTime(60_000);
+  set({ index: 1 });
+  expect(append.mock.calls[0][0]).toMatchObject({ playedSec: 60 });
+});
+
+it("keeps the play in progress safe if the app is killed, and recovers it next launch", async () => {
+  set({ playing: true });
+  for (let s = 5; s <= 130; s += 5) {
+    vi.advanceTimersByTime(5000);
+    set({ position: s });
+  }
+  expect(localStorage.getItem(PENDING_KEY)).not.toBeNull();
+  await recoverPendingPlay();
+  expect(append).toHaveBeenCalledTimes(1);
+  expect(append.mock.calls[0][0]).toMatchObject({ videoId: "a" });
+  expect((append.mock.calls[0][0] as { playedSec: number }).playedSec).toBeGreaterThanOrEqual(115);
+  expect(localStorage.getItem(PENDING_KEY)).toBeNull();
 });

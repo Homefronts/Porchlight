@@ -13,10 +13,15 @@ export type TimedPlay = { videoId: string; startedAt: number; playedSec: number;
 
 /** Accrues real listening time for one play at a time. */
 export class PlayTimer {
-  private cur: { videoId: string; startedAt: number; ms: number } | null = null;
+  private cur: { videoId: string; startedAt: number; ms: number; playing: boolean } | null = null;
 
   start(videoId: string, now: number): void {
-    this.cur = { videoId, startedAt: now, ms: 0 };
+    this.cur = { videoId, startedAt: now, ms: 0, playing: false };
+  }
+
+  /** The play is dated from its first real playback, not from being queued. */
+  markPlaying(now: number): void {
+    if (this.cur && !this.cur.playing) Object.assign(this.cur, { playing: true, startedAt: now });
   }
 
   tick(ms: number): void {
@@ -27,12 +32,20 @@ export class PlayTimer {
     return this.cur?.videoId;
   }
 
-  /** Ends the current play; null when none is running. */
-  finish(durationSec?: number): TimedPlay | null {
+  /** The current play so far (plus `extraMs` still running), without ending it. */
+  peek(durationSec?: number, extraMs = 0): TimedPlay | null {
     const c = this.cur;
     if (!c) return null;
-    this.cur = null;
-    const playedSec = Math.round(c.ms / 1000);
+    let playedSec = Math.round((c.ms + extraMs) / 1000);
+    // Anything past the song's length is a stall or a sleep, not listening.
+    if (durationSec && durationSec > 0) playedSec = Math.min(playedSec, Math.ceil(durationSec));
     return { videoId: c.videoId, startedAt: c.startedAt, playedSec, counted: countsAsPlay(playedSec, durationSec) };
+  }
+
+  /** Ends the current play; null when none is running. */
+  finish(durationSec?: number): TimedPlay | null {
+    const t = this.peek(durationSec);
+    this.cur = null;
+    return t;
   }
 }

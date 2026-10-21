@@ -30,4 +30,19 @@ describe("PlayTimer", () => {
     t.tick(1000);
     expect(t.finish(200)).toMatchObject({ videoId: "a", startedAt: 200_000, playedSec: 1 });
   });
+
+  it("never counts more than the song's length", () => {
+    const t = new PlayTimer();
+    t.start("a", 0);
+    t.tick(8 * 3600_000); // laptop asleep with the player "playing"
+    expect(t.finish(200)?.playedSec).toBe(200);
+  });
+  it("dates a play from when it first started playing", () => {
+    const t = new PlayTimer();
+    t.start("a", 0);
+    t.markPlaying(5000);
+    t.tick(1000);
+    t.markPlaying(9000);
+    expect(t.finish(200)?.startedAt).toBe(5000);
+  });
 });
