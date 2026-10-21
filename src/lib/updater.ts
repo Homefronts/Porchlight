@@ -42,15 +42,21 @@ export async function checkForUpdates({
 }): Promise<void> {
   const store = useUpdateStore.getState();
   const auto = useSettingsStore.getState().autoUpdate;
-  if (
-    store.phase === "downloading" ||
-    store.phase === "installing" ||
-    store.phase === "ready"
-  ) {
+  // A manual check that stops early still says why, or the button looks dead.
+  const say = (msg: string) => {
+    if (!silent) toast.message(msg, { id: TOAST_ID });
+  };
+  if (store.phase === "downloading" || store.phase === "installing") {
+    say("An update is already downloading.");
+    return;
+  }
+  if (store.phase === "ready") {
+    say("An update is ready: restart to install it.");
     return;
   }
   if (store.phase === "available") {
     if (auto) void downloadUpdate(store.version ?? "", store.handle);
+    else say("An update is available: download it from About.");
     return;
   }
 
@@ -61,7 +67,10 @@ export async function checkForUpdates({
     }
     return;
   }
-  if (checking) return;
+  if (checking) {
+    say("Already checking for updates.");
+    return;
+  }
   checking = true;
   try {
     let update: Update | null;
