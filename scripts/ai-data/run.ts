@@ -15,6 +15,7 @@ import {
   channelsFromSongSearch,
   confirmedFromState,
   decideChannel,
+  isDue,
   mergeResults,
   parseCsvArtists,
   parseSpotifyEmbed,
@@ -50,7 +51,6 @@ const SOURCES = [
 // Always rechecked, and the smoke test requires them confirmed.
 const SMOKE = ["The Velvet Sundown", "Xania Monet", "Breaking Rust"];
 const MAX_PER_RUN = 2000;
-const RECHECK_DAYS = 14;
 const SPOTIFY_DELAY_MS = 1000;
 // Mirrors WEB_REMIX_CLIENT_VERSION in src/lib/innertube/shared.ts.
 const YTM_CLIENT = { clientName: "WEB_REMIX", clientVersion: "1.20260510.02.00", hl: "en", gl: "US" };
@@ -129,13 +129,13 @@ async function main() {
   console.log(`lists: ${spotifyArtists.size} spotify artists, ${ytConfirmed.length} youtube channels`);
 
   // 2. Pick this run's slice: smoke artists, never-checked, then oldest.
-  const cutoff = Date.now() - RECHECK_DAYS * 86_400_000;
+  const now = Date.now();
   const smokeNames = new Set(SMOKE.map(normalizeName));
   const ids = [...spotifyArtists.keys()];
   const smoke = ids.filter((id) => smokeNames.has(normalizeName(spotifyArtists.get(id)!)));
   const fresh = ids.filter((id) => !state.artists[id]);
   const stale = ids
-    .filter((id) => state.artists[id] && Date.parse(state.artists[id].checkedAt) < cutoff)
+    .filter((id) => state.artists[id] && isDue(state.artists[id], now))
     .sort((a, b) => Date.parse(state.artists[a].checkedAt) - Date.parse(state.artists[b].checkedAt));
   const todo = [...new Set([...smoke, ...fresh, ...stale])].slice(0, limit);
   console.log(`checking ${todo.length} artists`);

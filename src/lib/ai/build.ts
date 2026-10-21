@@ -133,6 +133,13 @@ export function confirmedFromState(
   return confirmed;
 }
 
+const DAY_MS = 86_400_000;
+
+/** A Spotify miss is rechecked after a day, a good check after two weeks. */
+export function isDue(a: { checkedAt: string; spotifyOk: boolean }, now: number): boolean {
+  return now - Date.parse(a.checkedAt) > (a.spotifyOk ? 14 : 1) * DAY_MS;
+}
+
 export function spotifyStatus(
   attempted: number,
   failed: number,

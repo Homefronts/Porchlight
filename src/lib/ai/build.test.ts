@@ -10,6 +10,7 @@ import {
   channelsFromSongSearch,
   confirmedFromState,
   spotifyStatus,
+  isDue,
 } from "./build";
 import type { AiData } from "./match";
 
@@ -159,5 +160,16 @@ describe("review fixes", () => {
     expect(m.confirmed).toEqual({ UCyt: "", UC2: "New" });
     expect(m.maybeNames).toEqual(["new maybe", "old maybe"]);
     expect(m.status.lists).toBe("stale");
+  });
+});
+
+describe("isDue", () => {
+  const now = Date.parse("2026-10-20T00:00:00Z");
+  const ago = (days: number) => new Date(now - days * 86_400_000).toISOString();
+  it("rechecks a Spotify miss after a day, a good check after two weeks", () => {
+    expect(isDue({ checkedAt: ago(2), spotifyOk: false }, now)).toBe(true);
+    expect(isDue({ checkedAt: ago(2), spotifyOk: true }, now)).toBe(false);
+    expect(isDue({ checkedAt: ago(15), spotifyOk: true }, now)).toBe(true);
+    expect(isDue({ checkedAt: ago(0.5), spotifyOk: false }, now)).toBe(false);
   });
 });
