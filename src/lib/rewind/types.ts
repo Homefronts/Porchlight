@@ -21,11 +21,11 @@ export type Ranked = {
   plays: number;
   minutes: number;
   thumb?: string;
+  /** Songs and albums: the (first) artist. */
+  by?: string;
   /** Artists only: their most-played album in this quarter. */
   topAlbum?: { id?: string; name: string; thumb?: string };
 };
-
-export type Palette = { bg: [string, string, string]; accent: string };
 
 /** A sealed quarter. Frozen once built. */
 export type Rewind = {
@@ -49,6 +49,4 @@ export type Rewind = {
   songKeys?: string[];
   /** From Last.fm tags of the top artists; missing when none were found. */
   genres?: string[];
-  /** Keyed by cover URL. */
-  palette?: Record<string, Palette>;
 };

@@ -29,6 +29,7 @@ describe("buildRewind", () => {
     expect(r.topArtists[0].name).toBe("Top");
     expect(r.topArtists[0].plays).toBe(12);
     expect(r.topSongs[0].key).toBe("s1");
+    expect(r.topSongs[0].by).toBe("Top");
     expect(r.topAlbums[0].name).toBe("Top LP");
     expect(r.topArtists[0].topAlbum).toMatchObject({ id: "MPRE-Top", name: "Top LP" });
     expect(r.topArtists.length).toBeLessThanOrEqual(5);

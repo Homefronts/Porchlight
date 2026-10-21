@@ -6,7 +6,7 @@ vi.mock("@/lib/rewind/palette", () => ({ coverBlobUrl: async () => null }));
 
 import type { Ranked, Rewind } from "@/lib/rewind/types";
 import { RewindStory } from "./rewind-story";
-import { slidesFor } from "./slides";
+import { personality, slidesFor } from "./slides";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -20,7 +20,7 @@ const rewind: Rewind = {
 describe("slidesFor", () => {
   it("follows the spec's order and skips slides with no data", () => {
     expect(slidesFor(rewind).map((s) => s.kind)).toEqual([
-      "intro", "minutes", "variety", "topArtist", "artists", "topSong", "songs", "topAlbum", "hours", "summary",
+      "intro", "setup", "minutes", "variety", "topArtist", "artists", "songs", "topAlbum", "personality", "summary",
     ]);
     expect(slidesFor({ ...rewind, newArtists: [r("New")] }).map((s) => s.kind)).toContain("newArtists");
     expect(slidesFor({ ...rewind, genres: ["folk"] }).map((s) => s.kind)).toContain("genres");
@@ -39,7 +39,7 @@ describe("RewindStory", () => {
     const current = () => document.querySelector("[data-slide-current]")?.getAttribute("data-slide-current");
     expect(current()).toBe("intro");
     act(() => void window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" })));
-    expect(current()).toBe("minutes");
+    expect(current()).toBe("setup");
     expect(document.querySelectorAll("[data-slide]").length).toBeLessThanOrEqual(2);
     act(() => void window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
     expect(onClose).toHaveBeenCalled();
@@ -56,5 +56,13 @@ describe("RewindStory", () => {
     expect(shell).toHaveLastReturnedWith(true);
     window.removeEventListener("keydown", shell);
     act(() => root.unmount());
+  });
+});
+
+describe("personality", () => {
+  it("names you after the hour you listen most", () => {
+    expect(personality(15)).toMatchObject({ name: "The Afternoon Rescuer", line: expect.stringContaining("3 PM") });
+    expect(personality(0).name).toBe("The Night Owl");
+    expect(personality(22).name).toBe("The Late Night Romantic");
   });
 });

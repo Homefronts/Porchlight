@@ -2,8 +2,8 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { rewindBackground, rewindsQuery, useRewindStory } from "@/components/rewind/open-rewind";
-import { paletteOf, quarterLabel, slidesFor } from "@/components/rewind/slides";
+import { rewindsQuery, useRewindStory } from "@/components/rewind/open-rewind";
+import { REWIND_COVER, quarterLabel } from "@/components/rewind/slides";
 import { Button } from "@/components/ui/button";
 import { MIN_MINUTES, MIN_SONGS } from "@/lib/rewind/build";
 import { quarterOf } from "@/lib/rewind/quarter";
@@ -63,9 +63,9 @@ function RewindCard({ r, onOpen }: { r: Rewind; onOpen: () => void }) {
       type="button"
       onClick={onOpen}
       className="flex aspect-[3/4] flex-col justify-end rounded-xl p-4 text-left text-white transition-transform hover:scale-[1.02]"
-      style={{ background: rewindBackground(r) }}
+      style={{ background: REWIND_COVER.bg }}
     >
-      <span className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: paletteOf(slidesFor(r)[0], r).accent }}>
+      <span className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: REWIND_COVER.hi }}>
         Rewind
       </span>
       <span className="text-2xl font-black leading-tight">{quarterLabel(r)}</span>

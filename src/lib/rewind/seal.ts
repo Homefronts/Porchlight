@@ -5,9 +5,8 @@ import { fetchRadio } from "@/lib/innertube/radio";
 import { queryClient } from "@/lib/query-client";
 import { buildRewind } from "./build";
 import { rewindLog, type RewindLog } from "./log";
-import { readPalette } from "./palette";
 import { quarterOf, type QuarterId } from "./quarter";
-import type { Palette, Play, Ranked, Rewind } from "./types";
+import type { Play, Ranked, Rewind } from "./types";
 
 /** Only tracks that can make a top list are looked up, one at a time. */
 export const MAX_LOOKUPS = 25;
@@ -17,7 +16,6 @@ type Meta = { title?: string; album?: string; albumId?: string; thumb?: string }
 export type SealDeps = {
   log: RewindLog;
   lookup: (videoId: string) => Promise<Meta>;
-  readPalette: (url: string) => Promise<Palette | null>;
   excludeAi: (p: Play) => boolean;
   now: () => number;
   pauseMs: number;
@@ -62,26 +60,6 @@ async function fillMissing(plays: Play[], deps: SealDeps): Promise<void> {
   }
 }
 
-/** Covers the story will show, each read once. */
-export function coversOf(r: Rewind): string[] {
-  const urls = [
-    ...r.topArtists.map((a) => a.topAlbum?.thumb ?? a.thumb),
-    r.topSongs[0]?.thumb,
-    r.topAlbums[0]?.thumb,
-    ...r.newArtists.map((a) => a.thumb),
-  ];
-  return [...new Set(urls.filter((u): u is string => !!u))];
-}
-
-async function withPalettes(r: Rewind, deps: Pick<SealDeps, "readPalette">): Promise<Rewind> {
-  const palette: Record<string, Palette> = {};
-  for (const url of coversOf(r)) {
-    const p = await deps.readPalette(url).catch(() => null);
-    if (p) palette[url] = p;
-  }
-  return { ...r, palette };
-}
-
 async function known(log: RewindLog, before: QuarterId) {
   const earlier = (await log.rewinds()).filter((r) => r.quarter < before);
   return {
@@ -122,7 +100,7 @@ export async function previewQuarter(q: QuarterId, deps: SealDeps): Promise<Rewi
   if (!plays.length) return null;
   await fillMissing(plays, deps);
   const r = buildRewind(q, plays, { excludeAi: deps.excludeAi, ...(await known(deps.log, q)), now: deps.now() });
-  return r && withPalettes(await withGenres(r, deps), deps);
+  return r && withGenres(r, deps);
 }
 
 /** Seal an ended quarter: build, save, drop its raw plays. Runs once per quarter. */
@@ -146,7 +124,6 @@ async function lookupTrack(videoId: string): Promise<Meta> {
 export const appSealDeps: SealDeps = {
   log: rewindLog,
   lookup: lookupTrack,
-  readPalette,
   // "Play anyway" plays count; otherwise follow the AI switch as it is now.
   excludeAi: (p) => !p.aiAllowed && isAiBlocked(p),
   now: Date.now,

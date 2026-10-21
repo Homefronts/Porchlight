@@ -52,9 +52,9 @@ export function buildRewind(
     sec += s;
     hours[new Date(p.startedAt).getHours()] += s / 60;
     if (p.counted) counted++;
-    bump(songs, p.videoId, p.title, s, p.counted, p.thumb);
+    bump(songs, p.videoId, p.title, s, p.counted, p.thumb).by ??= p.artists[0]?.name;
     const albumKey = p.album ? p.albumId || `${normalizeName(p.album)}|${artistKey(p.artists[0] ?? { name: "" })}` : null;
-    if (albumKey) bump(albums, albumKey, p.album!, s, p.counted, p.thumb);
+    if (albumKey) bump(albums, albumKey, p.album!, s, p.counted, p.thumb).by ??= p.artists[0]?.name;
     for (const a of p.artists) {
       const e = bump(artists, artistKey(a), a.name, s, p.counted, p.thumb);
       if (p.album && p.counted) {

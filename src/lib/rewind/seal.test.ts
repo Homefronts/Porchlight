@@ -22,18 +22,16 @@ const plays: Play[] = Array.from({ length: 60 }, (_, i) => ({
 }));
 
 describe("sealQuarter", () => {
-  it("caps lookups, saves one rewind with palettes, drops plays, and runs once", async () => {
+  it("caps lookups, saves one rewind, drops plays, and runs once", async () => {
     const log = createLog(memKv());
     await log.addImported("2026-Q1", plays);
     const lookup = vi.fn(async (id: string) => ({ album: "LP", albumId: "MP1", thumb: `https://img/${id}` }));
-    const readPalette = vi.fn(async () => ({ bg: ["#111111", "#222222", "#000000"] as [string, string, string], accent: "#ffffff" }));
-    const deps = { log, lookup, readPalette, excludeAi: () => false, now: () => t0, pauseMs: 0, online: () => true };
+    const deps = { log, lookup, excludeAi: () => false, now: () => t0, pauseMs: 0, online: () => true };
 
     const r = await sealQuarter("2026-Q1", deps);
     expect(r).not.toBeNull();
     expect(lookup.mock.calls.length).toBeLessThanOrEqual(MAX_LOOKUPS);
     expect(r!.topSongs[0].thumb).toMatch(/^https:\/\/img\//);
-    expect(Object.keys(r!.palette ?? {}).length).toBeGreaterThan(0);
     expect(await log.plays("2026-Q1")).toEqual([]);
     expect((await log.rewinds()).length).toBe(1);
 
@@ -45,14 +43,14 @@ describe("sealQuarter", () => {
   it("previews the open quarter without saving or dropping plays", async () => {
     const log = createLog(memKv());
     await log.addImported("2026-Q1", plays);
-    const deps = { log, lookup: async () => null, readPalette: async () => null, excludeAi: () => false, now: () => t0, pauseMs: 0, online: () => true };
+    const deps = { log, lookup: async () => null, excludeAi: () => false, now: () => t0, pauseMs: 0, online: () => true };
     expect(await previewQuarter("2026-Q1", deps)).not.toBeNull();
     expect(await log.plays("2026-Q1")).toHaveLength(plays.length);
     expect(await log.rewinds()).toEqual([]);
   });
 
   const deps = (log: ReturnType<typeof createLog>, over = {}) => ({
-    log, lookup: async () => null, readPalette: async () => null, excludeAi: () => false,
+    log, lookup: async () => null, excludeAi: () => false,
     now: () => new Date(2026, 7, 1).getTime(), pauseMs: 0, online: () => true, ...over,
   });
 
@@ -112,7 +110,7 @@ describe("previewQuarter genres", () => {
   it("adds genres from the top artists' tags, and skips them when lookups fail", async () => {
     const log = createLog(memKv());
     await log.addImported("2026-Q1", plays);
-    const base = { log, lookup: async () => null, readPalette: async () => null, excludeAi: () => false, now: () => t0, pauseMs: 0, online: () => true };
+    const base = { log, lookup: async () => null, excludeAi: () => false, now: () => t0, pauseMs: 0, online: () => true };
     const r = await previewQuarter("2026-Q1", { ...base, artistTags: async () => ["shoegaze"] });
     expect(r!.genres).toEqual(["shoegaze"]);
     const off = await previewQuarter("2026-Q1", { ...base, artistTags: async () => Promise.reject(new Error("offline")) });

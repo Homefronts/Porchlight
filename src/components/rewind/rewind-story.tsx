@@ -69,7 +69,14 @@ export function RewindStory({
   const s = slides[i];
   const next = slides[i + 1];
   return createPortal(
-    <div className="fixed inset-0 z-50 bg-black" role="dialog" aria-modal="true" aria-label="Rewind">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black px-4 pb-4 pt-[calc(var(--titlebar-h)+3.5rem)]"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Rewind"
+    >
+      {/* A portrait card, like a phone story, whatever the window's shape. */}
+      <div className="relative aspect-[9/16] h-full max-w-full overflow-hidden rounded-2xl">
       <div
         ref={stage}
         className={reduced ? "absolute inset-0" : "absolute inset-0 animate-in fade-in duration-300"}
@@ -82,9 +89,9 @@ export function RewindStory({
         {next ? <Slide s={next} r={rewind} current={false} /> : null}
       </div>
 
-      <div className="pointer-events-none absolute inset-x-4 top-[calc(var(--titlebar-h)+0.5rem)] flex gap-1">
+      <div className="pointer-events-none absolute inset-x-3 top-3 flex gap-1">
         {slides.map((_, n) => (
-          <div key={n} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/30">
+          <div key={n} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/35 shadow-[0_0_3px_rgb(0_0_0/0.35)]">
             <div
               className="h-full bg-white"
               style={
@@ -95,6 +102,7 @@ export function RewindStory({
             />
           </div>
         ))}
+      </div>
       </div>
 
       <div className="absolute right-3 top-[calc(var(--titlebar-h)+1.25rem)] flex gap-1">
