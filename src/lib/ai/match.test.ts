@@ -82,4 +82,9 @@ describe("isLookalike", () => {
   it("tags suffix look-alikes as maybe", () => {
     expect(classifyArtists(one("Cain Walker Music"), idx, {})).toBe("maybe");
   });
+  it("matches acts whose own name ends in a suffix", () => {
+    const sfx = indexAiData(data({ UC3: "Good News Music" }));
+    expect(isLookalike(one("Good News Music"), sfx, {})).toBe(true);
+    expect(classifyArtists(one("Good News Music"), sfx, {})).toBe("maybe");
+  });
 });

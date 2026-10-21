@@ -72,7 +72,7 @@ export function classifyArtists(
     if (o === "ai" || (a.id && idx.confirmed.has(a.id))) return "ai";
     const n = normalizeName(a.name);
     // A name alone never confirms: a real artist can share it.
-    if (idx.maybe.has(n) || idx.confirmedNames.has(lookalikeBase(n))) result = "maybe";
+    if (idx.maybe.has(n) || idx.confirmedNames.has(n) || idx.confirmedNames.has(lookalikeBase(n))) result = "maybe";
   }
   return result;
 }
@@ -92,7 +92,8 @@ export function isLookalike(
 ): boolean {
   return (artists ?? []).some((a) => {
     if (a.id && overrides[a.id] === "not-ai") return false;
-    const b = lookalikeBase(normalizeName(a.name));
-    return (b.includes(" ") || b.length >= 8) && idx.confirmedNames.has(b);
+    const n = normalizeName(a.name);
+    // Both forms: some AI acts' own names end in a suffix ("Good News Music").
+    return [n, lookalikeBase(n)].some((b) => (b.includes(" ") || b.length >= 8) && idx.confirmedNames.has(b));
   });
 }
