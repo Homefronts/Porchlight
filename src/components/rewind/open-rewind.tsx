@@ -34,8 +34,9 @@ export function useRewindStory() {
   const story = open ? <RewindStory rewind={open} onClose={() => setOpen(null)} onSave={save} /> : null;
   return {
     story,
-    show: (r: Rewind) => {
-      markSeen(r.quarter);
+    /** A preview of the open quarter isn't "seen": its real rewind still gets the Home card. */
+    show: (r: Rewind, preview = false) => {
+      if (!preview) markSeen(r.quarter);
       setOpen(r);
     },
   };

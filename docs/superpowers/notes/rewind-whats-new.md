@@ -1,0 +1,19 @@
+# What's New copy for Rewind (paste into src/lib/whats-new.ts when the release version is bumped)
+
+```ts
+{
+  type: "new",
+  title: "Rewind",
+  text: "Every quarter, a full-screen recap of your listening: top artists, songs and albums, minutes listened and when you listen, coloured by the album art. Find it in the sidebar, and save any slide as an image.",
+},
+{
+  type: "new",
+  title: "Import past listening",
+  text: "Bring this quarter's plays in from a Google Takeout export in Settings > Storage, so your first Rewind isn't empty.",
+},
+{
+  type: "improved",
+  title: "Stays on your computer",
+  text: "Your listening history is kept on this computer only and never uploaded. Pause it or clear it any time in Settings > Storage.",
+},
+```

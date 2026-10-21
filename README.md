@@ -38,6 +38,7 @@ Built as a reaction to the sluggish webview-wrapper experience — YTubic talks 
 - **Offline downloads** — a Spotify-style download toggle on every playlist, album and Liked Songs, plus "Download" on single songs. Downloaded playlists stay in sync with new songs automatically.
 - **Downloads page** — everything you've saved, in the sidebar, playable with no internet (for up to 30 days between Premium check-ins).
 - **AI music filter** — one button in the top bar hides AI-generated music from search, home and mixes, using community lists checked against Spotify. Songs by AI artists carry an **AI** tag either way.
+- **Rewind** — a Wrapped-style recap of your own listening every quarter: full-screen slides of your top artists, songs and albums, coloured by their album art. Built and kept on your computer only; you can also import this quarter's plays from a Google Takeout export.
 - **Own update channel** — Plus updates itself from [this fork's releases](../../releases), so it never gets replaced by an upstream build.
 
 ## Roadmap
@@ -48,7 +49,7 @@ Ideas for future Plus releases, roughly in order. Not promises.
 - [ ] **Download compression** — smaller offline files.
 - [ ] **"AI songs hidden" counter** — a small note in search showing how many AI results were filtered, with a way to peek.
 - [ ] **Share your AI marks** — turn your Mark as AI choices into a one-click report to the community list.
-- [ ] **Listening stats** — your top artists and songs this month.
+- [ ] **Listen together** — a Jams-style shared session with friends on YTubic Plus. Needs a small relay server, so maybe someday.
 - [ ] **Sleep timer** — stop after X minutes or at the end of the current song.
 - [ ] **AI filter polish** — recheck artists sooner when Spotify was unreachable, keep mix songs when a refill page fails, and don't treat library items as "not in library" while it loads.
 

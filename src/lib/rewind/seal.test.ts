@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createLog, type Kv } from "./log";
-import { MAX_LOOKUPS, sealQuarter } from "./seal";
+import { MAX_LOOKUPS, previewQuarter, sealQuarter } from "./seal";
 import type { Play } from "./types";
 
 function memKv(): Kv {
@@ -39,5 +39,14 @@ describe("sealQuarter", () => {
     lookup.mockClear();
     expect(await sealQuarter("2026-Q1", deps)).toEqual(r);
     expect(lookup).not.toHaveBeenCalled();
+  });
+
+  it("previews the open quarter without saving or dropping plays", async () => {
+    const log = createLog(memKv());
+    await log.addImported("2026-Q1", plays);
+    const deps = { log, lookup: async () => null, readPalette: async () => null, excludeAi: () => false, now: () => t0, pauseMs: 0 };
+    expect(await previewQuarter("2026-Q1", deps)).not.toBeNull();
+    expect(await log.plays("2026-Q1")).toHaveLength(plays.length);
+    expect(await log.rewinds()).toEqual([]);
   });
 });
