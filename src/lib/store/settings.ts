@@ -69,6 +69,8 @@ type State = {
   aiMusic: boolean;
   /** The one-time "pretty good, but not perfect" note was shown. */
   aiNoticeSeen: boolean;
+  /** Log plays on this computer for Rewind. Off only pauses logging. */
+  rewindHistory: boolean;
   setCloseAction: (v: CloseButtonAction) => void;
   setCacheAutoClean: (v: CacheAutoCleanPeriod) => void;
   markCacheCleaned: () => void;
@@ -84,6 +86,7 @@ type State = {
   setLastfmAvatar: (v: string | null) => void;
   setAiMusic: (v: boolean) => void;
   markAiNoticeSeen: () => void;
+  setRewindHistory: (v: boolean) => void;
   /** Store the account returned by the connect flow and enable scrobbling. */
   setLastfmSession: (username: string, sessionKey: string) => void;
   /** Forget the connected account and stop scrobbling. */
@@ -116,6 +119,7 @@ export const useSettingsStore = create<State>()(
       lastfmLoveSync: false,
       aiMusic: true,
       aiNoticeSeen: false,
+      rewindHistory: true,
       setCloseAction: (closeAction) => set({ closeAction }),
       setCacheAutoClean: (cacheAutoClean) => set({ cacheAutoClean }),
       markCacheCleaned: () => set({ lastCacheCleanAt: Date.now() }),
@@ -133,6 +137,7 @@ export const useSettingsStore = create<State>()(
       setLastfmAvatar: (lastfmAvatar) => set({ lastfmAvatar }),
       setAiMusic: (aiMusic) => set({ aiMusic }),
       markAiNoticeSeen: () => set({ aiNoticeSeen: true }),
+      setRewindHistory: (rewindHistory) => set({ rewindHistory }),
       setLastfmSession: (lastfmUsername, lastfmSessionKey) =>
         set({ lastfmUsername, lastfmSessionKey, lastfmEnabled: true }),
       clearLastfmSession: () =>

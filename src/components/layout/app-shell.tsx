@@ -29,6 +29,7 @@ import { FullscreenPlayer } from "@/components/layout/fullscreen-player";
 import { useCacheAutoClean } from "@/lib/cache-cleanup";
 import { usePlaybackNotifications } from "@/lib/playback-notifications";
 import { useLastfmScrobbler } from "@/lib/lastfm-scrobbler";
+import { useRewindLogger } from "@/lib/rewind/use-rewind-logger";
 import { useYtdlpSetup } from "@/lib/ytdlp";
 import { useDownloadsBridge } from "@/lib/downloads";
 import { useDownloadsSync } from "@/lib/downloads-sync";
@@ -115,6 +116,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   useCacheAutoClean();
   usePlaybackNotifications();
   useLastfmScrobbler();
+  useRewindLogger();
   const mode = useLayoutStore((s) => s.mode);
   const setMode = useLayoutStore((s) => s.setMode);
   const sidebarWidth = useLayoutStore((s) => s.sidebarWidth);
