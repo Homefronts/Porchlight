@@ -76,6 +76,9 @@ Rewind must not change that.
     fills gaps by looking songs up when a rewind is built, and a slide never fails
     because one track is missing data.
 
+- **One history per install.** YTubic Plus is treated as single-account, so the log
+  and rewinds are not split by account and switching accounts doesn't touch them.
+
 ## Decided (my calls, the user can override)
 
 - **What counts as a play:** the same bar as the Last.fm scrobbler
