@@ -30,6 +30,7 @@ import { useCacheAutoClean } from "@/lib/cache-cleanup";
 import { usePlaybackNotifications } from "@/lib/playback-notifications";
 import { useLastfmScrobbler } from "@/lib/lastfm-scrobbler";
 import { useRewindLogger } from "@/lib/rewind/use-rewind-logger";
+import { useRewindScheduler } from "@/lib/rewind/seal";
 import { useYtdlpSetup } from "@/lib/ytdlp";
 import { useDownloadsBridge } from "@/lib/downloads";
 import { useDownloadsSync } from "@/lib/downloads-sync";
@@ -117,6 +118,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   usePlaybackNotifications();
   useLastfmScrobbler();
   useRewindLogger();
+  useRewindScheduler();
   const mode = useLayoutStore((s) => s.mode);
   const setMode = useLayoutStore((s) => s.setMode);
   const sidebarWidth = useLayoutStore((s) => s.sidebarWidth);

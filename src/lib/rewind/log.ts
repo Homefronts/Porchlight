@@ -61,6 +61,9 @@ export function createLog(kv: Kv) {
         await kv.del(playsKey(r.quarter));
       }),
 
+    /** An ended quarter with too little to show: nothing to keep. */
+    dropPlays: (q: QuarterId) => serial(() => kv.del(playsKey(q))),
+
     rewind: (q: QuarterId) => serial(() => kv.get<Rewind>(rewindKey(q))),
 
     rewinds: () =>

@@ -18,7 +18,7 @@ const play = (videoId: string, startedAt: number, source: Play["source"] = "app"
   videoId, title: videoId, artists: [{ name: "A" }], startedAt, playedSec: 100, counted: true, source,
 });
 const rewind = (quarter: Rewind["quarter"], builtAt: number): Rewind => ({
-  quarter, builtAt, minutes: 1, plays: 1, topArtists: [], topSongs: [], topAlbums: [], hours: [], newArtists: [],
+  quarter, builtAt, minutes: 1, plays: 1, topArtists: [], topSongs: [], topAlbums: [], hours: [], newArtists: [], artistKeys: [],
 });
 
 describe("play log", () => {

@@ -78,5 +78,6 @@ export function buildRewind(
     topAlbums: top(albums),
     hours: hours.map(Math.round),
     newArtists: top(fresh),
+    artistKeys: [...artists.keys()],
   };
 }

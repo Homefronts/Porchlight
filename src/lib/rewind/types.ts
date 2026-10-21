@@ -39,6 +39,8 @@ export type Rewind = {
   /** Minutes per local hour of day, 24 buckets. */
   hours: number[];
   newArtists: Ranked[];
+  /** Every artist heard this quarter, so later rewinds can tell who's new. */
+  artistKeys: string[];
   /** Keyed by cover URL. */
   palette?: Record<string, Palette>;
 };
