@@ -6,16 +6,13 @@ import { paletteOf, quarterLabel, slidesFor } from "@/components/rewind/slides";
 import { unseenRewind } from "@/lib/rewind/home";
 import { rewindLog } from "@/lib/rewind/log";
 import { saveSlideImage } from "@/lib/rewind/save-image";
-import { ensureLastRewind } from "@/lib/rewind/seal";
 import type { Rewind } from "@/lib/rewind/types";
 import { useSettingsStore } from "@/lib/store/settings";
 
 export const rewindsQuery = {
   queryKey: ["rewinds"],
-  queryFn: async () => {
-    await ensureLastRewind();
-    return rewindLog.rewinds();
-  },
+  // Read only: sealing runs from the idle-time scheduler, never on page load.
+  queryFn: () => rewindLog.rewinds(),
   staleTime: 60_000,
 };
 

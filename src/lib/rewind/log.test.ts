@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { MAX_PLAYS_PER_QUARTER, createLog, type Kv } from "./log";
 import type { Play, Rewind } from "./types";
 
@@ -6,6 +6,7 @@ function memKv(): Kv {
   const m = new Map<string, unknown>();
   return {
     get: async <T>(k: string) => m.get(k) as T | undefined,
+    getMany: async <T>(ks: string[]) => ks.map((k) => m.get(k) as T | undefined),
     set: async (k, v) => void m.set(k, structuredClone(v)),
     del: async (k) => void m.delete(k),
     keys: async () => [...m.keys()],
@@ -50,14 +51,32 @@ describe("play log", () => {
     expect(await log.rewinds()).toEqual([]);
   });
 
-  it("caps a quarter, dropping the oldest", async () => {
+  it("caps an import, keeping the newest", async () => {
     const log = createLog(memKv());
-    const many = Array.from({ length: MAX_PLAYS_PER_QUARTER }, (_, i) => play(`v${i}`, q1 + i * 1000, "takeout"));
-    await log.addImported("2026-Q1", many);
-    await log.append(play("new", q1 + MAX_PLAYS_PER_QUARTER * 1000));
+    const many = Array.from({ length: MAX_PLAYS_PER_QUARTER + 1 }, (_, i) => play(`v${i}`, q1 + i * 1000, "takeout"));
+    expect(await log.addImported("2026-Q1", many)).toBe(MAX_PLAYS_PER_QUARTER);
     const ps = await log.plays("2026-Q1");
     expect(ps).toHaveLength(MAX_PLAYS_PER_QUARTER);
     expect(ps[0].videoId).toBe("v1");
-    expect(ps[ps.length - 1].videoId).toBe("new");
+  });
+
+  it("writes one small record per play, never rereading the quarter", async () => {
+    const kv = memKv();
+    const log = createLog(kv);
+    for (let i = 0; i < 50; i++) await log.append(play(`v${i}`, q1 + i * 1000));
+    const get = vi.spyOn(kv, "get");
+    const set = vi.spyOn(kv, "set");
+    const keys = vi.spyOn(kv, "keys");
+    await log.append(play("one-more", q1 + 99_000));
+    expect(set).toHaveBeenCalledTimes(1);
+    expect(get).not.toHaveBeenCalled();
+    expect(keys).not.toHaveBeenCalled();
+  });
+
+  it("lists quarters that still hold raw plays", async () => {
+    const log = createLog(memKv());
+    await log.append(play("a", q1));
+    await log.append(play("b", q2));
+    expect((await log.openQuarters()).sort()).toEqual(["2026-Q1", "2026-Q2"]);
   });
 });
