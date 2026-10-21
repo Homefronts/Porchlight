@@ -4,7 +4,7 @@
 {
   type: "new",
   title: "Rewind",
-  text: "Every quarter, a full-screen recap of your listening: top artists, songs and albums, minutes listened and when you listen, coloured by the album art. Find it in the sidebar, and save any slide as an image.",
+  text: "Every quarter, a bold full-screen recap of your listening: minutes, top artists, songs and genres, and your listening personality, with your favourite songs playing underneath. Find it in the sidebar, and save any slide as an image.",
 },
 {
   type: "new",

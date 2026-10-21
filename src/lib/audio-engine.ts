@@ -11,7 +11,7 @@ import { toggleLiked } from "@/lib/like-actions";
 import { fetchRadio, fetchWatchQueueContinuation } from "@/lib/innertube/radio";
 import { prefetchStream, saveTrackMeta, streamUrlFor } from "@/lib/stream";
 import { AudioGraph, canSelectOutputDevice } from "@/lib/audio-graph";
-import { isHeldAi, usePlaybackStore, type QueueTrack } from "@/lib/store/playback";
+import { SNIPPET_FADE_SEC, isHeldAi, snippetWindow, usePlaybackStore, type QueueTrack } from "@/lib/store/playback";
 import { eqGains, usePlaybackSettings } from "@/lib/store/playback-settings";
 import { playbackAllowed, usePlaybackAllowed } from "@/lib/store/premium";
 import { useSettingsStore } from "@/lib/store/settings";
@@ -206,9 +206,10 @@ export function useAudioEngine() {
      * little ahead, then, once it has buffered, start the ramp.
      */
     const maybeCrossfade = (el: HTMLAudioElement) => {
-      const cf = usePlaybackSettings.getState().crossfadeSec;
-      if (cf <= 0 || fadeRef.current) return;
       const s = store();
+      // Rewind's snippet mode always crossfades, whatever the setting.
+      const cf = s.snippets ? SNIPPET_FADE_SEC : usePlaybackSettings.getState().crossfadeSec;
+      if (cf <= 0 || fadeRef.current) return;
       const nextIndex = s.index + 1;
       // Only a plain step to the next queued track is crossfaded; repeat
       // wraps and single-track loops go through `ended` as before.
@@ -219,7 +220,7 @@ export function useAudioEngine() {
       if (isHeldAi(s.queue[nextIndex])) return;
       const dur = el.duration;
       if (!Number.isFinite(dur) || dur <= 0) return;
-      const remaining = dur - el.currentTime;
+      const remaining = (s.snippets ? snippetWindow(dur)[1] : dur) - el.currentTime;
       const nextTrack = s.queue[nextIndex];
       const nextStreamId = resolveStreamId(
         nextTrack.videoId,
@@ -289,6 +290,7 @@ export function useAudioEngine() {
         src: next.src ?? "",
       };
       store().next();
+      if (store().snippets && Number.isFinite(to.duration)) to.currentTime = snippetWindow(to.duration)[0];
       graphRef.current?.resume();
       void to.play().catch(() => {});
 

@@ -43,18 +43,19 @@ export function quarterLabel(r: Rewind): string {
   return `${MONTHS[d.getMonth()]}–${MONTHS[d.getMonth() + 2]} ${d.getFullYear()}`;
 }
 
-/** Flat, loud colour per slide; `dark` means dark text on it. `hi` highlights numbers. */
-const THEME: Record<SlideSpec["kind"], { bg: string; dark?: true; hi: string }> = {
-  intro: { bg: "#ff4fa3", hi: "#ffd84d" },
+/** Flat, loud colour per slide; `dark` means dark text on it. `hi` highlights numbers.
+ *  Contrast is pinned by a test: text 4.5:1, highlights 3:1. */
+export const THEME: Record<SlideSpec["kind"], { bg: string; dark?: true; hi: string }> = {
+  intro: { bg: "#ff4fa3", dark: true, hi: "#111111" },
   setup: { bg: "#c6f432", dark: true, hi: "#111111" },
   minutes: { bg: "#2b4bff", hi: "#c6f432" },
-  variety: { bg: "#ff8a1f", dark: true, hi: "#ffffff" },
+  variety: { bg: "#ff8a1f", dark: true, hi: "#3a0ca3" },
   topArtist: { bg: "#7a2cff", hi: "#ffd84d" },
   artists: { bg: "#111111", hi: "#c6f432" },
-  songs: { bg: "#ffd84d", dark: true, hi: "#ff3b30" },
-  topAlbum: { bg: "#00a86b", hi: "#ffd84d" },
+  songs: { bg: "#ffd84d", dark: true, hi: "#c1121f" },
+  topAlbum: { bg: "#007a4d", hi: "#ffd84d" },
   personality: { bg: "#5ce1e6", dark: true, hi: "#111111" },
-  genres: { bg: "#ff3b30", hi: "#ffd84d" },
+  genres: { bg: "#c4161c", hi: "#ffd84d" },
   newArtists: { bg: "#c6f432", dark: true, hi: "#7a2cff" },
   summary: { bg: "#2b4bff", hi: "#2b4bff" },
 };
@@ -314,16 +315,17 @@ export function Slide({ s, r, current }: { s: SlideSpec; r: Rewind; current: boo
     >
       {s.kind === "intro" ? (
         <div className="absolute -left-[6cqw] -top-[3cqw] text-[27cqw] font-black uppercase leading-[0.8] tracking-[-0.06em] text-[#ffd84d]">
-          {Array.from({ length: 6 }, (_, i) => (
+          {/* Three rows only: the pattern stays above the words. */}
+          {Array.from({ length: 3 }, (_, i) => (
             <div key={i}>Rewind</div>
           ))}
         </div>
       ) : null}
-      {s.kind === "setup" ? <div className="absolute -right-[28cqw] top-[20cqw] size-[85cqw] rounded-full bg-[#111]" /> : null}
-      {s.kind === "genres" ? <div className="absolute -left-[22cqw] top-[16cqw] size-[70cqw] rounded-full bg-[#ffd84d]" /> : null}
+      {s.kind === "setup" ? <div className="absolute -right-[25cqw] -top-[25cqw] size-[80cqw] rounded-full bg-[#111]" /> : null}
+      {s.kind === "genres" ? <div className="absolute -left-[22cqw] -top-[20cqw] size-[70cqw] rounded-full bg-[#ffd84d]" /> : null}
       {s.kind === "newArtists" ? <div className="absolute -right-[20cqw] -top-[10cqw] size-[60cqw] rounded-full bg-[#7a2cff]" /> : null}
       {cover ? (
-        <img src={cover} alt="" className="absolute -right-[8cqw] top-[14cqw] aspect-square w-[62%] rotate-[8deg] rounded-[2cqw] object-cover shadow-[0_14px_40px_rgb(0_0_0/0.45)]" />
+        <img src={cover} alt="" className="absolute -right-[8cqw] top-[10cqw] aspect-square w-[56%] rotate-[8deg] rounded-[2cqw] object-cover shadow-[0_14px_40px_rgb(0_0_0/0.45)]" />
       ) : null}
       {/* Light grain over the flat colour. */}
       <div className="pointer-events-none absolute inset-0 opacity-20 [background:repeating-radial-gradient(circle_at_30%_30%,rgb(0_0_0/0.25)_0_1px,transparent_1px_3px)]" />

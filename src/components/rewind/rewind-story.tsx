@@ -8,7 +8,7 @@ import { Slide, slidesFor } from "./slides";
 const SLIDE_MS = 6000;
 
 /**
- * Full-screen, Wrapped-style story. Tap or click the right/left half, swipe,
+ * Full-screen, year-in-review style story. Tap or click the right/left half, swipe,
  * or use ←/→ to move; hold to pause; Esc closes. Only the current slide and
  * the next one are mounted, and nothing runs once it's closed. Drawn on <body>,
  * above the player bar; only the window's own title bar stays on top.

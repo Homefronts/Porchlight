@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { QueueTrack } from "@/lib/store/playback";
 import type { Ranked, Rewind } from "./types";
 
@@ -15,35 +15,60 @@ const mem = new Map<string, string>();
   },
 };
 
-const { usePlaybackStore } = await import("@/lib/store/playback");
+const { usePlaybackStore, snippetWindow } = await import("@/lib/store/playback");
 const { playSoundtrack } = await import("./soundtrack");
 
 const track = (videoId: string): QueueTrack => ({ videoId, title: videoId, thumbnails: [] });
 const song = (key: string): Ranked => ({ key, name: key, by: "Caamp", plays: 5, minutes: 15 });
 const rewind = { topSongs: [song("s1"), song("s2"), song("s3")] } as Rewind;
 
+beforeEach(() => vi.useFakeTimers());
+afterEach(() => vi.useRealTimers());
+
+describe("snippetWindow", () => {
+  it("starts a third in and plays 25 seconds, never past the end", () => {
+    expect(snippetWindow(200)).toEqual([60, 85]);
+    expect(snippetWindow(30)).toEqual([5, 30]);
+    expect(snippetWindow(10)).toEqual([0, 10]);
+  });
+});
+
 describe("playSoundtrack", () => {
-  it("plays the top songs, then puts your queue back where you left off", () => {
-    usePlaybackStore.setState({ queue: [track("a"), track("b")], index: 1, position: 42, playing: true, status: "ready" });
+  it("plays snippets of the top songs, fading in, then fades out and puts your queue back", async () => {
+    usePlaybackStore.setState({ queue: [track("a"), track("b")], index: 1, position: 42, playing: true, status: "ready", volume: 0.8 });
     const restore = playSoundtrack(rewind);
-    const s = usePlaybackStore.getState();
+    let s = usePlaybackStore.getState();
     expect(s.queue.map((t) => t.videoId).sort()).toEqual(["s1", "s2", "s3"]);
-    expect(s.playing).toBe(true);
+    expect(s.snippets).toBe(true);
+    expect(s.volume).toBe(0);
     expect(s.queue[0].artists).toEqual([{ name: "Caamp" }]);
 
-    restore();
-    expect(usePlaybackStore.getState()).toMatchObject({ index: 1, playing: true, status: "loading" });
-    expect(usePlaybackStore.getState().queue.map((t) => t.videoId)).toEqual(["a", "b"]);
+    // The first song loads: it jumps to its snippet and fades in.
+    usePlaybackStore.setState({ status: "ready", duration: 200 });
+    expect(usePlaybackStore.getState().pendingSeek).toBe(60);
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(usePlaybackStore.getState().volume).toBeCloseTo(0.8);
+
+    const done = restore();
+    await vi.advanceTimersByTimeAsync(3000);
+    await done;
+    s = usePlaybackStore.getState();
+    expect(s).toMatchObject({ index: 1, playing: true, status: "loading", snippets: false });
+    expect(s.queue.map((t) => t.videoId)).toEqual(["a", "b"]);
+    expect(s.volume).toBeCloseTo(0.8);
     // Once the old song has loaded again, it jumps back to where it was.
-    usePlaybackStore.setState({ status: "ready" });
+    usePlaybackStore.setState({ status: "ready", duration: 200 });
     expect(usePlaybackStore.getState().pendingSeek).toBe(42);
   });
 
-  it("stops the music if nothing was playing before", () => {
-    usePlaybackStore.setState({ queue: [], index: -1, position: 0, playing: false });
-    const restore = playSoundtrack(rewind);
-    restore();
-    expect(usePlaybackStore.getState().queue).toEqual([]);
-    expect(usePlaybackStore.getState().playing).toBe(false);
+  it("stops the music if nothing was playing before", async () => {
+    usePlaybackStore.setState({ queue: [], index: -1, position: 0, playing: false, volume: 0.5 });
+    const done = playSoundtrack(rewind)();
+    await vi.advanceTimersByTimeAsync(3000);
+    await done;
+    const s = usePlaybackStore.getState();
+    expect(s.queue).toEqual([]);
+    expect(s.playing).toBe(false);
+    expect(s.volume).toBe(0.5);
   });
 });

@@ -6,7 +6,7 @@ vi.mock("@/lib/rewind/palette", () => ({ coverBlobUrl: async () => null }));
 
 import type { Ranked, Rewind } from "@/lib/rewind/types";
 import { RewindStory } from "./rewind-story";
-import { personality, slidesFor } from "./slides";
+import { THEME, personality, slidesFor } from "./slides";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -64,5 +64,23 @@ describe("personality", () => {
     expect(personality(15)).toMatchObject({ name: "The Afternoon Rescuer", line: expect.stringContaining("3 PM") });
     expect(personality(0).name).toBe("The Night Owl");
     expect(personality(22).name).toBe("The Late Night Romantic");
+  });
+});
+
+describe("slide colours", () => {
+  const lum = (h: string) => {
+    const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  const contrast = (a: string, b: string) => {
+    const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m);
+    return (x + 0.05) / (y + 0.05);
+  };
+  it("keeps every slide readable: text 4.5:1, highlights 3:1", () => {
+    for (const [kind, t] of Object.entries(THEME)) {
+      if (kind === "summary") continue; // its words sit on a white card
+      expect(contrast(t.dark ? "#111111" : "#ffffff", t.bg), `${kind} text`).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(t.hi, t.bg), `${kind} highlight`).toBeGreaterThanOrEqual(3);
+    }
   });
 });

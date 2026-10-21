@@ -100,6 +100,9 @@ export type PlaybackState = {
   /** Set while a radio-button mix owns "Up next". */
   radio?: RadioMix;
 
+  /** Rewind is open: each track plays a short snippet, crossfading into the next. Not persisted. */
+  snippets: boolean;
+
   // Actions — queue
   playNow: (track: QueueTrack | ShelfItem, extras?: QueueTrack[]) => void;
   setQueue: (tracks: QueueTrack[], startIndex?: number) => void;
@@ -149,6 +152,16 @@ export type PlaybackState = {
   setShuffle: (on: boolean) => void;
   cycleRepeat: () => void;
 };
+
+/** Snippet mode (Rewind): this long from each track, fading over the last few seconds. */
+export const SNIPPET_SEC = 25;
+export const SNIPPET_FADE_SEC = 3;
+
+/** Where a snippet starts and ends: about a third in, where songs tend to get going. */
+export function snippetWindow(duration: number): [start: number, end: number] {
+  const start = Math.max(0, Math.min(duration * 0.3, duration - SNIPPET_SEC));
+  return [start, Math.min(duration, start + SNIPPET_SEC)];
+}
 
 export function fisherYates<T>(arr: readonly T[]): T[] {
   const result = arr.slice();
@@ -218,6 +231,7 @@ const playbackStateCreator: StateCreator<PlaybackState> = (set, get) => ({
   autoRadio: false,
   radioEpoch: 0,
   queueContinuation: undefined,
+  snippets: false,
 
   status: "idle",
   error: undefined,
