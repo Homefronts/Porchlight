@@ -131,7 +131,7 @@ function Body({ s, r }: { s: SlideSpec; r: Rewind }) {
       return (
         <>
           <Kicker>{quarterLabel(r)}</Kicker>
-          <Huge className="text-[24cqw]">Your quarter, on repeat.</Huge>
+          <Huge className="text-[17cqw]">Your quarter, on repeat.</Huge>
           <Line>Let's see what you've been up to.</Line>
         </>
       );
@@ -314,8 +314,8 @@ export function Slide({ s, r, current }: { s: SlideSpec; r: Rewind; current: boo
       style={{ background: t.bg, "--rw-hi": t.hi, visibility: current ? "visible" : "hidden" } as CSSProperties}
     >
       {s.kind === "intro" ? (
-        <div className="absolute -left-[6cqw] -top-[3cqw] text-[27cqw] font-black uppercase leading-[0.8] tracking-[-0.06em] text-[#ffd84d]">
-          {/* Three rows only: the pattern stays above the words. */}
+        <div className="absolute -left-[6cqw] -top-[3cqw] h-[58cqw] overflow-hidden text-[27cqw] font-black uppercase leading-[0.8] tracking-[-0.06em] text-[#ffd84d]">
+          {/* Fenced into the top third: never behind the words. */}
           {Array.from({ length: 3 }, (_, i) => (
             <div key={i}>Rewind</div>
           ))}
