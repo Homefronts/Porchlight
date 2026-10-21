@@ -30,13 +30,16 @@ export function RewindStory({
   const go = useCallback((d: number) => setI((n) => Math.max(0, Math.min(slides.length - 1, n + d))), [slides.length]);
 
   useEffect(() => {
+    // Capture phase + preventDefault: AppShell's Space-to-play skips handled keys.
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
       else if (e.key === "ArrowRight" || e.key === " ") go(1);
       else if (e.key === "ArrowLeft") go(-1);
+      else return;
+      e.preventDefault();
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, [go, onClose]);
 
   // Auto-advance, paused while held and on the last slide.

@@ -74,6 +74,11 @@ describe("findWatchHistory", () => {
     const bytes = zip("Takeout/YouTube and YouTube Music/history/watch-history.json", "[1,2]");
     expect(await findWatchHistory(bytes, "takeout.zip")).toEqual({ json: "[1,2]" });
   });
+  it("finds the history in a non-English export by its content", async () => {
+    const json = JSON.stringify([{ titleUrl: "https://music.youtube.com/watch?v=a", time: "2026-02-01T00:00:00Z" }]);
+    const bytes = zip("Takeout/YouTube und YouTube Music/Verlauf/Wiedergabeverlauf.json", json);
+    expect(await findWatchHistory(bytes, "takeout-20261020.zip")).toEqual({ json });
+  });
   it("takes a bare JSON file and rejects the HTML export", async () => {
     expect(await findWatchHistory(new TextEncoder().encode("[]"), "watch-history.json")).toEqual({ json: "[]" });
     expect(await findWatchHistory(new TextEncoder().encode("<html>"), "watch-history.html")).toEqual({ error: "html" });

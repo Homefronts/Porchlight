@@ -42,4 +42,16 @@ describe("RewindStory", () => {
     expect(onClose).toHaveBeenCalled();
     act(() => root.unmount());
   });
+
+  it("claims Space and the arrows, so the app's play/pause shortcut doesn't also fire", () => {
+    const shell = vi.fn((e: KeyboardEvent) => e.defaultPrevented);
+    window.addEventListener("keydown", shell); // like AppShell's, registered first
+    const el = document.createElement("div");
+    const root = createRoot(el);
+    act(() => root.render(createElement(RewindStory, { rewind, onClose: () => {} })));
+    act(() => void window.dispatchEvent(new KeyboardEvent("keydown", { key: " ", cancelable: true })));
+    expect(shell).toHaveLastReturnedWith(true);
+    window.removeEventListener("keydown", shell);
+    act(() => root.unmount());
+  });
 });

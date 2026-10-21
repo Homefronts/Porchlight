@@ -55,6 +55,16 @@ export function parseTakeout(json: unknown, q: QuarterId): Play[] {
 
 const HISTORY = /watch-history\.(json|html)$/i;
 
+/** A Takeout watch history, whatever the export's language calls the file. */
+function looksLikeHistory(text: string): boolean {
+  try {
+    const j = JSON.parse(text) as Entry[];
+    return Array.isArray(j) && j.slice(0, 20).some((e) => !!e?.titleUrl && !!e?.time);
+  } catch {
+    return false;
+  }
+}
+
 async function inflate(data: Uint8Array): Promise<Uint8Array> {
   const out = new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
   return new Uint8Array(await new Response(out).arrayBuffer());
@@ -75,6 +85,7 @@ async function fromZip(b: Uint8Array): Promise<Uint8Array | "html" | null> {
   let p = v.getUint32(eocd + 16, true);
   const count = v.getUint16(eocd + 10, true);
   let html = false;
+  const candidates: (() => Promise<Uint8Array>)[] = [];
   for (let n = 0; n < count && v.getUint32(p, true) === 0x02014b50; n++) {
     const method = v.getUint16(p + 10, true);
     const size = v.getUint32(p + 20, true);
@@ -83,15 +94,20 @@ async function fromZip(b: Uint8Array): Promise<Uint8Array | "html" | null> {
     const local = v.getUint32(p + 42, true);
     const name = new TextDecoder().decode(b.subarray(p + 46, p + 46 + nameLen));
     p += 46 + nameLen + extra;
+    const read = () => {
+      const start = local + 30 + v.getUint16(local + 26, true) + v.getUint16(local + 28, true);
+      const raw = b.subarray(start, start + size);
+      return method === 8 ? inflate(raw) : Promise.resolve(raw);
+    };
     const m = name.match(HISTORY);
-    if (!m) continue;
-    if (m[1].toLowerCase() === "html") {
-      html = true;
-      continue;
-    }
-    const start = local + 30 + v.getUint16(local + 26, true) + v.getUint16(local + 28, true);
-    const raw = b.subarray(start, start + size);
-    return method === 8 ? inflate(raw) : raw;
+    if (m?.[1].toLowerCase() === "html") html = true;
+    else if (m) return read();
+    // Non-English exports name the file in their language: keep YouTube JSONs to sniff.
+    else if (/youtube/i.test(name) && name.toLowerCase().endsWith(".json")) candidates.push(read);
+  }
+  for (const read of candidates) {
+    const data = await read();
+    if (looksLikeHistory(new TextDecoder().decode(data))) return data;
   }
   return html ? "html" : null;
 }
