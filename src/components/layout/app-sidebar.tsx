@@ -18,6 +18,7 @@ import {
   IconBookmarks,
   IconBookmarksFilled,
   IconDownload,
+  IconHistory,
   IconSettings,
   IconPlaylist,
   IconPinFilled,
@@ -117,6 +118,13 @@ const NAV_ITEMS = [
     label: "Downloads",
     icon: IconDownload,
     iconOn: IconDownload,
+  },
+  // Tabler has no filled history glyph either.
+  {
+    to: "/rewind",
+    label: "Rewind",
+    icon: IconHistory,
+    iconOn: IconHistory,
   },
 ] as const;
 
