@@ -95,7 +95,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
       {
         type: "new",
         title: "AI tags",
-        text: "Songs by known AI artists carry an AI tag wherever they appear. AI? marks an artist who only shares a name with a known AI act, and is never hidden.",
+        text: "Songs by known AI artists carry an AI tag wherever they appear. AI? marks an artist who only shares a name with a known AI act.",
       },
       {
         type: "new",
