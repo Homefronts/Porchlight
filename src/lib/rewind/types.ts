@@ -33,6 +33,10 @@ export type Rewind = {
   builtAt: number;
   minutes: number;
   plays: number;
+  /** Different songs played (counted plays). */
+  songs: number;
+  /** Of those, never heard in an earlier rewind; left out when there is none. */
+  newSongs?: number;
   topArtists: Ranked[];
   topSongs: Ranked[];
   topAlbums: Ranked[];
@@ -41,6 +45,10 @@ export type Rewind = {
   newArtists: Ranked[];
   /** Every artist heard this quarter, so later rewinds can tell who's new. */
   artistKeys: string[];
+  /** Every song heard this quarter, so later rewinds can tell what's new. */
+  songKeys?: string[];
+  /** From Last.fm tags of the top artists; missing when none were found. */
+  genres?: string[];
   /** Keyed by cover URL. */
   palette?: Record<string, Palette>;
 };

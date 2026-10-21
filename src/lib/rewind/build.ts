@@ -37,7 +37,7 @@ function top(m: Map<string, Acc>, n = TOP): Ranked[] {
 export function buildRewind(
   q: QuarterId,
   plays: Play[],
-  opts: { excludeAi: (p: Play) => boolean; knownArtists: Set<string>; now: number },
+  opts: { excludeAi: (p: Play) => boolean; knownArtists: Set<string>; knownSongs?: Set<string>; now: number },
 ): Rewind | null {
   const artists = new Map<string, Acc>();
   const songs = new Map<string, Acc>();
@@ -68,16 +68,20 @@ export function buildRewind(
 
   if (sec / 60 < MIN_MINUTES || songs.size < MIN_SONGS) return null;
   const fresh = new Map([...artists].filter(([k]) => !opts.knownArtists.has(k)));
+  const heard = [...songs.values()].filter((e) => e.plays > 0);
   return {
     quarter: q,
     builtAt: opts.now,
     minutes: Math.round(sec / 60),
     plays: counted,
+    songs: heard.length,
+    ...(opts.knownSongs && { newSongs: heard.filter((e) => !opts.knownSongs!.has(e.key)).length }),
     topArtists: top(artists),
     topSongs: top(songs),
     topAlbums: top(albums),
     hours: hours.map(Math.round),
     newArtists: top(fresh),
     artistKeys: [...artists.keys()],
+    songKeys: [...songs.keys()],
   };
 }

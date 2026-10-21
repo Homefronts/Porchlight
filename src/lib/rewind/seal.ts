@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { isAiBlocked } from "@/lib/ai/use-ai";
 import { fetchRadio } from "@/lib/innertube/radio";
 import { queryClient } from "@/lib/query-client";
@@ -6,7 +7,7 @@ import { buildRewind } from "./build";
 import { rewindLog, type RewindLog } from "./log";
 import { readPalette } from "./palette";
 import { quarterOf, type QuarterId } from "./quarter";
-import type { Palette, Play, Rewind } from "./types";
+import type { Palette, Play, Ranked, Rewind } from "./types";
 
 /** Only tracks that can make a top list are looked up, one at a time. */
 export const MAX_LOOKUPS = 25;
@@ -22,6 +23,8 @@ export type SealDeps = {
   pauseMs: number;
   /** Sealing is final, so it waits for a connection (covers, lookups). */
   online: () => boolean;
+  /** An artist's Last.fm tags, most used first. Without it there are no genres. */
+  artistTags?: (artist: string) => Promise<string[]>;
 };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -79,10 +82,38 @@ async function withPalettes(r: Rewind, deps: Pick<SealDeps, "readPalette">): Pro
   return { ...r, palette };
 }
 
-async function knownArtists(log: RewindLog, before: QuarterId): Promise<Set<string>> {
-  const known = new Set<string>();
-  for (const r of await log.rewinds()) if (r.quarter < before) for (const k of r.artistKeys ?? []) known.add(k);
-  return known;
+async function known(log: RewindLog, before: QuarterId) {
+  const earlier = (await log.rewinds()).filter((r) => r.quarter < before);
+  return {
+    knownArtists: new Set(earlier.flatMap((r) => r.artistKeys ?? [])),
+    // With no earlier rewind every song would look new, so the count is left out.
+    knownSongs: earlier.length ? new Set(earlier.flatMap((r) => r.songKeys ?? [])) : undefined,
+  };
+}
+
+// Tags people use that aren't genres: "seen live", "favorites", "2010s", ...
+const NOT_GENRE = /seen live|favou?rite|albums? i own|listen|^\d/i;
+
+/** Top genres: each artist's first few real tags, weighted by your minutes with them. */
+export function topGenres(artists: Ranked[], tags: Map<string, string[]>): string[] {
+  const score = new Map<string, number>();
+  for (const a of artists) {
+    const own = (tags.get(a.key) ?? [])
+      .map((t) => t.toLowerCase())
+      .filter((t) => !NOT_GENRE.test(t) && t !== a.name.toLowerCase())
+      .slice(0, 3);
+    for (const g of own) score.set(g, (score.get(g) ?? 0) + a.minutes);
+  }
+  return [...score].sort((x, y) => y[1] - x[1]).slice(0, 5).map(([g]) => g);
+}
+
+async function withGenres(r: Rewind, deps: Pick<SealDeps, "artistTags">): Promise<Rewind> {
+  if (!deps.artistTags) return r;
+  const artists = [...new Map([...r.topArtists, ...r.newArtists].map((a) => [a.key, a])).values()];
+  const tags = new Map<string, string[]>();
+  for (const a of artists) tags.set(a.key, await deps.artistTags(a.name).catch(() => []));
+  const genres = topGenres(artists, tags);
+  return genres.length ? { ...r, genres } : r;
 }
 
 /** Build a quarter's rewind without saving it (also the "so far" preview). */
@@ -90,8 +121,8 @@ export async function previewQuarter(q: QuarterId, deps: SealDeps): Promise<Rewi
   const plays = await deps.log.plays(q);
   if (!plays.length) return null;
   await fillMissing(plays, deps);
-  const r = buildRewind(q, plays, { excludeAi: deps.excludeAi, knownArtists: await knownArtists(deps.log, q), now: deps.now() });
-  return r && withPalettes(r, deps);
+  const r = buildRewind(q, plays, { excludeAi: deps.excludeAi, ...(await known(deps.log, q)), now: deps.now() });
+  return r && withPalettes(await withGenres(r, deps), deps);
 }
 
 /** Seal an ended quarter: build, save, drop its raw plays. Runs once per quarter. */
@@ -121,6 +152,8 @@ export const appSealDeps: SealDeps = {
   now: Date.now,
   pauseMs: 300,
   online: () => navigator.onLine,
+  // Only artist names go out, with no account; empty when the build has no Last.fm key.
+  artistTags: (artist) => invoke<string[]>("lastfm_artist_tags", { artist }),
 };
 
 /** Seal every quarter that has ended and still holds raw plays (oldest first). */

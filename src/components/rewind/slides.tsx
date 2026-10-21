@@ -6,11 +6,13 @@ import type { Palette, Ranked, Rewind } from "@/lib/rewind/types";
 export type SlideSpec =
   | { kind: "intro" }
   | { kind: "minutes" }
+  | { kind: "variety" }
   | { kind: "topArtist"; item: Ranked }
   | { kind: "artists"; items: Ranked[] }
   | { kind: "topSong"; item: Ranked }
   | { kind: "songs"; items: Ranked[] }
   | { kind: "topAlbum"; item: Ranked }
+  | { kind: "genres"; items: string[] }
   | { kind: "hours" }
   | { kind: "newArtists"; items: Ranked[] }
   | { kind: "summary" };
@@ -20,11 +22,13 @@ export function slidesFor(r: Rewind): SlideSpec[] {
   const s: (SlideSpec | false)[] = [
     { kind: "intro" },
     { kind: "minutes" },
+    r.songs > 0 && { kind: "variety" },
     !!r.topArtists[0] && { kind: "topArtist", item: r.topArtists[0] },
     r.topArtists.length > 1 && { kind: "artists", items: r.topArtists },
     !!r.topSongs[0] && { kind: "topSong", item: r.topSongs[0] },
     r.topSongs.length > 1 && { kind: "songs", items: r.topSongs },
     !!r.topAlbums[0] && { kind: "topAlbum", item: r.topAlbums[0] },
+    !!r.genres?.length && { kind: "genres", items: r.genres },
     r.hours.some((h) => h > 0) && { kind: "hours" },
     r.newArtists.length > 0 && { kind: "newArtists", items: r.newArtists },
     { kind: "summary" },
@@ -75,6 +79,7 @@ function useBlob(url: string | undefined): string | null {
 }
 
 const fmt = (n: number) => n.toLocaleString();
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 function Label({ children }: { children: ReactNode }) {
   return <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--rw-accent)]">{children}</div>;
@@ -117,9 +122,39 @@ function Body({ s, r }: { s: SlideSpec; r: Rewind }) {
     case "minutes":
       return (
         <>
-          <Label>You listened for</Label>
+          <Label>You listened to</Label>
           <Num>{fmt(r.minutes)}</Num>
-          <Small>minutes, across {fmt(r.plays)} plays</Small>
+          <Small>minutes of music this quarter</Small>
+        </>
+      );
+    case "variety":
+      return (
+        <>
+          <Label>You listened to</Label>
+          <Num>{fmt(r.songs)}</Num>
+          <Small>different songs</Small>
+          {r.newSongs ? (
+            <div className="mt-5 text-2xl font-bold">
+              <span className="text-[var(--rw-accent)]">{fmt(r.newSongs)}</span> of those were brand new to you!
+            </div>
+          ) : null}
+        </>
+      );
+    case "genres":
+      return (
+        <>
+          <Label>Your top genres</Label>
+          <Big>{cap(s.items[0])}</Big>
+          {s.items.length > 1 ? (
+            <ol className="mt-5 flex flex-col gap-2">
+              {s.items.slice(1).map((g, n) => (
+                <li key={g} className="flex items-baseline gap-3">
+                  <span className="w-6 text-right text-xl font-black text-[var(--rw-accent)]">{n + 2}</span>
+                  <span className="text-2xl font-bold">{cap(g)}</span>
+                </li>
+              ))}
+            </ol>
+          ) : null}
         </>
       );
     case "topArtist":

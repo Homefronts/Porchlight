@@ -458,6 +458,53 @@ pub async fn lastfm_user_info(user: String) -> Result<LastfmUserInfo, String> {
     })
 }
 
+/// Rewind's genres: an artist's top tags, most used first. Public data, no
+/// account; only the artist name is sent. Empty when this build has no key or
+/// Last.fm doesn't know the artist.
+#[tauri::command]
+pub async fn lastfm_artist_tags(artist: String) -> Result<Vec<String>, String> {
+    if API_KEY.is_empty() {
+        return Ok(Vec::new());
+    }
+    let mut params = BTreeMap::new();
+    params.insert("method".to_string(), "artist.getTopTags".to_string());
+    params.insert("api_key".to_string(), API_KEY.to_string());
+    params.insert("artist".to_string(), artist);
+    params.insert("autocorrect".to_string(), "1".to_string());
+    params.insert("format".to_string(), "json".to_string());
+
+    let body = reqwest::Client::new()
+        .get(API_ROOT)
+        .query(&params)
+        .send()
+        .await
+        .map_err(|e| format!("network error: {e}"))?
+        .text()
+        .await
+        .map_err(|e| format!("read error: {e}"))?;
+    // Error 6 = unknown artist: no tags, not a failure.
+    if check_api_error(&body).is_err() {
+        return Ok(Vec::new());
+    }
+
+    #[derive(Deserialize)]
+    struct Resp {
+        toptags: Tags,
+    }
+    #[derive(Deserialize)]
+    struct Tags {
+        #[serde(default)]
+        tag: Vec<Tag>,
+    }
+    #[derive(Deserialize)]
+    struct Tag {
+        name: String,
+    }
+    let resp: Resp =
+        serde_json::from_str(&body).map_err(|e| format!("unexpected getTopTags response: {e}"))?;
+    Ok(resp.toptags.tag.into_iter().take(8).map(|t| t.name).collect())
+}
+
 /// Tell Last.fm what's playing right now. Fire-and-forget: now-playing is
 /// ephemeral (Last.fm expires it on its own), so a failure is never queued.
 #[tauri::command]

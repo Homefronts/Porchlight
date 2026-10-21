@@ -4286,6 +4286,7 @@ pub fn run() {
             lastfm::lastfm_scrobble,
             lastfm::lastfm_love,
             lastfm::lastfm_flush,
+            lastfm::lastfm_artist_tags,
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {

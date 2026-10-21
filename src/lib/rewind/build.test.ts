@@ -57,6 +57,16 @@ describe("buildRewind", () => {
     expect(r.newArtists.map((a) => a.name)).toEqual(["Newbie"]);
   });
 
+  it("counts different songs, and new ones only when there is history to compare", () => {
+    const ps = [...filler, play("x", "Skip", { counted: false }), play("n", "Newbie")];
+    const first = buildRewind("2026-Q1", ps, opts)!;
+    expect(first.songs).toBe(MIN_SONGS + 1);
+    expect(first.newSongs).toBeUndefined();
+    const later = buildRewind("2026-Q1", ps, { ...opts, knownSongs: new Set(["f0", "f1"]) })!;
+    expect(later.newSongs).toBe(MIN_SONGS - 1);
+    expect(later.songKeys).toContain("x");
+  });
+
   it("counts imported plays with no length as 3.5 minutes", () => {
     const imported = Array.from({ length: MIN_SONGS }, (_, i) => play(`i${i}`, "Imp", { playedSec: 0, source: "takeout" }));
     const r = buildRewind("2026-Q1", [...imported, ...filler], opts)!;

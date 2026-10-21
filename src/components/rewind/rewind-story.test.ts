@@ -12,7 +12,7 @@ import { slidesFor } from "./slides";
 
 const r = (name: string): Ranked => ({ key: name, name, plays: 10, minutes: 30, thumb: `https://img/${name}` });
 const rewind: Rewind = {
-  quarter: "2026-Q3", builtAt: 0, minutes: 1284, plays: 400,
+  quarter: "2026-Q3", builtAt: 0, minutes: 1284, plays: 400, songs: 212,
   topArtists: [r("Tame Impala"), r("Billie Eilish")], topSongs: [r("Let It Happen"), r("Eventually")], topAlbums: [r("Currents")],
   hours: new Array(24).fill(1), newArtists: [], artistKeys: [],
 };
@@ -20,9 +20,10 @@ const rewind: Rewind = {
 describe("slidesFor", () => {
   it("follows the spec's order and skips slides with no data", () => {
     expect(slidesFor(rewind).map((s) => s.kind)).toEqual([
-      "intro", "minutes", "topArtist", "artists", "topSong", "songs", "topAlbum", "hours", "summary",
+      "intro", "minutes", "variety", "topArtist", "artists", "topSong", "songs", "topAlbum", "hours", "summary",
     ]);
     expect(slidesFor({ ...rewind, newArtists: [r("New")] }).map((s) => s.kind)).toContain("newArtists");
+    expect(slidesFor({ ...rewind, genres: ["folk"] }).map((s) => s.kind)).toContain("genres");
   });
 });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createLog, type Kv } from "./log";
-import { MAX_LOOKUPS, previewQuarter, sealEnded, sealQuarter } from "./seal";
+import { MAX_LOOKUPS, previewQuarter, sealEnded, sealQuarter, topGenres } from "./seal";
 import type { Play } from "./types";
 
 function memKv(): Kv {
@@ -91,5 +91,31 @@ describe("sealQuarter", () => {
     await log.addImported("2026-Q1", plays.map((p) => ({ ...p, title: "Angesehen: Song" })));
     const r = await previewQuarter("2026-Q1", deps(log, { lookup: async (id: string) => ({ title: `Real ${id}` }) }));
     expect(r!.topSongs[0].name).toMatch(/^Real /);
+  });
+});
+
+describe("topGenres", () => {
+  const a = (key: string, minutes: number) => ({ key, name: key, plays: 1, minutes });
+  it("weights each artist's tags by minutes and drops tags that aren't genres", () => {
+    const tags = new Map([
+      ["Caamp", ["folk", "indie folk", "seen live", "americana"]],
+      ["The Strokes", ["indie rock", "rock", "2000s"]],
+      ["Pierce The Veil", ["post-hardcore", "Pierce the Veil"]],
+    ]);
+    expect(topGenres([a("Caamp", 300), a("The Strokes", 100), a("Pierce The Veil", 50)], tags)).toEqual([
+      "folk", "indie folk", "americana", "indie rock", "rock",
+    ]);
+  });
+});
+
+describe("previewQuarter genres", () => {
+  it("adds genres from the top artists' tags, and skips them when lookups fail", async () => {
+    const log = createLog(memKv());
+    await log.addImported("2026-Q1", plays);
+    const base = { log, lookup: async () => null, readPalette: async () => null, excludeAi: () => false, now: () => t0, pauseMs: 0, online: () => true };
+    const r = await previewQuarter("2026-Q1", { ...base, artistTags: async () => ["shoegaze"] });
+    expect(r!.genres).toEqual(["shoegaze"]);
+    const off = await previewQuarter("2026-Q1", { ...base, artistTags: async () => Promise.reject(new Error("offline")) });
+    expect(off!.genres).toBeUndefined();
   });
 });
