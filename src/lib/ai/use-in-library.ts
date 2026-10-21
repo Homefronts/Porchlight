@@ -21,6 +21,9 @@ export function useInLibrary(kind: "playlist" | "album", id: string, owned = fal
   });
   const downloaded = useDownloadsStore((s) => !!s.index.collections[bare(id)] || !!s.index.collections[id]);
   if (owned || downloaded || bare(id) === "LM") return true;
+  // Hold (not hide) until we know: AI rows would vanish, then reappear greyed.
+  // A disabled query stays pending, so only wait on it when signed in.
+  if (loggedIn.isPending || (loggedIn.data === true && lib.isPending)) return true;
   const want = bare(id);
   return !!lib.data?.some((sec) => sec.items.some((i) => bare(i.id) === want));
 }
