@@ -50,7 +50,6 @@ Ideas for future Plus releases, roughly in order. Not promises.
 - [ ] **Share your AI marks** — turn your Mark as AI choices into a one-click report to the community list.
 - [ ] **Listening stats** — your top artists and songs this month.
 - [ ] **Sleep timer** — stop after X minutes or at the end of the current song.
-- [ ] **AI filter polish** — recheck artists sooner when Spotify was unreachable, keep mix songs when a refill page fails, and don't treat library items as "not in library" while it loads.
 
 > **All the credit for the app itself goes to [George Shyshov (NUber)](https://github.com/NUber-dev)**,
 > who designed and built YTubic. Plus only adds features on top. If you enjoy it,

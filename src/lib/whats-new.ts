@@ -56,6 +56,33 @@ export type WhatsNewEntry = {
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.7.2",
+    date: "October 21, 2026",
+    summary: "AI filter fixes",
+    changes: [
+      {
+        type: "fixed",
+        title: "Check now",
+        text: "The update button now tells you when an update is already downloading, ready to install, or being checked, instead of doing nothing.",
+      },
+      {
+        type: "fixed",
+        title: "AI look-alikes",
+        text: "Copycats of AI acts whose own name already ends in a word like \"Music\" are now hidden and tagged too.",
+      },
+      {
+        type: "fixed",
+        title: "AI mixes",
+        text: "With AI music off, a network hiccup while topping up a mix no longer throws away the songs it already found.",
+      },
+      {
+        type: "fixed",
+        title: "Your library",
+        text: "AI songs on your own playlists and albums no longer vanish for a moment and pop back greyed out while your library loads.",
+      },
+    ],
+  },
+  {
     version: "0.7.1",
     date: "October 20, 2026",
     summary: "Steadier updates",
