@@ -44,7 +44,12 @@ export async function refillFiltered<T>(
   const tracks = first.filter(keep);
   let continuation = token;
   for (let i = 0; i < max && continuation && tracks.length < MIN_AFTER_FILTER; i++) {
-    const page = await fetchMore(continuation);
+    let page;
+    try {
+      page = await fetchMore(continuation);
+    } catch {
+      break; // keep what survived; the kept token lets the next load retry
+    }
     tracks.push(...page.tracks.filter(keep));
     continuation = page.continuation;
   }

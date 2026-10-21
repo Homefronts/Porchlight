@@ -70,4 +70,12 @@ describe("refillFiltered", () => {
     expect(r.tracks.map((t) => t.id)).toEqual(["x"]);
     expect(r.continuation).toBeUndefined();
   });
+  it("keeps what it has when a refill page fails", async () => {
+    const fetchMore = vi.fn(async () => {
+      throw new Error("offline");
+    });
+    const r = await refillFiltered([song("k", "UCreal")], "t0", fetchMore, keep);
+    expect(r.tracks.map((t) => t.id)).toEqual(["k"]);
+    expect(r.continuation).toBe("t0");
+  });
 });
