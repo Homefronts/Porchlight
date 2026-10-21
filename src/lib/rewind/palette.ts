@@ -26,8 +26,27 @@ const saturation = ([r, g, b]: Rgb) => {
   return max === 0 ? 0 : (max - Math.min(r, g, b)) / max;
 };
 
-const BLACK: Rgb = [0, 0, 0];
 const WHITE: Rgb = [255, 255, 255];
+
+function hueSat([r, g, b]: Rgb): [number, number] {
+  const [R, G, B] = [r / 255, g / 255, b / 255];
+  const max = Math.max(R, G, B);
+  const d = max - Math.min(R, G, B);
+  if (!d) return [0, 0];
+  const h = max === R ? ((G - B) / d) % 6 : max === G ? (B - R) / d + 2 : (R - G) / d + 4;
+  return [(h * 60 + 360) % 360, d / (1 - Math.abs(max + max - d - 1))];
+}
+
+function fromHsl(h: number, s: number, l: number): Rgb {
+  const a = s * Math.min(l, 1 - l);
+  return [0, 8, 4].map((n) => {
+    const k = (n + h / 30) % 12;
+    return 255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)));
+  }) as Rgb;
+}
+
+/** Lightness of the mockup's ramp: bright behind the cover, near-black under the text. */
+const RAMP = [0.5, 0.27, 0.08];
 
 /** Background ramp from the cover's main colour, plus a readable accent. */
 export function paletteFromPixels(rgba: Uint8ClampedArray): Palette {
@@ -48,13 +67,17 @@ export function paletteFromPixels(rgba: Uint8ClampedArray): Palette {
   const colours = [...buckets.values()]
     .map((b) => ({ n: b.n, c: b.sum.map((v) => v / b.n) as Rgb }))
     .sort((a, b) => b.n - a.n);
-  const main = colours[0]?.c ?? [40, 40, 40];
-  const bg: Palette["bg"] = [hex(mix(main, BLACK, 0.3)), hex(mix(main, BLACK, 0.65)), hex(mix(main, BLACK, 0.88))];
+  const colourful = colours.filter((x) => x.n >= total * 0.02 && saturation(x.c) >= 0.25);
+  const vividness = (x: { c: Rgb }) => saturation(x.c) * Math.max(...x.c);
+  // Background: the colour that fills the most of the cover, counting only colourful
+  // pixels (album art is often mostly black or white). A grey cover stays grey.
+  const base = [...colourful].sort((a, b) => b.n * vividness(b) - a.n * vividness(a))[0];
+  const [h, s] = hueSat(base?.c ?? colours[0]?.c ?? [40, 40, 40]);
+  const sat = base ? Math.min(Math.max(s, 0.55), 0.8) : s;
+  const bg = RAMP.map((l) => hex(fromHsl(h, sat, l))) as Palette["bg"];
 
-  // Most vivid colour with a real share of the image.
-  const vivid = colours
-    .filter((x) => x.n >= total * 0.02 && saturation(x.c) >= 0.25)
-    .sort((a, b) => saturation(b.c) * Math.max(...b.c) - saturation(a.c) * Math.max(...a.c))[0];
+  // Accent: the most vivid colour with a real share of the image.
+  const vivid = [...colourful].sort((a, b) => vividness(b) - vividness(a))[0];
   if (!vivid) return { bg, accent: "#ffffff" };
   let accent = vivid.c;
   for (let t = 0.15; contrast(hex(accent), bg[2]) < 3 && t <= 1; t += 0.15) accent = mix(vivid.c, WHITE, t);

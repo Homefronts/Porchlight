@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useReducedMotion } from "motion/react";
 import { IconPhotoDown, IconX } from "@tabler/icons-react";
 import type { Rewind } from "@/lib/rewind/types";
@@ -9,7 +10,8 @@ const SLIDE_MS = 6000;
 /**
  * Full-screen, Wrapped-style story. Tap or click the right/left half, swipe,
  * or use ←/→ to move; hold to pause; Esc closes. Only the current slide and
- * the next one are mounted, and nothing runs once it's closed.
+ * the next one are mounted, and nothing runs once it's closed. Drawn on <body>,
+ * above the player bar; only the window's own title bar stays on top.
  */
 export function RewindStory({
   rewind,
@@ -66,7 +68,7 @@ export function RewindStory({
 
   const s = slides[i];
   const next = slides[i + 1];
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 bg-black" role="dialog" aria-modal="true" aria-label="Rewind">
       <div
         ref={stage}
@@ -80,7 +82,7 @@ export function RewindStory({
         {next ? <Slide s={next} r={rewind} current={false} /> : null}
       </div>
 
-      <div className="pointer-events-none absolute inset-x-4 top-3 flex gap-1">
+      <div className="pointer-events-none absolute inset-x-4 top-[calc(var(--titlebar-h)+0.5rem)] flex gap-1">
         {slides.map((_, n) => (
           <div key={n} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/30">
             <div
@@ -95,7 +97,7 @@ export function RewindStory({
         ))}
       </div>
 
-      <div className="absolute right-3 top-6 flex gap-1">
+      <div className="absolute right-3 top-[calc(var(--titlebar-h)+1.25rem)] flex gap-1">
         {onSave ? (
           <button
             type="button"
@@ -119,6 +121,7 @@ export function RewindStory({
         </button>
       </div>
       <style>{"@keyframes rw-fill { from { width: 0% } to { width: 100% } }"}</style>
-    </div>
+    </div>,
+    document.body,
   );
 }

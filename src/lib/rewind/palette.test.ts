@@ -18,6 +18,15 @@ describe("paletteFromPixels", () => {
     expect(b).toBeGreaterThan(g);
     expect(contrast(p.accent, p.bg[2])).toBeGreaterThanOrEqual(3);
   });
+  it("colours a mostly black cover from its colourful part, bright like the mockup", () => {
+    const p = paletteFromPixels(image([...Array(9).fill([8, 8, 8]), [200, 40, 60]]));
+    const [r, g, b] = rgb(p.bg[0]);
+    expect(r).toBeGreaterThan(150);
+    expect(r).toBeGreaterThan(g + 80);
+    expect(r).toBeGreaterThan(b + 80);
+    // The middle of the slide is still a colour, not black.
+    expect(Math.max(...rgb(p.bg[1]))).toBeGreaterThan(80);
+  });
   it("falls back to a white accent on a grey cover", () => {
     expect(paletteFromPixels(image([[128, 128, 128]])).accent).toBe("#ffffff");
   });

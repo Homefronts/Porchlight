@@ -27,17 +27,19 @@ describe("slidesFor", () => {
 });
 
 describe("RewindStory", () => {
-  it("steps with the arrow keys, closes on Escape, and keeps at most two slides mounted", () => {
+  it("covers the whole window, steps with the arrow keys, closes on Escape, keeps at most two slides mounted", () => {
     const onClose = vi.fn();
     const el = document.createElement("div");
     document.body.append(el);
     const root = createRoot(el);
     act(() => root.render(createElement(RewindStory, { rewind, onClose })));
-    const current = () => el.querySelector("[data-slide-current]")?.getAttribute("data-slide-current");
+    // On <body>, not inside the page, so the player bar can't sit on top of it.
+    expect(document.querySelector("[role=dialog]")?.parentElement).toBe(document.body);
+    const current = () => document.querySelector("[data-slide-current]")?.getAttribute("data-slide-current");
     expect(current()).toBe("intro");
     act(() => void window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" })));
     expect(current()).toBe("minutes");
-    expect(el.querySelectorAll("[data-slide]").length).toBeLessThanOrEqual(2);
+    expect(document.querySelectorAll("[data-slide]").length).toBeLessThanOrEqual(2);
     act(() => void window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
     expect(onClose).toHaveBeenCalled();
     act(() => root.unmount());
