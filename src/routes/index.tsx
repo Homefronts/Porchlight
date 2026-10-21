@@ -20,6 +20,7 @@ import {
   RefreshCwIcon,
   SlidersHorizontalIcon,
 } from "lucide-react";
+import { RewindHomeCard } from "@/components/rewind/open-rewind";
 
 const HOME_KEY = ["home", "v2"];
 
@@ -187,6 +188,7 @@ function HomePage() {
       />
 
       <div className="flex flex-col gap-8 pt-3">
+        <RewindHomeCard />
         {error ? (
           <div className="flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm">
             <AlertCircleIcon className="size-5 shrink-0 text-destructive" />

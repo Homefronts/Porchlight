@@ -30,6 +30,7 @@ import {
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ListeningHistoryGroup } from "@/components/rewind/listening-history-group";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -73,6 +74,7 @@ export function StorageTab() {
           <AutoCleanRow loggedIn={!!loggedIn.data} />
         </Group>
         <CoverCacheGroup />
+        <ListeningHistoryGroup />
         {/* The track list is intentionally the last block on the tab. */}
         <CacheGroupGate loggedIn={!!loggedIn.data} />
       </TabPane>

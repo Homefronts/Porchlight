@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { QuarterId } from "@/lib/rewind/quarter";
 
 export type CloseButtonAction = "tray" | "quit";
 export type CacheAutoCleanPeriod = "off" | "daily" | "weekly" | "monthly";
@@ -71,6 +72,8 @@ type State = {
   aiNoticeSeen: boolean;
   /** Log plays on this computer for Rewind. Off only pauses logging. */
   rewindHistory: boolean;
+  /** Newest rewind the user has opened; hides the Home card. */
+  seenRewind: QuarterId | null;
   setCloseAction: (v: CloseButtonAction) => void;
   setCacheAutoClean: (v: CacheAutoCleanPeriod) => void;
   markCacheCleaned: () => void;
@@ -87,6 +90,7 @@ type State = {
   setAiMusic: (v: boolean) => void;
   markAiNoticeSeen: () => void;
   setRewindHistory: (v: boolean) => void;
+  markRewindSeen: (q: QuarterId) => void;
   /** Store the account returned by the connect flow and enable scrobbling. */
   setLastfmSession: (username: string, sessionKey: string) => void;
   /** Forget the connected account and stop scrobbling. */
@@ -120,6 +124,7 @@ export const useSettingsStore = create<State>()(
       aiMusic: true,
       aiNoticeSeen: false,
       rewindHistory: true,
+      seenRewind: null,
       setCloseAction: (closeAction) => set({ closeAction }),
       setCacheAutoClean: (cacheAutoClean) => set({ cacheAutoClean }),
       markCacheCleaned: () => set({ lastCacheCleanAt: Date.now() }),
@@ -138,6 +143,7 @@ export const useSettingsStore = create<State>()(
       setAiMusic: (aiMusic) => set({ aiMusic }),
       markAiNoticeSeen: () => set({ aiNoticeSeen: true }),
       setRewindHistory: (rewindHistory) => set({ rewindHistory }),
+      markRewindSeen: (seenRewind) => set({ seenRewind }),
       setLastfmSession: (lastfmUsername, lastfmSessionKey) =>
         set({ lastfmUsername, lastfmSessionKey, lastfmEnabled: true }),
       clearLastfmSession: () =>

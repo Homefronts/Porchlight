@@ -2962,6 +2962,27 @@ async fn pick_cache_folder(app: tauri::AppHandle) -> Option<String> {
         .map(|p| p.display().to_string())
 }
 
+/// Rewind's "save slide as image": native save dialog, then write the PNG.
+/// `Ok(false)` when the user cancels.
+#[tauri::command]
+async fn save_png(app: tauri::AppHandle, bytes: Vec<u8>, name: String) -> Result<bool, String> {
+    use tauri_plugin_dialog::DialogExt;
+    let picked = tauri::async_runtime::spawn_blocking(move || {
+        app.dialog()
+            .file()
+            .add_filter("PNG image", &["png"])
+            .set_file_name(&name)
+            .blocking_save_file()
+    })
+    .await
+    .map_err(|e| e.to_string())?;
+    let Some(path) = picked.and_then(|f| f.into_path().ok()) else {
+        return Ok(false);
+    };
+    std::fs::write(&path, bytes).map_err(|e| format!("save image: {e}"))?;
+    Ok(true)
+}
+
 #[derive(serde::Serialize)]
 struct CacheEntry {
     #[serde(rename = "videoId")]
@@ -4207,6 +4228,7 @@ pub fn run() {
         .manage(discord::spawn())
         .manage(lastfm::LastfmState::default())
         .invoke_handler(tauri::generate_handler![
+            save_png,
             ensure_ytdlp,
             check_ytdlp_update,
             resolve_stream_ytdlp,
