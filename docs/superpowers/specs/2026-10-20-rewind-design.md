@@ -126,6 +126,32 @@ Rewind must not change that.
   with reduced motion off, but transitions turn into cuts with it on).
 - Keep `whats-new.ts` and the README in step when it ships.
 
+## Performance (decided by the user: "even when this is running it should be performant")
+
+Rewind is one more thing running on the user's PC, so it must cost close to nothing
+when you're not looking at it.
+
+- **Logging:** no new timer. Reuse the one ticking-while-playing pattern (or share
+  the scrobbler's), nothing runs while paused, and the log is written **once per
+  track** (when it ends or changes), never per second. No React re-renders from it.
+- **Storage writes** go through IndexedDB asynchronously; a failed write is dropped
+  quietly and never blocks playback.
+- **Building a rewind** happens once, lazily: when the quarter has ended and the app
+  is idle (`requestIdleCallback`), or when the user opens it, never at startup on the
+  hot path. It works on at most one quarter of plays, so it must finish well under
+  a second; if it can't, it yields between chunks.
+- **Takeout import** parses in a Web Worker (or in chunks that yield), so the UI and
+  audio never stutter on a big file; it shows progress and can be cancelled.
+- **Online lookups** for missing metadata are capped and rate-limited, only for
+  tracks that make a top list, and cached.
+- **Slides:** only the current slide and the next are mounted; covers load lazily
+  at the size shown; animations use `transform`/`opacity` only; nothing renders or
+  animates while Rewind is closed.
+- **Colour extraction** runs once per cover on a small downscaled image and is cached
+  with the rewind.
+- Budget for the plan's tests: logging adds no measurable CPU while playing, and
+  building a quarter of 5,000 plays takes under 200 ms.
+
 ## Left to the builder
 
 - How the cover colours are read (canvas on the artwork, falling back to a
