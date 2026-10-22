@@ -63,8 +63,8 @@ async function fillMissing(plays: Play[], deps: SealDeps): Promise<void> {
 async function known(log: RewindLog, before: QuarterId) {
   const earlier = (await log.rewinds()).filter((r) => r.quarter < before);
   return {
-    knownArtists: new Set(earlier.flatMap((r) => r.artistKeys ?? [])),
-    // With no earlier rewind every song would look new, so the count is left out.
+    // With no earlier rewind every artist and song would look new, so both are left out.
+    knownArtists: earlier.length ? new Set(earlier.flatMap((r) => r.artistKeys ?? [])) : undefined,
     knownSongs: earlier.length ? new Set(earlier.flatMap((r) => r.songKeys ?? [])) : undefined,
   };
 }

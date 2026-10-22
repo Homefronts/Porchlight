@@ -53,6 +53,10 @@ describe("buildRewind", () => {
     expect(buildRewind("2026-Q1", [play("a", "A")], opts)).toBeNull();
   });
 
+  it("lists no new artists on a first rewind, with nothing to compare against", () => {
+    expect(buildRewind("2026-Q1", [...filler, play("n", "Newbie")], { ...opts, knownArtists: undefined })!.newArtists).toEqual([]);
+  });
+
   it("lists only artists not heard in earlier rewinds as new", () => {
     const r = buildRewind("2026-Q1", [...filler, play("n", "Newbie")], { ...opts, knownArtists: new Set(["UC-Filler"]) })!;
     expect(r.newArtists.map((a) => a.name)).toEqual(["Newbie"]);
