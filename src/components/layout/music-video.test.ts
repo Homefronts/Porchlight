@@ -6,7 +6,7 @@ vi.mock("@/lib/store/playback", () => ({ usePlaybackStore: { getState: vi.fn(), 
 vi.mock("@/lib/store/premium", () => ({ usePlaybackAllowed: vi.fn() }));
 vi.mock("@/lib/store/track-source", () => ({ useTrackSourceStore: vi.fn() }));
 
-const { layersFor, syncPicture } = await import("./music-video");
+const { layersFor, stageSwitch, syncPicture } = await import("./music-video");
 
 const picture = (over: Partial<{ readyState: number; currentTime: number; paused: boolean; seeking: boolean }> = {}) => ({
   readyState: 4, currentTime: 10, paused: true, seeking: false, play: vi.fn(async () => {}), pause: vi.fn(), ...over,
@@ -85,5 +85,23 @@ describe("layersFor", () => {
   it("settles once the new one has taken over", () => {
     const at1080 = { id: "v", url: "1080" };
     expect(layersFor(at1080, "v", "1080")).toEqual({ front: at1080, back: null });
+  });
+});
+
+describe("stageSwitch", () => {
+  const frameA = { id: "frame A" };
+  const frameB = { id: "frame B" };
+  it("crossfades only once the new destination exists", () => {
+    expect(stageSwitch(frameA, frameB)).toBe("crossfade");
+    expect(stageSwitch(frameA, "immersive")).toBe("crossfade");
+    expect(stageSwitch("immersive", frameB)).toBe("crossfade");
+  });
+  it("waits while a new layout's frame hasn't reported yet (the old fade, pop, fade)", () => {
+    expect(stageSwitch("immersive", null)).toBe("none");
+    expect(stageSwitch(frameA, null)).toBe("none");
+  });
+  it("does nothing when nothing moved, and doesn't crossfade on the first arrival", () => {
+    expect(stageSwitch(frameA, frameA)).toBe("none");
+    expect(stageSwitch(null, frameA)).toBe("first");
   });
 });

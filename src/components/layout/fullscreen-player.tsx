@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { fetchLikedSongs } from "@/lib/innertube/library";
 import { toggleDisliked, toggleLiked } from "@/lib/like-actions";
 import { useDislikesStore } from "@/lib/store/dislikes";
-import { AnimatePresence, motion, useAnimate } from "motion/react";
+import { AnimatePresence, motion, useAnimate, useReducedMotion } from "motion/react";
 import { useTheme } from "next-themes";
 import {
   PlayIcon,
@@ -40,7 +40,7 @@ import {
   repeatLabel,
   useITunesCover,
 } from "@/components/layout/player-bar";
-import { MusicVideo, useMusicVideoId, vlog } from "@/components/layout/music-video";
+import { MusicVideo, stageSwitch, useMusicVideoId, vlog } from "@/components/layout/music-video";
 import { PlayerMoreMenu } from "@/components/layout/player-more-menu";
 import { QueuePopover } from "@/components/layout/queue-panel";
 import { LyricsSourceButton } from "@/components/layout/lyrics-view";
@@ -133,6 +133,8 @@ function FullscreenView({ track }: { track: QueueTrack }) {
 
   const iTunesCover = useITunesCover(track);
   const videoId = useMusicVideoId(track);
+  // Reduce Motion: layouts appear without fading in.
+  const fadeIn = useReducedMotion() ? {} : FADE_IN;
   // Where the VideoStage sits: the view, and in the boxed layouts the Cover frame.
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   const [slot, setSlot] = useState<HTMLDivElement | null>(null);
@@ -216,7 +218,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
             over a full-screen one (it keeps the title readable). */}
         <div
           aria-hidden
-          className="absolute inset-0 transition-opacity duration-500"
+          className="absolute inset-0 transition-opacity duration-500 motion-reduce:transition-none"
           style={{ background: "var(--g9d)", opacity: immersive ? 0 : 1 }}
         />
         {videoId ? (
@@ -224,7 +226,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
         ) : null}
         <div
           aria-hidden
-          className="absolute inset-0 transition-opacity duration-500"
+          className="absolute inset-0 transition-opacity duration-500 motion-reduce:transition-none"
           style={{
             background: "linear-gradient(180deg, var(--g9a) 0%, var(--g9b) 34%, var(--g9c) 100%)",
             opacity: immersive ? 1 : 0,
@@ -282,7 +284,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
 
           {/* Body, one of three. */}
           {shown === "cover" ? (
-            <motion.div {...FADE_IN} className="flex min-h-0 flex-1 flex-col items-center justify-center gap-[26px] py-2.5">
+            <motion.div {...fadeIn} className="flex min-h-0 flex-1 flex-col items-center justify-center gap-[26px] py-2.5">
               <Cover
                 track={track}
                 override={iTunesCover}
@@ -303,7 +305,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
           ) : null}
 
           {shown === "lyrics" ? (
-            <motion.div {...FADE_IN} className="mx-auto flex min-h-0 w-full max-w-[1020px] flex-1 items-center gap-14 py-3.5">
+            <motion.div {...fadeIn} className="mx-auto flex min-h-0 w-full max-w-[1020px] flex-1 items-center gap-14 py-3.5">
               <div className="flex w-[340px] shrink-0 flex-col gap-5">
                 <Cover
                   track={track}
@@ -327,7 +329,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
           ) : null}
 
           {immersive ? (
-            <motion.div {...FADE_IN} className="flex min-h-0 flex-1 flex-col justify-end gap-2.5 pb-5 pt-3.5">
+            <motion.div {...fadeIn} className="flex min-h-0 flex-1 flex-col justify-end gap-2.5 pb-5 pt-3.5">
               <span className="text-[56px] font-bold leading-[1.02] tracking-[-0.035em] text-(--fs-title) [text-wrap:pretty]">
                 {track.title}
               </span>
@@ -640,6 +642,7 @@ function VideoStage({
   const [box, setBox] = useState<StageBox | null>(null);
   const [ghost, setGhost] = useState<{ id: number; canvas: HTMLCanvasElement; box: StageBox | null } | null>(null);
   const [stage, animate] = useAnimate<HTMLDivElement>();
+  const reduce = useReducedMotion();
   const boxRef = useRef<StageBox | null>(null);
   // Where the video goes; null while a boxed layout's frame hasn't reported yet.
   const target = immersive ? "immersive" : (slot?.isConnected ? slot : null);
@@ -652,15 +655,15 @@ function VideoStage({
   });
 
   useLayoutEffect(() => {
-    if (!target || lastTarget.current === target) return;
-    const first = lastTarget.current === null;
+    const step = stageSwitch(lastTarget.current, target);
+    if (step === "none") return;
     lastTarget.current = target;
-    if (first) return; // opening onto the video: nothing to cross from
+    if (step === "first" || reduce) return; // Reduce Motion: a plain cut
     const canvas = snapshot(stage.current);
     vlog(`fullscreen: switch to ${immersive ? "immersive" : "frame"}, snapshot ${canvas ? "taken" : "skipped"}`);
     if (canvas) setGhost({ id: Date.now(), canvas, box: boxRef.current });
     if (stage.current) void animate(stage.current, { opacity: [0, 1], scale: [0.96, 1] }, SWITCH);
-  }, [target, immersive, animate, stage]);
+  }, [target, immersive, animate, stage, reduce]);
 
   useLayoutEffect(() => {
     if (immersive) return setBox(null);

@@ -65,6 +65,17 @@ export function useMusicVideoId(track: QueueTrack | undefined): string | undefin
   });
 }
 
+/**
+ * What fullscreen's video stage does when its destination (`target`: a cover
+ * frame, or "immersive") changes: crossfade once the new destination exists;
+ * nothing while a new layout's frame hasn't reported yet (null), or when it
+ * didn't move; no crossfade on the first arrival (nothing to cross from).
+ */
+export function stageSwitch(last: unknown, target: unknown): "none" | "first" | "crossfade" {
+  if (!target || last === target) return "none";
+  return last === null ? "first" : "crossfade";
+}
+
 type Layer = { id: string; url: string };
 
 /**
