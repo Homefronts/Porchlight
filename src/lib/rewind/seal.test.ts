@@ -113,7 +113,31 @@ describe("previewQuarter genres", () => {
     const base = { log, lookup: async () => null, excludeAi: () => false, now: () => t0, pauseMs: 0, online: () => true };
     const r = await previewQuarter("2026-Q1", { ...base, artistTags: async () => ["shoegaze"] });
     expect(r!.genres).toEqual(["shoegaze"]);
-    const off = await previewQuarter("2026-Q1", { ...base, artistTags: async () => Promise.reject(new Error("offline")) });
+    // Nothing cached yet (a fresh log) and the lookups fail: no genres, no crash.
+    const fresh = createLog(memKv());
+    await fresh.addImported("2026-Q1", plays);
+    const off = await previewQuarter("2026-Q1", { ...base, log: fresh, artistTags: async () => Promise.reject(new Error("offline")) });
     expect(off!.genres).toBeUndefined();
+  });
+});
+
+describe("genre tags cache", () => {
+  it("asks Last.fm once per artist, not on every preview, and retries after an error", async () => {
+    const log = createLog(memKv());
+    await log.addImported("2026-Q1", plays);
+    const artistTags = vi.fn(async () => ["shoegaze"]);
+    const deps = { log, lookup: async () => null, excludeAi: () => false, now: () => t0, pauseMs: 0, online: () => true, artistTags };
+    await previewQuarter("2026-Q1", deps);
+    const asked = artistTags.mock.calls.length;
+    expect(asked).toBeGreaterThan(0);
+    await previewQuarter("2026-Q1", deps);
+    expect(artistTags.mock.calls.length).toBe(asked); // second preview: all from the cache
+
+    const flaky = vi.fn().mockRejectedValueOnce(new Error("offline")).mockResolvedValue(["dream pop"]);
+    const log2 = createLog(memKv());
+    await log2.addImported("2026-Q1", plays);
+    await previewQuarter("2026-Q1", { ...deps, log: log2, artistTags: flaky });
+    const r = await previewQuarter("2026-Q1", { ...deps, log: log2, artistTags: flaky });
+    expect(r!.genres).toContain("dream pop"); // the failed artist was asked again
   });
 });

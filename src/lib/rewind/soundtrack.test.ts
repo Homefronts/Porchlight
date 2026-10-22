@@ -15,7 +15,7 @@ const mem = new Map<string, string>();
   },
 };
 
-const { usePlaybackStore, snippetWindow } = await import("@/lib/store/playback");
+const { usePlaybackStore, snippetWindow, persistedPlayback } = await import("@/lib/store/playback");
 const { useTrackSourceStore } = await import("@/lib/store/track-source");
 const { playSoundtrack } = await import("./soundtrack");
 
@@ -86,5 +86,44 @@ describe("playSoundtrack", () => {
     expect(s.queue).toEqual([]);
     expect(s.playing).toBe(false);
     expect(s.volume).toBe(0.5);
+  });
+});
+
+describe("handing your queue back", () => {
+  it("doesn't leave the same song stuck loading when it was also the soundtrack's song", async () => {
+    usePlaybackStore.setState({ queue: [track("s1"), track("b")], index: 0, position: 42, playing: true, status: "ready", volume: 0.8 });
+    const restore = playSoundtrack({ topSongs: [song("s1")] } as Rewind); // only one song: it lands on index 0
+    usePlaybackStore.setState({ status: "ready", duration: 200 });
+    const done = restore();
+    await vi.advanceTimersByTimeAsync(3000);
+    await done;
+    const s = usePlaybackStore.getState();
+    expect(s.status).toBe("ready"); // the engine won't reload the same song at the same spot
+    expect(s.pendingSeek).toBe(42);
+    expect(s.queue.map((t) => t.videoId)).toEqual(["s1", "b"]);
+  });
+
+  it("keeps your queue if a Rewind is reopened while the last one is still handing it back", async () => {
+    usePlaybackStore.setState({ queue: [track("mine")], index: 0, position: 30, playing: true, status: "ready", volume: 0.8 });
+    const first = playSoundtrack(rewind);
+    const closing = first(); // fading out...
+    await vi.advanceTimersByTimeAsync(400);
+    const second = playSoundtrack(rewind); // ...reopened mid-fade
+    await vi.advanceTimersByTimeAsync(3000);
+    const done = second();
+    await vi.advanceTimersByTimeAsync(3000);
+    await done;
+    await closing;
+    expect(usePlaybackStore.getState().queue.map((t) => t.videoId)).toEqual(["mine"]);
+    expect(usePlaybackStore.getState().snippetResume).toBeUndefined();
+  });
+
+  it("saves your own queue and volume, not the soundtrack, if the app quits mid-Rewind", () => {
+    usePlaybackStore.setState({ queue: [track("mine")], index: 0, position: 30, playing: true, status: "ready", volume: 0.8 });
+    playSoundtrack(rewind);
+    const saved = persistedPlayback(usePlaybackStore.getState());
+    expect(saved.queue.map((t) => t.videoId)).toEqual(["mine"]);
+    expect(saved.volume).toBe(0.8);
+    expect(saved.position).toBe(30);
   });
 });

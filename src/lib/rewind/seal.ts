@@ -85,11 +85,25 @@ export function topGenres(artists: Ranked[], tags: Map<string, string[]>): strin
   return [...score].sort((x, y) => y[1] - x[1]).slice(0, 5).map(([g]) => g);
 }
 
-async function withGenres(r: Rewind, deps: Pick<SealDeps, "artistTags">): Promise<Rewind> {
-  if (!deps.artistTags) return r;
+/**
+ * An artist's Last.fm tags, cached in the log like song lookups so a preview
+ * doesn't ask again each time. An error isn't cached: it's asked again next time.
+ */
+async function tagsFor(name: string, ask: (artist: string) => Promise<string[]>, log: RewindLog): Promise<string[]> {
+  const key = `lastfm:${name.toLowerCase()}`;
+  const cached = await log.meta<string[]>(key);
+  if (cached) return cached;
+  const tags = await ask(name);
+  await log.setMeta(key, tags);
+  return tags;
+}
+
+async function withGenres(r: Rewind, deps: Pick<SealDeps, "artistTags" | "log">): Promise<Rewind> {
+  const ask = deps.artistTags;
+  if (!ask) return r;
   const artists = [...new Map([...r.topArtists, ...r.newArtists].map((a) => [a.key, a])).values()];
   const tags = new Map<string, string[]>();
-  for (const a of artists) tags.set(a.key, await deps.artistTags(a.name).catch(() => []));
+  for (const a of artists) tags.set(a.key, await tagsFor(a.name, ask, deps.log).catch(() => []));
   const genres = topGenres(artists, tags);
   return genres.length ? { ...r, genres } : r;
 }

@@ -102,6 +102,8 @@ export type PlaybackState = {
 
   /** Rewind is open: each track plays a short snippet, crossfading into the next. Not persisted. */
   snippets: boolean;
+  /** While snippet mode runs: your own queue, place and volume, handed back when it ends. */
+  snippetResume?: SnippetResume;
 
   // Actions — queue
   playNow: (track: QueueTrack | ShelfItem, extras?: QueueTrack[]) => void;
@@ -190,6 +192,30 @@ export function persistedRadio(radio?: RadioMix): RadioMix | undefined {
   return radio && { ...radio, resume: radio.resume.slice(0, MAX_PERSISTED_QUEUE_TRACKS) };
 }
 
+/** What a Rewind sets aside while its soundtrack plays. */
+export type SnippetResume = Pick<PlaybackState, "queue" | "index" | "position" | "playing" | "radio" | "queueContinuation" | "volume">;
+
+/**
+ * What survives a restart. During a Rewind it's your own queue, place and
+ * volume (`snippetResume`), not the soundtrack: quitting mid-Rewind would
+ * otherwise bring back its five songs, at the volume of a fade.
+ */
+export function persistedPlayback(s: PlaybackState) {
+  const r = s.snippets && s.snippetResume ? { ...s, ...s.snippetResume } : s;
+  return {
+    queue: compactPersistedQueue(r.queue, r.index),
+    index: persistedQueueIndex(r.queue, r.index),
+    shuffle: r.shuffle,
+    repeat: r.repeat,
+    autoRadio: r.autoRadio,
+    queueContinuation: r.queueContinuation,
+    radio: persistedRadio(r.radio),
+    volume: r.volume,
+    muted: r.muted,
+    position: r.position,
+  };
+}
+
 function persistedQueueIndex(queue: QueueTrack[], index: number): number {
   if (queue.length <= MAX_PERSISTED_QUEUE_TRACKS) return index;
   const safeIndex = Math.max(0, Math.min(index, queue.length - 1));
@@ -232,6 +258,7 @@ const playbackStateCreator: StateCreator<PlaybackState> = (set, get) => ({
   radioEpoch: 0,
   queueContinuation: undefined,
   snippets: false,
+  snippetResume: undefined,
 
   status: "idle",
   error: undefined,
@@ -629,18 +656,7 @@ export const usePlaybackStore = isFloatingPlayerWindow()
         // rehydrate only when "Resume where you left off" is on; the audio
         // engine seeks there once the track's metadata has loaded.
         storage: createJSONStorage(() => createDebouncedStorage()),
-        partialize: (s) => ({
-          queue: compactPersistedQueue(s.queue, s.index),
-          index: persistedQueueIndex(s.queue, s.index),
-          shuffle: s.shuffle,
-          repeat: s.repeat,
-          autoRadio: s.autoRadio,
-          queueContinuation: s.queueContinuation,
-          radio: persistedRadio(s.radio),
-          volume: s.volume,
-          muted: s.muted,
-          position: s.position,
-        }),
+        partialize: persistedPlayback,
         onRehydrateStorage: () => (state) => {
           if (!state) return;
           state.playing = false;

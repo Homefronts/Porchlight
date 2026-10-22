@@ -7,6 +7,7 @@ import { unseenRewind } from "@/lib/rewind/home";
 import { rewindLog } from "@/lib/rewind/log";
 import { saveSlideImage } from "@/lib/rewind/save-image";
 import { playSoundtrack } from "@/lib/rewind/soundtrack";
+import { playbackAllowed } from "@/lib/store/premium";
 import type { Rewind } from "@/lib/rewind/types";
 import { useSettingsStore } from "@/lib/store/settings";
 
@@ -41,7 +42,9 @@ export function useRewindStory() {
     /** A preview of the open quarter isn't "seen": its real rewind still gets the Home card. */
     show: (r: Rewind, preview = false) => {
       if (!preview) markSeen(r.quarter);
-      restore.current ??= playSoundtrack(r);
+      // Rewind works for everyone; its soundtrack needs streaming, which Free or
+      // signed-out accounts can't (the engine would pop the Premium dialog over it).
+      if (playbackAllowed(r.topSongs[0]?.key)) restore.current ??= playSoundtrack(r);
       setOpen(r);
     },
   };
