@@ -15,11 +15,17 @@ const STORY_CSS = `
 @keyframes rw-turn { to { transform: rotate(360deg) } }
 @keyframes rw-float { 0%, 100% { transform: rotate(8deg) } 50% { transform: translateY(-3cqw) rotate(4deg) } }
 @keyframes rw-spin-in { from { transform: rotate(-50deg) scale(0.4); opacity: 0 } to { transform: rotate(8deg) scale(1); opacity: 1 } }
-@keyframes rw-orbit { from { transform: rotate(0deg) translateX(7cqw) rotate(0deg) } to { transform: rotate(360deg) translateX(7cqw) rotate(-360deg) } }
 @keyframes rw-wobble { 0%, 100% { transform: rotate(0deg) scale(1) } 50% { transform: rotate(30deg) scale(1.12, 0.9) } }
 @keyframes rw-rise { from { transform: translateY(5cqw); opacity: 0 } }
 @keyframes rw-grow { from { transform: scaleY(0) } }
 @keyframes rw-pop { from { transform: scale(0.8); opacity: 0 } }
+@keyframes rw-bob { 50% { transform: translateY(-4cqw) rotate(-6deg) } }
+@keyframes rw-swing { 0%, 100% { transform: rotate(9deg) } 50% { transform: rotate(-9deg) } }
+@keyframes rw-eq { from { transform: scaleY(0.2) } to { transform: scaleY(1) } }
+@keyframes rw-thump { 0%, 60%, 100% { transform: scale(1) } 15% { transform: scale(1.05) } }
+@keyframes rw-twinkle { 0%, 100% { transform: scale(0.4); opacity: 0.25 } 50% { transform: scale(1); opacity: 1 } }
+@keyframes rw-fall { from { transform: translateY(-6cqmin) rotate(0deg) } to { transform: translateY(62cqh) rotate(540deg) } }
+@keyframes rw-dawn { from { transform: translateY(25cqw); opacity: 0 } }
 @media (prefers-reduced-motion: reduce) { [data-slide], [data-slide] * { animation: none !important } }
 `;
 

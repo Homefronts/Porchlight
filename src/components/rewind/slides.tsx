@@ -3,6 +3,7 @@ import { coverBlobUrl } from "@/lib/rewind/palette";
 import { quarterRange } from "@/lib/rewind/quarter";
 import type { Ranked, Rewind } from "@/lib/rewind/types";
 import { cn } from "@/lib/utils";
+import { Confetti, SlideArt } from "./slide-art";
 
 export type SlideSpec =
   | { kind: "intro" }
@@ -389,28 +390,25 @@ export function Slide({ s, r, current }: { s: SlideSpec; r: Rewind; current: boo
           style={{ background: PATTERN[s.kind](t.dark ? "rgb(0 0 0 / 0.13)" : "rgb(255 255 255 / 0.14)"), ...MOTION[s.kind] } as CSSProperties}
         />
       </div>
+      {s.kind === "summary" ? <Confetti /> : null}
       <div className="@container absolute right-0 top-0 h-full w-[min(100cqw,83.3cqh)]">
-      {s.kind === "intro" ? (
-        // A vinyl record spinning in from the corner, the quarter on its label.
-        <div className="absolute -right-[30cqw] -top-[24cqw] grid size-[100cqw] place-items-center rounded-full bg-[#111] shadow-[0_14px_40px_rgb(0_0_0/0.35)] [background-image:repeating-radial-gradient(circle,#111_0_1.1cqw,#2a2a2a_1.1cqw_1.5cqw)] motion-safe:animate-[spin_14s_linear_infinite]">
-          <div className="grid size-[34cqw] place-items-center rounded-full bg-[#ffd84d] text-[12cqw] font-black tracking-[-0.05em] text-[#111]">
-            {r.quarter.split("-")[1]}
-          </div>
-        </div>
-      ) : null}
-      {s.kind === "setup" ? <div className="absolute -right-[25cqw] -top-[25cqw] size-[80cqw] rounded-full bg-[#111]" style={{ animation: "rw-breathe 5s ease-in-out infinite" }} /> : null}
-      {s.kind === "genres" ? <div className="absolute -left-[22cqw] -top-[20cqw] size-[70cqw] rounded-full bg-[#ffd84d]" style={{ animation: "rw-orbit 9s linear infinite" }} /> : null}
-      {s.kind === "newArtists" ? <div className="absolute -right-[20cqw] -top-[10cqw] h-[52cqw] w-[62cqw] rounded-[48%] bg-[#7a2cff]" style={{ animation: "rw-wobble 6s ease-in-out infinite" }} /> : null}
-      {cover ? (
-        <img
-          src={cover}
-          alt=""
-          className="absolute -right-[8cqw] top-[10cqw] aspect-square w-[56%] rotate-[8deg] rounded-[2cqw] object-cover shadow-[0_14px_40px_rgb(0_0_0/0.45)]"
-          style={{
-            animation: s.kind === "topAlbum" ? "rw-spin-in 0.9s cubic-bezier(0.2, 0.8, 0.2, 1.2) both" : "rw-float 5s ease-in-out infinite",
-          }}
+        <SlideArt
+          s={s}
+          peak={r.hours.indexOf(Math.max(...r.hours))}
+          quarter={r.quarter.split("-")[1]}
+          cover={
+            cover ? (
+              <img
+                src={cover}
+                alt=""
+                className="absolute -right-[8cqw] top-[10cqw] aspect-square w-[56%] rotate-[8deg] rounded-[2cqw] object-cover shadow-[0_14px_40px_rgb(0_0_0/0.45)]"
+                style={{
+                  animation: s.kind === "topAlbum" ? "rw-spin-in 0.9s cubic-bezier(0.2, 0.8, 0.2, 1.2) both" : "rw-float 5s ease-in-out infinite",
+                }}
+              />
+            ) : null
+          }
         />
-      ) : null}
       </div>
       {/* Light grain over the flat colour. */}
       <div className="pointer-events-none absolute inset-0 opacity-20 [background:repeating-radial-gradient(circle_at_30%_30%,rgb(0_0_0/0.25)_0_1px,transparent_1px_3px)]" />
