@@ -1,12 +1,26 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { findAlternateVideoId } from "@/lib/innertube/alternate-source";
 import { usePlaybackStore, type QueueTrack } from "@/lib/store/playback";
-import { useTrackSourceStore } from "@/lib/store/track-source";
+import { useTrackSourceStore, type SourceKind } from "@/lib/store/track-source";
 
-// Tracks found to have no music video this session, so they aren't looked up
-// again; and lookups in flight, so a track is never looked up twice at once.
-const noVideo = new Set<string>();
-const looking = new Set<string>();
+// Lookups by "kind:videoId": a running one is shared by everyone who asks, and
+// a clean "none" stays for the session so it isn't asked again. An error is
+// dropped, so the next ask tries again; a found id is dropped too (the store
+// keeps it).
+const lookups = new Map<string, Promise<string | null>>();
+
+/** The other version of `track` (its video, or its song), one lookup at a time. */
+export function lookupAlternate(track: QueueTrack, kind: SourceKind): Promise<string | null> {
+  const key = `${kind}:${track.videoId}`;
+  let p = lookups.get(key);
+  if (!p) {
+    p = findAlternateVideoId(track, kind);
+    lookups.set(key, p);
+    p.then((id) => id && lookups.delete(key), () => lookups.delete(key));
+  }
+  return p;
+}
 
 /**
  * Bring one track's Song/Video choice in line with video mode: its music
@@ -20,14 +34,8 @@ export async function followVideoMode(track: QueueTrack | undefined): Promise<vo
   if ((rec?.selected ?? "song") === want) return;
   if (want === "song") return src.setSelected(track.videoId, "song");
   if (rec?.video) return src.setSelected(track.videoId, "video");
-  if (noVideo.has(track.videoId) || looking.has(track.videoId)) return;
-  looking.add(track.videoId);
-  const alt = await findAlternateVideoId(track, "video").catch(() => null);
-  looking.delete(track.videoId);
-  if (!alt) {
-    noVideo.add(track.videoId);
-    return;
-  }
+  const alt = await lookupAlternate(track, "video").catch(() => null);
+  if (!alt) return;
   const now = useTrackSourceStore.getState();
   now.setAlternate(track.videoId, "video", alt);
   if (now.videoMode) now.setSelected(track.videoId, "video"); // the mode may have changed meanwhile
@@ -59,4 +67,41 @@ export function useVideoModeFollower(): void {
       offSource();
     };
   }, []);
+}
+
+/**
+ * The Song/Video switch, shared by the player chip and the ⋯ menu. The choice
+ * is a mode: Video sticks for the next tracks even if this one has none, and
+ * Song turns it off even on a track already playing its song. `busy` is the
+ * side whose version is still being looked up.
+ */
+export function useSourceSwitch(track: QueueTrack) {
+  const record = useTrackSourceStore((s) => s.byVideoId[track.videoId]);
+  const [busy, setBusy] = useState<SourceKind | null>(null);
+  const selected: SourceKind = record?.selected ?? "song";
+
+  const switchTo = async (target: SourceKind) => {
+    const src = useTrackSourceStore.getState();
+    src.setVideoMode(target === "video");
+    if (busy || target === selected) return;
+    const cached = target === "video" ? record?.video : record?.song;
+    if (cached) return src.setSelected(track.videoId, target);
+    setBusy(target);
+    try {
+      const alt = await lookupAlternate(track, target);
+      if (!alt) {
+        toast.error(target === "video" ? "No video version found" : "No song version found");
+        return;
+      }
+      const now = useTrackSourceStore.getState();
+      now.setAlternate(track.videoId, target, alt);
+      now.setSelected(track.videoId, target);
+    } catch (e) {
+      toast.error(`Couldn't switch source: ${(e as Error).message}`);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return { selected, busy, switchTo };
 }

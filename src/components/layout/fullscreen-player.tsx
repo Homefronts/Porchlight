@@ -550,7 +550,8 @@ function Cover({
       <Thumbnail
         thumbnails={track.thumbnails}
         alt={track.title}
-        className="pointer-events-none size-full rounded-[inherit]"
+        // In the wide video box the square cover sits centred, whole, until the video's first frame.
+        className={cn("pointer-events-none rounded-[inherit]", video ? "mx-auto aspect-square h-full" : "size-full")}
         targetSize={1024}
         highRes
         overrideHighRes={override}

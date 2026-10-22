@@ -3218,9 +3218,14 @@ async fn resolve_video_ytdlp(app: tauri::AppHandle, video_id: String, max_height
     };
     let url = format!("https://www.youtube.com/watch?v={video_id}");
     let program = ytdlp::program(&ytdlp::managed_path(&app));
+    let started = std::time::Instant::now();
+    eprintln!("[video] resolve {video_id} up to {h}p");
+    let id = video_id.clone();
     let output = tauri::async_runtime::spawn_blocking(move || {
         let mut command = std::process::Command::new(program);
         command.args([
+            "--print",
+            "%(format_id)s %(height)sp %(vcodec)s %(ext)s",
             "-g",
             "-f",
             &format,
@@ -3238,16 +3243,29 @@ async fn resolve_video_ytdlp(app: tauri::AppHandle, video_id: String, max_height
     .await
     .map_err(|e| e.to_string())?
     .map_err(|e| format!("spawn yt-dlp: {e}"))?;
+    let ms = started.elapsed().as_millis();
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("yt-dlp exit {}: {}", output.status, stderr.chars().take(400).collect::<String>()));
+        let err = format!("yt-dlp exit {}: {}", output.status, stderr.chars().take(400).collect::<String>());
+        eprintln!("[video] {id} failed after {ms}ms: {err}");
+        return Err(err);
     }
-    String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .next()
-        .filter(|l| l.starts_with("https://"))
-        .map(str::to_owned)
-        .ok_or_else(|| "yt-dlp returned no video URL".into())
+    // --print puts the chosen format first, -g the URL after it.
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let picked = stdout.lines().next().unwrap_or("?");
+    let url = stdout.lines().find(|l| l.starts_with("https://")).map(str::to_owned);
+    match &url {
+        Some(u) => eprintln!("[video] {id} -> {picked} in {ms}ms ({})", u.split('/').nth(2).unwrap_or("?")),
+        None => eprintln!("[video] {id}: no URL in yt-dlp output after {ms}ms: {}", stdout.chars().take(300).collect::<String>()),
+    }
+    url.ok_or_else(|| "yt-dlp returned no video URL".into())
+}
+
+/// Dev diagnostics: a line from the webview into this process's log (stderr),
+/// where webview console output doesn't reach.
+#[tauri::command]
+fn debug_log(msg: String) {
+    eprintln!("{}", msg.chars().take(500).collect::<String>());
 }
 
 /// Lifecycle of a single track's yt-dlp download. yt-dlp writes
@@ -4263,6 +4281,7 @@ pub fn run() {
             check_ytdlp_update,
             resolve_stream_ytdlp,
             resolve_video_ytdlp,
+            debug_log,
             get_stream_base_url,
             downloads::downloads_index,
             downloads::downloads_set_collection,

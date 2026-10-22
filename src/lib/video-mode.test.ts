@@ -9,7 +9,7 @@ const find = vi.hoisted(() => vi.fn<(...a: unknown[]) => Promise<string | null>>
 vi.mock("@/lib/innertube/alternate-source", () => ({ findAlternateVideoId: find }));
 
 const { useTrackSourceStore } = await import("@/lib/store/track-source");
-const { followVideoMode } = await import("./video-mode");
+const { followVideoMode, lookupAlternate } = await import("./video-mode");
 
 const track = (videoId: string) => ({ videoId, title: videoId, thumbnails: [] });
 const selected = (id: string) => useTrackSourceStore.getState().byVideoId[id]?.selected ?? "song";
@@ -44,6 +44,25 @@ describe("followVideoMode", () => {
     await followVideoMode(track("c"));
     expect(selected("c")).toBe("song");
     expect(find).not.toHaveBeenCalled();
+  });
+
+  it("retries after a network error instead of remembering \"no video\" for the session", async () => {
+    useTrackSourceStore.setState({ videoMode: true });
+    find.mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce("e-video");
+    await followVideoMode(track("e"));
+    expect(selected("e")).toBe("song");
+    await followVideoMode(track("e"));
+    expect(selected("e")).toBe("video");
+  });
+
+  it("shares one lookup between the chip and the video-mode watcher", async () => {
+    useTrackSourceStore.setState({ videoMode: true });
+    let done!: (id: string) => void;
+    find.mockImplementation(() => new Promise((r) => (done = r)));
+    const [a, b] = [followVideoMode(track("f")), lookupAlternate(track("f"), "video")];
+    done("f-video");
+    await Promise.all([a, b]);
+    expect(find).toHaveBeenCalledTimes(1);
   });
 
   it("drops a late lookup if video mode was switched off meanwhile", async () => {

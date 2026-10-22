@@ -25,6 +25,11 @@ describe("matchesTrack", () => {
     expect(matchesTrack(item("The Adults Are Talking (Official Audio)", "The Strokes"), "The Adults Are Talking", strokes)).toBe(false);
   });
 
+  it("rejects a different song whose title merely starts with this one", () => {
+    expect(matchesTrack(item("Hurt Me Bad (Official Video)", "Johnny Cash"), "Hurt", ["Johnny Cash"])).toBe(false);
+    expect(matchesTrack(item("Johnny Cash - Hurt [Official Music Video] HD", "JohnnyCashVEVO"), "Hurt", ["Johnny Cash"])).toBe(true);
+  });
+
   it("allows a live take when the track itself is one", () => {
     expect(matchesTrack(item("Hurt (Live)", "Johnny Cash"), "Hurt (Live)", ["Johnny Cash"])).toBe(true);
   });
@@ -54,5 +59,26 @@ describe("pairOf", () => {
     expect(pairOf(panel({ playlistPanelVideoRenderer: { videoId: "mv", navigationEndpoint: type("OMV") } }), "mv")).toEqual({ self: "video", other: undefined });
     expect(pairOf(paired, "nope")).toEqual({});
     expect(pairOf(null, "song1")).toEqual({});
+  });
+});
+
+describe("findAlternateVideoId", () => {
+  const type = (t: string) => ({ watchEndpoint: { watchEndpointMusicSupportedConfigs: { watchEndpointMusicConfig: { musicVideoType: `MUSIC_VIDEO_TYPE_${t}` } } } });
+  const pairPanel = {
+    contents: { singleColumnMusicWatchNextResultsRenderer: { tabbedRenderer: { watchNextTabbedResultsRenderer: { tabs: [{ tabRenderer: { content: { musicQueueRenderer: { content: { playlistPanelRenderer: { contents: [{
+      playlistPanelVideoWrapperRenderer: {
+        primaryRenderer: { playlistPanelVideoRenderer: { videoId: "mv", navigationEndpoint: type("OMV") } },
+        counterpart: [{ counterpartRenderer: { playlistPanelVideoRenderer: { videoId: "song", navigationEndpoint: type("ATV") } } }],
+      },
+    }] } } } } } }] } } } },
+  };
+
+  it("keeps a queued music video as its own video, not its song's still-picture stream", async () => {
+    const { rawNext } = await import("./shared");
+    vi.mocked(rawNext).mockResolvedValue(pairPanel);
+    const { findAlternateVideoId } = await import("./alternate-source");
+    expect(await findAlternateVideoId({ videoId: "mv", title: "T" }, "video")).toBe("mv");
+    expect(await findAlternateVideoId({ videoId: "mv", title: "T" }, "song")).toBe("song");
+    expect(await findAlternateVideoId({ videoId: "song", title: "T" }, "video")).toBe("mv");
   });
 });

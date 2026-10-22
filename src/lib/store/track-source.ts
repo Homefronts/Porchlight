@@ -55,6 +55,16 @@ function capByVideoId(
   return out;
 }
 
+/**
+ * Saved state from an older version. v0 paired songs with the first search
+ * result (sometimes a lyric video, cover or live take), so its pairs are
+ * dropped once and rebuilt by the strict lookup as songs play.
+ */
+export function migrateTrackSources(persisted: unknown, version: number): Pick<State, "byVideoId" | "videoMode"> {
+  if (version < 1) return { byVideoId: {}, videoMode: false };
+  return persisted as Pick<State, "byVideoId" | "videoMode">;
+}
+
 export const useTrackSourceStore = create<State>()(
   persist(
     (set) => ({
@@ -98,6 +108,8 @@ export const useTrackSourceStore = create<State>()(
     {
       name: "ytm-track-source",
       storage: createJSONStorage(() => safeIdbStorage),
+      version: 1,
+      migrate: migrateTrackSources,
     },
   ),
 );

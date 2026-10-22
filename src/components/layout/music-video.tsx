@@ -8,16 +8,50 @@ import { usePlaybackAllowed } from "@/lib/store/premium";
 import { useTrackSourceStore } from "@/lib/store/track-source";
 import { cn } from "@/lib/utils";
 
+/** Dev builds: a line in the terminal log, where webview console output doesn't reach. */
+function vlog(msg: string): void {
+  if (import.meta.env.DEV) void invoke("debug_log", { msg: `[video] ${msg}` }).catch(() => {});
+}
+
+const MEDIA_ERRORS = ["", "aborted", "network", "decode", "unsupported source"];
+
 /** Re-sync the picture when it drifts this far from the audio. */
 const MAX_DRIFT_SEC = 0.4;
+/** Never aim further ahead than this, however slow a jump has been. */
+const MAX_LEAD_SEC = 4;
 
-type Picture = Pick<HTMLVideoElement, "readyState" | "currentTime" | "paused" | "play" | "pause">;
+type Picture = Pick<HTMLVideoElement, "readyState" | "currentTime" | "paused" | "seeking" | "play" | "pause">;
 
-/** Keep the picture on the audio: jump back when it drifts, play and pause with it. */
-export function syncPicture(v: Picture, s: { position: number; playing: boolean; status: string }): void {
-  if (v.readyState < 1) return; // no metadata yet: nothing to seek
-  if (Math.abs(v.currentTime - s.position) > MAX_DRIFT_SEC) v.currentTime = s.position;
+// Per video element: when its current jump started, and how long its last one took.
+const jumpStarted = new WeakMap<Picture, number>();
+const jumpCost = new WeakMap<Picture, number>();
+
+/**
+ * Keep the picture on the audio. A jump (seek) has to buffer before it lands,
+ * and at high quality that takes longer than the drift we allow, so jumping to
+ * where the music *is* lands behind it and jumps again, forever. Instead: never
+ * jump while one is still buffering, aim ahead by what the last jump cost, and
+ * if it lands early, hold until the music catches up. `now` is in ms.
+ */
+export function syncPicture(v: Picture, s: { position: number; playing: boolean; status: string }, now = performance.now()): void {
+  if (v.readyState < 1 || v.seeking) return; // no metadata yet, or a jump still buffering
+  const started = jumpStarted.get(v);
+  if (started !== undefined) {
+    jumpCost.set(v, (now - started) / 1000);
+    jumpStarted.delete(v);
+  }
   const play = s.playing && s.status === "ready";
+  const ahead = v.currentTime - s.position;
+  if (Math.abs(ahead) > MAX_DRIFT_SEC) {
+    if (play && ahead > 0 && ahead < MAX_LEAD_SEC) {
+      if (!v.paused) v.pause(); // landed early: wait for the music
+      return;
+    }
+    const lead = play ? Math.min(MAX_LEAD_SEC, (jumpCost.get(v) ?? 0.5) * 1.25 + 0.2) : 0;
+    v.currentTime = s.position + lead;
+    jumpStarted.set(v, now);
+    return;
+  }
   if (play && v.paused) void v.play().catch(() => {});
   else if (!play && !v.paused) v.pause();
 }
@@ -67,6 +101,9 @@ export function MusicVideo({ track, where, className }: { track: QueueTrack; whe
     gcTime: 2 * 60 * 60_000,
     retry: 1,
   });
+  useEffect(() => {
+    if (src.error) vlog(`${id} at ${quality}p: lookup failed: ${String(src.error)}`);
+  }, [src.error, id, quality]);
   const [front, setFront] = useState<Layer | null>(null);
   const [ready, setReady] = useState<string | null>(null);
   const layers = layersFor(front, on ? id : undefined, src.data);
@@ -88,6 +125,7 @@ export function MusicVideo({ track, where, className }: { track: QueueTrack; whe
   const promote = (v: HTMLVideoElement) => {
     if (!back || v.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) return;
     if (Math.abs(v.currentTime - usePlaybackStore.getState().position) > MAX_DRIFT_SEC) return;
+    vlog(`${back.id}: new quality took over (${v.videoWidth}x${v.videoHeight})`);
     setReady(back.url);
     setFront(back);
   };
@@ -108,9 +146,18 @@ export function MusicVideo({ track, where, className }: { track: QueueTrack; whe
             playsInline
             preload="auto"
             onLoadedMetadata={(e) => syncPicture(e.currentTarget, usePlaybackStore.getState())}
-            onLoadedData={() => l.url === layers.front?.url && setReady(l.url)}
+            onLoadedData={(e) => {
+              vlog(`${l.id}: first frame ${e.currentTarget.videoWidth}x${e.currentTarget.videoHeight} (${l.url === back?.url ? "loading behind" : "on screen"})`);
+              if (l.url === layers.front?.url) setReady(l.url);
+            }}
+            onError={(e) => {
+              const err = e.currentTarget.error;
+              vlog(`${l.id}: player error ${err?.code} ${MEDIA_ERRORS[err?.code ?? 0] ?? ""} ${err?.message ?? ""} (${new URL(l.url).host})`);
+            }}
             onCanPlay={(e) => l.url === back?.url && promote(e.currentTarget)}
             onSeeked={(e) => l.url === back?.url && promote(e.currentTarget)}
+            // Checked on every tick too: right after a jump it is often still a little off.
+            onTimeUpdate={(e) => l.url === back?.url && promote(e.currentTarget)}
             className={cn(
               "pointer-events-none absolute inset-0 size-full rounded-[inherit] bg-black object-contain transition-opacity duration-300",
               l.url === layers.front?.url && ready === l.url ? "opacity-100" : "opacity-0",

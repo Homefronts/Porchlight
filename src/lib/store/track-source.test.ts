@@ -25,3 +25,11 @@ describe("resumeOnSourceSwitch", () => {
     expect(resumeOnSourceSwitch(song, video, 0.4)).toBeNull(); // hadn't really started
   });
 });
+
+describe("saved pairings from before the strict lookup", () => {
+  it("are dropped once, so wrong old pairs get looked up again", async () => {
+    const { migrateTrackSources } = await import("./track-source");
+    const old = { byVideoId: { a: { song: "a", video: "lyric-video", selected: "video" } } };
+    expect(migrateTrackSources(old, 0)).toEqual({ byVideoId: {}, videoMode: false });
+  });
+});

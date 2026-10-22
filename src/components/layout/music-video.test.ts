@@ -8,33 +8,64 @@ vi.mock("@/lib/store/track-source", () => ({ useTrackSourceStore: vi.fn() }));
 
 const { layersFor, syncPicture } = await import("./music-video");
 
-const picture = (over: Partial<{ readyState: number; currentTime: number; paused: boolean }> = {}) => ({
-  readyState: 4, currentTime: 10, paused: true, play: vi.fn(async () => {}), pause: vi.fn(), ...over,
+const picture = (over: Partial<{ readyState: number; currentTime: number; paused: boolean; seeking: boolean }> = {}) => ({
+  readyState: 4, currentTime: 10, paused: true, seeking: false, play: vi.fn(async () => {}), pause: vi.fn(), ...over,
 });
+const playing = (position: number) => ({ position, playing: true, status: "ready" });
 
 describe("syncPicture", () => {
-  it("jumps the picture back onto the audio when it drifts, and plays along", () => {
+  it("jumps a little ahead of the music when far behind, instead of to where it already was", () => {
     const v = picture({ currentTime: 3 });
-    syncPicture(v, { position: 42, playing: true, status: "ready" });
-    expect(v.currentTime).toBe(42);
-    expect(v.play).toHaveBeenCalled();
+    syncPicture(v, playing(42), 0);
+    expect(v.currentTime).toBeGreaterThan(42);
+    expect(v.currentTime).toBeLessThan(43);
   });
 
-  it("leaves small drift alone, and pauses when the audio pauses or loads", () => {
-    const v = picture({ currentTime: 42.2, paused: false });
-    syncPicture(v, { position: 42, playing: false, status: "ready" });
-    expect(v.currentTime).toBe(42.2);
+  it("never jumps again while a jump is still buffering (the old endless seek loop)", () => {
+    const v = picture({ currentTime: 3 });
+    syncPicture(v, playing(42), 0);
+    const target = v.currentTime;
+    v.seeking = true;
+    syncPicture(v, playing(43.5), 900);
+    expect(v.currentTime).toBe(target);
+  });
+
+  it("learns how long a jump takes and aims that far ahead next time", () => {
+    const v = picture({ currentTime: 3 });
+    syncPicture(v, playing(42), 0); // jump starts at t=0
+    v.seeking = false;
+    v.currentTime = 42.8;
+    syncPicture(v, playing(44), 2000); // it took 2 s to land; now 1.2 s behind
+    expect(v.currentTime).toBeGreaterThanOrEqual(44 + 2); // aims at least the 2 s a jump costs ahead
+  });
+
+  it("holds when it lands ahead, and plays once the music catches up", () => {
+    const v = picture({ currentTime: 45, paused: false });
+    syncPicture(v, playing(43), 0);
     expect(v.pause).toHaveBeenCalled();
+    expect(v.currentTime).toBe(45);
+    const w = picture({ currentTime: 45, paused: true });
+    syncPicture(w, playing(44.8), 0);
+    expect(w.play).toHaveBeenCalled();
+  });
+
+  it("goes exactly to the music's spot when paused, and pauses when the audio pauses or loads", () => {
+    const v = picture({ currentTime: 3, paused: false });
+    syncPicture(v, { position: 42, playing: false, status: "ready" }, 0);
+    expect(v.currentTime).toBe(42);
     const w = picture({ paused: false });
-    syncPicture(w, { position: 10, playing: true, status: "loading" });
+    syncPicture(w, { position: 10, playing: true, status: "loading" }, 0);
     expect(w.pause).toHaveBeenCalled();
   });
 
-  it("waits for the video's metadata before touching it", () => {
-    const v = picture({ readyState: 0, currentTime: 0 });
-    syncPicture(v, { position: 42, playing: true, status: "ready" });
-    expect(v.currentTime).toBe(0);
-    expect(v.play).not.toHaveBeenCalled();
+  it("leaves small drift alone, and waits for metadata before touching anything", () => {
+    const v = picture({ currentTime: 42.2, paused: false });
+    syncPicture(v, playing(42), 0);
+    expect(v.currentTime).toBe(42.2);
+    const w = picture({ readyState: 0, currentTime: 0 });
+    syncPicture(w, playing(42), 0);
+    expect(w.currentTime).toBe(0);
+    expect(w.play).not.toHaveBeenCalled();
   });
 });
 

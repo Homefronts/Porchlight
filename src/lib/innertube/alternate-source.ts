@@ -28,9 +28,11 @@ export async function findAlternateVideoId(
     await rawNext({ videoId: track.videoId, playlistId: `RDAMVM${track.videoId}`, isAudioOnly: true }).catch(() => null),
     track.videoId,
   );
-  if (pair.other) return pair.other;
-  // Already a music video (e.g. queued from a video search): it is its own video.
+  // Already the kind asked for (a music video queued from a playlist or search):
+  // checked before the pair, whose other side would be its song, whose "video"
+  // is only the cover as a still picture.
   if (pair.self === targetKind) return targetKind === "video" ? track.videoId : null;
+  if (pair.other) return pair.other;
 
   const artists = (track.artists ?? []).map((a) => a.name);
   const query = `${track.title} ${artists.join(" ")}`.trim();
@@ -73,6 +75,9 @@ export function pairOf(json: YtNode | null, videoId: string): { self?: SourceKin
 /** Versions that are a different recording, or not the real video. */
 const OTHER_TAKE = /\b(cover|lyrics?|live|karaoke|reaction|remix|instrumental|sped up|slowed|8d|audio)\b/;
 
+/** Words an upload's title may add around "Artist - Title" without being another song. */
+const FILLER = new Set(["official", "music", "video", "videoclip", "clip", "hd", "hq", "4k", "remaster", "remastered", "mv", "the", "a"]);
+
 /** Is this search result the same song (by the same artist) as the track? */
 export function matchesTrack(item: ShelfItem, title: string, artists: string[]): boolean {
   if (item.kind !== "song" && item.kind !== "video") return false;
@@ -83,9 +88,11 @@ export function matchesTrack(item: ShelfItem, title: string, artists: string[]):
   const names = artists.map(normalizeName).filter(Boolean);
   const byArtist = (item.artists ?? []).some((a) => names.includes(normalizeName(a.name))) || names.some((n) => got.includes(n));
   if (!byArtist) return false;
-  const extra = names.reduce((s, n) => s.replace(n, " "), got.replace(want, " "));
+  // Beyond the title and artist only filler may remain: "Hurt Me Bad" isn't "Hurt".
+  const leftover = names.reduce((s, n) => s.replace(n, " "), got.replace(want, " "));
+  if (!leftover.split(/\s+/).every((w) => !w || FILLER.has(w))) return false;
   // Tags like "(Live)" are dropped by normalizeTitle, so check the raw title too.
   const rawExtra = item.title.toLowerCase().replace(title.toLowerCase(), " ");
   const takeOf = (s: string) => OTHER_TAKE.test(s);
-  return !takeOf(extra) && (takeOf(title.toLowerCase()) || !takeOf(rawExtra));
+  return takeOf(title.toLowerCase()) || !takeOf(rawExtra);
 }
