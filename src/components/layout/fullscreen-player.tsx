@@ -40,7 +40,7 @@ import {
   repeatLabel,
   useITunesCover,
 } from "@/components/layout/player-bar";
-import { MusicVideo, useMusicVideoId } from "@/components/layout/music-video";
+import { MusicVideo, useMusicVideoId, vlog } from "@/components/layout/music-video";
 import { PlayerMoreMenu } from "@/components/layout/player-more-menu";
 import { QueuePopover } from "@/components/layout/queue-panel";
 import { LyricsSourceButton } from "@/components/layout/lyrics-view";
@@ -220,7 +220,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
           style={{ background: "var(--g9d)", opacity: immersive ? 0 : 1 }}
         />
         {videoId ? (
-          <VideoStage track={track} override={iTunesCover} host={host} slot={slot} immersive={immersive} tag={shown} />
+          <VideoStage track={track} override={iTunesCover} host={host} slot={slot} immersive={immersive} />
         ) : null}
         <div
           aria-hidden
@@ -594,8 +594,8 @@ type StageBox = { left: number; top: number; width: number; height: number; radi
 
 const SWITCH = { duration: 0.42, ease: [0.32, 0.72, 0, 1] } as const;
 
-/** The frame the video is showing right now, as an image (null if there's none to take). */
-function snapshot(stage: HTMLElement | null): string | null {
+/** The frame the video is showing right now, drawn on a canvas (null if there's none to take). */
+function snapshot(stage: HTMLElement | null): HTMLCanvasElement | null {
   const v = stage?.querySelector<HTMLVideoElement>("video[data-front]");
   if (!v || v.readyState < 2 || !v.videoWidth) return null;
   const c = document.createElement("canvas");
@@ -603,7 +603,7 @@ function snapshot(stage: HTMLElement | null): string | null {
   c.height = Math.round((c.width * v.videoHeight) / v.videoWidth);
   try {
     c.getContext("2d")?.drawImage(v, 0, 0, c.width, c.height);
-    return c.toDataURL("image/jpeg", 0.85);
+    return c; // shown as is: no image encoding at the moment of the switch
   } catch {
     return null; // not readable: just skip the crossfade
   }
@@ -616,10 +616,13 @@ function snapshot(stage: HTMLElement | null): string | null {
  * included; Immersive has no frame, so it fills the view. The cover shows
  * under the video until its first frame.
  *
- * A layout switch crossfades instead of sliding (a slide always crossed the
- * screen and left the frame for a moment): a snapshot of the frame on screen
- * fades out where the video was, while the live video, still playing, is
- * already in its new frame and fades and scales in.
+ * A layout switch crossfades instead of sliding: a snapshot of the frame on
+ * screen fades out where the video was, while the live video, still playing
+ * and already in its new frame, fades and scales in. It runs when the video's
+ * destination exists (`target`: the new frame, or the view for Immersive),
+ * not when the layout name changes: a new layout's frame reports itself a
+ * render later, and starting before that showed the video in the wrong place
+ * (full screen, or a removed frame's zero box) and then popping.
  */
 function VideoStage({
   track,
@@ -627,66 +630,80 @@ function VideoStage({
   host,
   slot,
   immersive,
-  tag,
 }: {
   track: QueueTrack;
   override: string | null;
   host: HTMLElement | null;
   slot: HTMLElement | null;
   immersive: boolean;
-  tag: FullscreenLayout;
 }) {
   const [box, setBox] = useState<StageBox | null>(null);
-  const [ghost, setGhost] = useState<{ id: number; src: string; box: StageBox | null } | null>(null);
+  const [ghost, setGhost] = useState<{ id: number; canvas: HTMLCanvasElement; box: StageBox | null } | null>(null);
   const [stage, animate] = useAnimate<HTMLDivElement>();
   const boxRef = useRef<StageBox | null>(null);
-  const where = immersive ? "immersive" : tag;
-  const lastWhere = useRef(where);
+  // Where the video goes; null while a boxed layout's frame hasn't reported yet.
+  const target = immersive ? "immersive" : (slot?.isConnected ? slot : null);
+  const lastTarget = useRef(target);
 
   // Effects run in this order within a commit: remember the box on screen,
-  // then on a switch snapshot it, then move to the new frame.
+  // then on arriving at a new target snapshot it, then move to the target.
   useLayoutEffect(() => {
     boxRef.current = box;
   });
 
   useLayoutEffect(() => {
-    if (lastWhere.current === where) return;
-    lastWhere.current = where;
-    const src = snapshot(stage.current);
-    if (src) setGhost({ id: Date.now(), src, box: boxRef.current });
+    if (!target || lastTarget.current === target) return;
+    const first = lastTarget.current === null;
+    lastTarget.current = target;
+    if (first) return; // opening onto the video: nothing to cross from
+    const canvas = snapshot(stage.current);
+    vlog(`fullscreen: switch to ${immersive ? "immersive" : "frame"}, snapshot ${canvas ? "taken" : "skipped"}`);
+    if (canvas) setGhost({ id: Date.now(), canvas, box: boxRef.current });
     if (stage.current) void animate(stage.current, { opacity: [0, 1], scale: [0.96, 1] }, SWITCH);
-  }, [where, animate, stage]);
+  }, [target, immersive, animate, stage]);
 
   useLayoutEffect(() => {
-    if (immersive || !slot || !host) return setBox(null);
+    if (immersive) return setBox(null);
+    if (!target || !host || !(target instanceof HTMLElement)) return; // waiting for the frame: stay put
+    const frame = target;
+    const radius = getComputedStyle(frame).borderRadius; // fixed per frame: read once, not every animation frame
     // The frame can move without resizing (lyrics load beside it, a title
     // wraps), which no observer reports, so follow it every frame; it's one
     // rect read, and state only changes when the frame did.
     let last = "";
     let raf = 0;
     const follow = () => {
-      const h = host.getBoundingClientRect();
-      const r = slot.getBoundingClientRect();
-      // The view's open animation scales it; divide that out to get its own pixels.
-      const k = host.offsetWidth ? h.width / host.offsetWidth : 1;
-      const next = { left: (r.left - h.left) / k, top: (r.top - h.top) / k, width: r.width / k, height: r.height / k, radius: getComputedStyle(slot).borderRadius };
-      const key = `${next.left.toFixed(1)}|${next.top.toFixed(1)}|${next.width.toFixed(1)}|${next.height.toFixed(1)}|${next.radius}`;
-      if (key !== last) {
-        last = key;
-        setBox(next);
+      if (frame.isConnected) {
+        const h = host.getBoundingClientRect();
+        const r = frame.getBoundingClientRect();
+        // The view's open animation scales it; divide that out to get its own pixels.
+        const k = host.offsetWidth ? h.width / host.offsetWidth : 1;
+        const next = { left: (r.left - h.left) / k, top: (r.top - h.top) / k, width: r.width / k, height: r.height / k, radius };
+        const key = `${next.left.toFixed(1)}|${next.top.toFixed(1)}|${next.width.toFixed(1)}|${next.height.toFixed(1)}`;
+        if (key !== last) {
+          last = key;
+          setBox(next);
+        }
       }
       raf = requestAnimationFrame(follow);
     };
     follow();
     return () => cancelAnimationFrame(raf);
-  }, [slot, host, immersive]);
+  }, [target, host, immersive]);
 
   const place = (b: StageBox | null) =>
     b ? { left: b.left, top: b.top, width: b.width, height: b.height, borderRadius: b.radius } : { left: 0, top: 0, width: "100%", height: "100%", borderRadius: 0 };
+  // A boxed layout before its frame first reports: don't flash full screen.
+  const waiting = !immersive && !box;
 
   return (
     <>
-      <div ref={stage} aria-hidden className="pointer-events-none absolute overflow-hidden" style={place(box)}>
+      <div
+        ref={stage}
+        aria-hidden
+        className="pointer-events-none absolute overflow-hidden"
+        style={{ ...place(box), visibility: waiting ? "hidden" : undefined }}
+      >
         {box ? (
           <Thumbnail
             thumbnails={track.thumbnails}
@@ -700,16 +717,20 @@ function VideoStage({
         <MusicVideo track={track} where="fullscreen" className={box ? "rounded-none" : "rounded-none object-cover"} />
       </div>
       {ghost ? (
-        <motion.img
+        <motion.div
           key={ghost.id}
-          src={ghost.src}
-          alt=""
           aria-hidden
+          ref={(el: HTMLDivElement | null) => {
+            if (el && !el.firstChild) el.append(ghost.canvas);
+          }}
           initial={{ opacity: 1, scale: 1 }}
           animate={{ opacity: 0, scale: 1.03 }}
           transition={SWITCH}
           onAnimationComplete={() => setGhost(null)}
-          className={cn("pointer-events-none absolute bg-black", ghost.box ? "object-contain" : "object-cover")}
+          className={cn(
+            "pointer-events-none absolute overflow-hidden bg-black [&>canvas]:size-full",
+            ghost.box ? "[&>canvas]:object-contain" : "[&>canvas]:object-cover",
+          )}
           style={place(ghost.box)}
         />
       ) : null}

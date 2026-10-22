@@ -10,7 +10,7 @@ import { getStreamBaseUrl } from "@/lib/stream";
 import { cn } from "@/lib/utils";
 
 /** Dev builds: a line in the terminal log, where webview console output doesn't reach. */
-function vlog(msg: string): void {
+export function vlog(msg: string): void {
   if (import.meta.env.DEV) void invoke("debug_log", { msg: `[video] ${msg}` }).catch(() => {});
 }
 
