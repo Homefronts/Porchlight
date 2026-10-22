@@ -91,8 +91,8 @@ Download the latest installer from the [Releases](../../releases) page and run i
 - Signing in is optional: browse and playback work anonymously; sign in to get
   your library, likes, and playlists.
 
-> **Linux and macOS builds are in beta.** They are compiled and unit-tested in
-> CI, but get far less real-world testing than the Windows build. If something
+> **Tested on Windows. macOS and Linux builds are included, but haven't been
+> tested on real machines yet.** They are compiled and unit-tested in CI. If something
 > breaks, please [open an issue](../../issues) — or use the in-app reporter
 > (⋯ menu → Report an issue), which attaches your app version and OS
 > automatically.
