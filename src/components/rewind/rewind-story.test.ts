@@ -6,7 +6,7 @@ vi.mock("@/lib/rewind/palette", () => ({ coverBlobUrl: async () => null }));
 
 import type { Ranked, Rewind } from "@/lib/rewind/types";
 import { RewindStory } from "./rewind-story";
-import { THEME, personality, slidesFor } from "./slides";
+import { THEME, fit, personality, slidesFor } from "./slides";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -82,5 +82,15 @@ describe("slide colours", () => {
       expect(contrast(t.dark ? "#111111" : "#ffffff", t.bg), `${kind} text`).toBeGreaterThanOrEqual(4.5);
       expect(contrast(t.hi, t.bg), `${kind} highlight`).toBeGreaterThanOrEqual(3);
     }
+  });
+});
+
+describe("fit", () => {
+  const size = (text: string, max?: number) => parseFloat(String(fit(text, max).fontSize));
+  it("keeps the longest word on one line, so names never break mid-word", () => {
+    // 5 letters at the old 34cqw ran past the card's edge and split.
+    expect(size("Caamp") * 5 * 0.62).toBeLessThanOrEqual(80);
+    expect(size("Emerson Woolf & the Wishbones") * 9 * 0.62).toBeLessThanOrEqual(80);
+    expect(size("Hi", 24)).toBe(24); // short words keep the full size
   });
 });

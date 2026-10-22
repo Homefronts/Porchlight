@@ -7,6 +7,22 @@ import { Slide, slidesFor } from "./slides";
 
 const SLIDE_MS = 6000;
 
+// Slide motion (see slides.tsx), transform and opacity only. Reduced motion: all still.
+const STORY_CSS = `
+@keyframes rw-fill { from { width: 0% } to { width: 100% } }
+@keyframes rw-drift { to { transform: translate(var(--dx, 0), var(--dy, 0)) } }
+@keyframes rw-breathe { 50% { transform: scale(1.1) } }
+@keyframes rw-turn { to { transform: rotate(360deg) } }
+@keyframes rw-float { 0%, 100% { transform: rotate(8deg) } 50% { transform: translateY(-3cqw) rotate(4deg) } }
+@keyframes rw-spin-in { from { transform: rotate(-50deg) scale(0.4); opacity: 0 } to { transform: rotate(8deg) scale(1); opacity: 1 } }
+@keyframes rw-orbit { from { transform: rotate(0deg) translateX(7cqw) rotate(0deg) } to { transform: rotate(360deg) translateX(7cqw) rotate(-360deg) } }
+@keyframes rw-wobble { 0%, 100% { transform: rotate(0deg) scale(1) } 50% { transform: rotate(30deg) scale(1.12, 0.9) } }
+@keyframes rw-rise { from { transform: translateY(5cqw); opacity: 0 } }
+@keyframes rw-grow { from { transform: scaleY(0) } }
+@keyframes rw-pop { from { transform: scale(0.8); opacity: 0 } }
+@media (prefers-reduced-motion: reduce) { [data-slide], [data-slide] * { animation: none !important } }
+`;
+
 /**
  * Full-screen, year-in-review style story. Tap or click the right/left half, swipe,
  * or use ←/→ to move; hold to pause; Esc closes. Only the current slide and
@@ -128,7 +144,7 @@ export function RewindStory({
           <IconX className="size-5" />
         </button>
       </div>
-      <style>{"@keyframes rw-fill { from { width: 0% } to { width: 100% } }"}</style>
+      <style>{STORY_CSS}</style>
     </div>,
     document.body,
   );

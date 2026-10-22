@@ -82,6 +82,25 @@ const PATTERN: Record<SlideSpec["kind"], (c: string) => string> = {
   summary: dots,
 };
 
+// Diagonal stripes repeat every 9cqw across, which is 12.73cqw along x or y.
+const drift = (dx: string, dy: string, sec: number) => ({ "--dx": dx, "--dy": dy, animation: `rw-drift ${sec}s linear infinite` });
+
+/** How each slide's pattern moves: every slide its own direction, speed or motion. */
+const MOTION: Record<SlideSpec["kind"], CSSProperties> = {
+  intro: drift("-8cqw", "8cqw", 9),
+  setup: drift("8cqw", "-8cqw", 7),
+  minutes: { animation: "rw-breathe 6s ease-in-out infinite" },
+  variety: drift("12.73cqw", "0", 4),
+  topArtist: drift("10cqw", "10cqw", 8),
+  artists: { animation: "rw-turn 40s linear infinite" },
+  songs: drift("-12.73cqw", "0", 5),
+  topAlbum: drift("8cqw", "0", 6),
+  personality: drift("0", "-8cqw", 5),
+  genres: drift("-10cqw", "10cqw", 9),
+  newArtists: drift("0", "-12.73cqw", 6),
+  summary: drift("8cqw", "8cqw", 12),
+};
+
 /** The Home card and Rewind list share the intro's look. */
 export const REWIND_COVER = THEME.intro;
 
@@ -99,7 +118,15 @@ export function personality(peak: number): { name: string; line: string } {
 const fmt = (n: number) => n.toLocaleString();
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 /** Giant for short names, still big for long ones; sizes are % of the card's width. */
-const fit = (s: string) => (s.length <= 6 ? "text-[34cqw]" : s.length <= 10 ? "text-[24cqw]" : s.length <= 18 ? "text-[16cqw]" : "text-[12cqw]");
+/**
+ * As big as `max` (in % of the card width), but small enough that the longest
+ * word fits on one line: headings wrap at spaces only, never mid-word.
+ */
+export function fit(text: string, max = 34): CSSProperties {
+  const longest = Math.max(...text.split(/s+/).map((w) => w.length));
+  // ~0.62em a character for this heavy, tightly tracked type; 80cqw of room.
+  return { fontSize: `${Math.min(max, 80 / (longest * 0.62)).toFixed(1)}cqw` };
+}
 
 function useBlob(url: string | undefined): string | null {
   const [src, setSrc] = useState<string | null>(null);
@@ -122,8 +149,8 @@ function Thumb({ url, className = "size-[12cqw] rounded-[1cqw]" }: { url?: strin
 const Kicker = ({ children }: { children: ReactNode }) => (
   <div className="text-[4.4cqw] font-extrabold uppercase tracking-[0.12em]">{children}</div>
 );
-const Huge = ({ children, className }: { children: ReactNode; className?: string }) => (
-  <div className={cn("mt-[3cqw] font-black leading-[0.85] tracking-[-0.055em] [overflow-wrap:anywhere]", className)}>{children}</div>
+const Huge = ({ children, className, style }: { children: ReactNode; className?: string; style?: CSSProperties }) => (
+  <div className={cn("mt-[3cqw] font-black leading-[0.85] tracking-[-0.055em]", className)} style={style}>{children}</div>
 );
 const Line = ({ children }: { children: ReactNode }) => (
   <div className="mt-[4cqw] text-[6.3cqw] font-bold leading-tight">{children}</div>
@@ -134,7 +161,7 @@ function Ranks({ items, from = 1 }: { items: Ranked[]; from?: number }) {
   return (
     <ol className="mt-[5cqw] flex flex-col gap-[2.5cqw]">
       {items.map((it, n) => (
-        <li key={it.key} className="flex items-center gap-[3.5cqw]">
+        <li key={it.key} className="flex items-center gap-[3.5cqw]" style={{ animation: `rw-rise 0.5s ease-out ${0.15 + n * 0.1}s both` }}>
           <b className="w-[7cqw] text-[7.5cqw] font-black">{n + from}</b>
           <Thumb url={it.topAlbum?.thumb ?? it.thumb} />
           <span className="min-w-0">
@@ -153,15 +180,15 @@ function Body({ s, r }: { s: SlideSpec; r: Rewind }) {
       return (
         <>
           <Kicker>{quarterLabel(r)}</Kicker>
-          <Huge className="text-[24cqw]">Your Rewind</Huge>
+          <Huge style={fit("Your Rewind", 24)}>Your Rewind</Huge>
           <Line>Your quarter, on repeat. Let's see what you've been up to.</Line>
         </>
       );
     case "setup":
       return (
         <>
-          <Huge className="text-[15cqw]">Time is a construct.</Huge>
-          <Huge className="mt-[5cqw] text-[15cqw]">We kept track anyway.</Huge>
+          <Huge style={fit("Time is a construct.", 15)}>Time is a construct.</Huge>
+          <Huge className="mt-[5cqw]" style={fit("Time is a construct.", 15)}>We kept track anyway.</Huge>
         </>
       );
     case "minutes": {
@@ -170,7 +197,7 @@ function Body({ s, r }: { s: SlideSpec; r: Rewind }) {
       return (
         <>
           <Kicker>You listened to</Kicker>
-          <Huge className="text-[34cqw] text-[var(--rw-hi)]">{fmt(r.minutes)}</Huge>
+          <Huge className="text-[var(--rw-hi)]" style={fit(fmt(r.minutes))}>{fmt(r.minutes)}</Huge>
           <Huge className="text-[9.6cqw]">minutes of music</Huge>
           <Line>
             {days >= 1
@@ -184,7 +211,7 @@ function Body({ s, r }: { s: SlideSpec; r: Rewind }) {
       return (
         <>
           <Kicker>You played</Kicker>
-          <Huge className="text-[34cqw]">{fmt(r.songs)}</Huge>
+          <Huge style={fit(fmt(r.songs))}>{fmt(r.songs)}</Huge>
           <Huge className="text-[9.6cqw]">different songs</Huge>
           <Line>
             {r.newSongs ? (
@@ -201,7 +228,7 @@ function Body({ s, r }: { s: SlideSpec; r: Rewind }) {
       return (
         <>
           <Kicker>Your top artist</Kicker>
-          <Huge className={fit(s.item.name)}>{s.item.name}</Huge>
+          <Huge style={fit(s.item.name)}>{s.item.name}</Huge>
           <Line>
             <Hi>{fmt(s.item.plays)} plays.</Hi> Should we tell them, or will you?
           </Line>
@@ -219,7 +246,7 @@ function Body({ s, r }: { s: SlideSpec; r: Rewind }) {
       return (
         <>
           <Kicker>Your top songs</Kicker>
-          <Huge className={fit(s.items[0].name)}>{s.items[0].name}</Huge>
+          <Huge style={fit(s.items[0].name)}>{s.items[0].name}</Huge>
           {s.items[0].by ? <Line>{s.items[0].by}</Line> : null}
           <Ranks items={s.items.slice(1)} from={2} />
         </>
@@ -228,7 +255,7 @@ function Body({ s, r }: { s: SlideSpec; r: Rewind }) {
       return (
         <>
           <Kicker>Your top album</Kicker>
-          <Huge className={fit(s.item.name)}>{s.item.name}</Huge>
+          <Huge style={fit(s.item.name)}>{s.item.name}</Huge>
           <Line>
             <Hi>{fmt(s.item.minutes)} minutes.</Hi> Front to back, probably.
           </Line>
@@ -240,11 +267,19 @@ function Body({ s, r }: { s: SlideSpec; r: Rewind }) {
       return (
         <>
           <Kicker>Your listening personality</Kicker>
-          <Huge className="text-[17cqw]">{p.name}</Huge>
+          <Huge style={fit(p.name, 17)}>{p.name}</Huge>
           <Line>{p.line}</Line>
           <div className="mt-[6cqw] flex h-[30cqw] items-end gap-[0.7cqw]">
             {r.hours.map((m, i) => (
-              <div key={i} className="flex-1 rounded-t-[0.6cqw]" style={{ height: `${Math.max(3, (m / max) * 100)}%`, background: m === max ? "var(--rw-hi)" : "rgb(0 0 0 / 0.22)" }} />
+              <div
+                key={i}
+                className="flex-1 origin-bottom rounded-t-[0.6cqw]"
+                style={{
+                  height: `${Math.max(3, (m / max) * 100)}%`,
+                  background: m === max ? "var(--rw-hi)" : "rgb(0 0 0 / 0.22)",
+                  animation: `rw-grow 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) ${0.2 + i * 0.03}s both`,
+                }}
+              />
             ))}
           </div>
         </>
@@ -254,9 +289,9 @@ function Body({ s, r }: { s: SlideSpec; r: Rewind }) {
       return (
         <>
           <Kicker>Your top genres</Kicker>
-          <Huge className={fit(s.items[0])}>{cap(s.items[0])}</Huge>
+          <Huge style={fit(s.items[0])}>{cap(s.items[0])}</Huge>
           {s.items.slice(1, 3).map((g, n) => (
-            <Huge key={g} className={cn("text-[11cqw]", n ? "opacity-70" : "opacity-85")}>{cap(g)}</Huge>
+            <Huge key={g} className={n ? "opacity-70" : "opacity-85"} style={fit(g, 11)}>{cap(g)}</Huge>
           ))}
           <Line>A little bit of everything. Tasteful.</Line>
         </>
@@ -274,7 +309,7 @@ function Body({ s, r }: { s: SlideSpec; r: Rewind }) {
     case "summary": {
       const cover = r.topArtists[0]?.topAlbum?.thumb ?? r.topSongs[0]?.thumb;
       return (
-        <div className="rounded-[5cqw] bg-white p-[6cqw] text-[#111]">
+        <div className="rounded-[5cqw] bg-white p-[6cqw] text-[#111]" style={{ animation: "rw-pop 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.3) both" }}>
           <div className="mb-[5cqw] flex items-center gap-[4cqw]">
             <Thumb url={cover} className="size-[22cqw] rounded-[2cqw]" />
             <div>
@@ -336,10 +371,13 @@ export function Slide({ s, r, current }: { s: SlideSpec; r: Rewind; current: boo
       style={{ background: t.bg, "--rw-hi": t.hi, visibility: current ? "visible" : "hidden" } as CSSProperties}
     >
       {/* A pattern in the top half, faded out before it reaches the words. */}
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[60%] [mask-image:linear-gradient(to_bottom,black_45%,transparent)]"
-        style={{ background: PATTERN[s.kind](t.dark ? "rgb(0 0 0 / 0.13)" : "rgb(255 255 255 / 0.14)") }}
-      />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[60%] overflow-hidden [mask-image:linear-gradient(to_bottom,black_45%,transparent)]">
+        {/* Oversized, so drifting by one pattern period loops seamlessly. */}
+        <div
+          className="absolute -inset-[25cqw]"
+          style={{ background: PATTERN[s.kind](t.dark ? "rgb(0 0 0 / 0.13)" : "rgb(255 255 255 / 0.14)"), ...MOTION[s.kind] } as CSSProperties}
+        />
+      </div>
       {s.kind === "intro" ? (
         // A vinyl record spinning in from the corner, the quarter on its label.
         <div className="absolute -right-[30cqw] -top-[24cqw] grid size-[100cqw] place-items-center rounded-full bg-[#111] shadow-[0_14px_40px_rgb(0_0_0/0.35)] [background-image:repeating-radial-gradient(circle,#111_0_1.1cqw,#2a2a2a_1.1cqw_1.5cqw)] motion-safe:animate-[spin_14s_linear_infinite]">
@@ -348,11 +386,18 @@ export function Slide({ s, r, current }: { s: SlideSpec; r: Rewind; current: boo
           </div>
         </div>
       ) : null}
-      {s.kind === "setup" ? <div className="absolute -right-[25cqw] -top-[25cqw] size-[80cqw] rounded-full bg-[#111]" /> : null}
-      {s.kind === "genres" ? <div className="absolute -left-[22cqw] -top-[20cqw] size-[70cqw] rounded-full bg-[#ffd84d]" /> : null}
-      {s.kind === "newArtists" ? <div className="absolute -right-[20cqw] -top-[10cqw] size-[60cqw] rounded-full bg-[#7a2cff]" /> : null}
+      {s.kind === "setup" ? <div className="absolute -right-[25cqw] -top-[25cqw] size-[80cqw] rounded-full bg-[#111]" style={{ animation: "rw-breathe 5s ease-in-out infinite" }} /> : null}
+      {s.kind === "genres" ? <div className="absolute -left-[22cqw] -top-[20cqw] size-[70cqw] rounded-full bg-[#ffd84d]" style={{ animation: "rw-orbit 9s linear infinite" }} /> : null}
+      {s.kind === "newArtists" ? <div className="absolute -right-[20cqw] -top-[10cqw] h-[52cqw] w-[62cqw] rounded-[48%] bg-[#7a2cff]" style={{ animation: "rw-wobble 6s ease-in-out infinite" }} /> : null}
       {cover ? (
-        <img src={cover} alt="" className="absolute -right-[8cqw] top-[10cqw] aspect-square w-[56%] rotate-[8deg] rounded-[2cqw] object-cover shadow-[0_14px_40px_rgb(0_0_0/0.45)]" />
+        <img
+          src={cover}
+          alt=""
+          className="absolute -right-[8cqw] top-[10cqw] aspect-square w-[56%] rotate-[8deg] rounded-[2cqw] object-cover shadow-[0_14px_40px_rgb(0_0_0/0.45)]"
+          style={{
+            animation: s.kind === "topAlbum" ? "rw-spin-in 0.9s cubic-bezier(0.2, 0.8, 0.2, 1.2) both" : "rw-float 5s ease-in-out infinite",
+          }}
+        />
       ) : null}
       {/* Light grain over the flat colour. */}
       <div className="pointer-events-none absolute inset-0 opacity-20 [background:repeating-radial-gradient(circle_at_30%_30%,rgb(0_0_0/0.25)_0_1px,transparent_1px_3px)]" />
