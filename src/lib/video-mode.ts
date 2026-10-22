@@ -30,7 +30,8 @@ export async function followVideoMode(track: QueueTrack | undefined): Promise<vo
   if (!track) return;
   const src = useTrackSourceStore.getState();
   const rec = src.byVideoId[track.videoId];
-  const want = src.videoMode ? "video" : "song";
+  // A Rewind's soundtrack (snippet mode) plays songs, whatever the saved mode.
+  const want = src.videoMode && !usePlaybackStore.getState().snippets ? "video" : "song";
   if ((rec?.selected ?? "song") === want) return;
   if (want === "song") return src.setSelected(track.videoId, "song");
   if (rec?.video) return src.setSelected(track.videoId, "video");
@@ -38,7 +39,8 @@ export async function followVideoMode(track: QueueTrack | undefined): Promise<vo
   if (!alt) return;
   const now = useTrackSourceStore.getState();
   now.setAlternate(track.videoId, "video", alt);
-  if (now.videoMode) now.setSelected(track.videoId, "video"); // the mode may have changed meanwhile
+  // The mode (or a Rewind opening) may have changed meanwhile.
+  if (now.videoMode && !usePlaybackStore.getState().snippets) now.setSelected(track.videoId, "video");
 }
 
 /**
@@ -54,7 +56,7 @@ export function useVideoModeFollower(): void {
       const mode = useTrackSourceStore.getState().videoMode;
       const cur = s.queue[s.index];
       const next = s.queue[s.index + 1];
-      const key = `${mode}|${cur?.videoId}|${next?.videoId}`;
+      const key = `${mode}|${s.snippets}|${cur?.videoId}|${next?.videoId}`;
       if (key === last) return;
       last = key;
       void followVideoMode(cur).then(() => followVideoMode(next));

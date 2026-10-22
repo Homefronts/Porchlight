@@ -3,6 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 (globalThis as unknown as { window: unknown }).window = {
   location: { search: "" },
   addEventListener: () => {},
+  // The stores' save debounce runs on window timers.
+  setTimeout: globalThis.setTimeout.bind(globalThis),
+  clearTimeout: globalThis.clearTimeout.bind(globalThis),
 };
 
 const find = vi.hoisted(() => vi.fn<(...a: unknown[]) => Promise<string | null>>());
@@ -73,5 +76,21 @@ describe("followVideoMode", () => {
     });
     await followVideoMode(track("d"));
     expect(selected("d")).toBe("song");
+  });
+});
+
+describe("video mode during a Rewind", () => {
+  it("plays songs while the Rewind soundtrack runs, without touching the saved mode", async () => {
+    const { usePlaybackStore } = await import("@/lib/store/playback");
+    useTrackSourceStore.setState({ videoMode: true });
+    useTrackSourceStore.getState().setAlternate("g", "video", "g-video");
+    useTrackSourceStore.getState().setSelected("g", "video");
+    usePlaybackStore.setState({ snippets: true });
+    await followVideoMode(track("g"));
+    expect(selected("g")).toBe("song");
+    expect(useTrackSourceStore.getState().videoMode).toBe(true);
+    usePlaybackStore.setState({ snippets: false });
+    await followVideoMode(track("g"));
+    expect(selected("g")).toBe("video");
   });
 });

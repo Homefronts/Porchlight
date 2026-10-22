@@ -106,7 +106,9 @@ export function useRewindLogger(): void {
 
     const sync = (s: PlaybackState) => {
       const on = useSettingsStore.getState().rewindHistory;
-      const cur = on && s.index >= 0 ? s.queue[s.index] : undefined;
+      // The Rewind's own soundtrack (snippet mode) isn't listening: like no track at
+      // all, so the play before it is logged as it ends, and nothing during it.
+      const cur = on && !s.snippets && s.index >= 0 ? s.queue[s.index] : undefined;
       // Loading or buffering isn't listening.
       const audible = s.playing && s.status === "ready";
       if (cur?.videoId !== track?.videoId) {

@@ -62,15 +62,18 @@ describe("playSoundtrack", () => {
     expect(usePlaybackStore.getState().pendingSeek).toBe(42);
   });
 
-  it("pauses video mode while the Rewind plays, so it gets the songs, and brings it back after", async () => {
+  it("never changes the saved video mode (songs are forced by snippet mode instead), and ends snippet mode with your queue", async () => {
     useTrackSourceStore.setState({ videoMode: true });
     usePlaybackStore.setState({ queue: [track("a")], index: 0, position: 5, playing: true, status: "ready", volume: 0.8 });
     const restore = playSoundtrack(rewind);
-    expect(useTrackSourceStore.getState().videoMode).toBe(false);
+    expect(useTrackSourceStore.getState().videoMode).toBe(true);
+    expect(usePlaybackStore.getState().snippets).toBe(true);
     const done = restore();
     await vi.advanceTimersByTimeAsync(3000);
     await done;
     expect(useTrackSourceStore.getState().videoMode).toBe(true);
+    expect(usePlaybackStore.getState()).toMatchObject({ snippets: false, index: 0 });
+    expect(usePlaybackStore.getState().queue.map((t) => t.videoId)).toEqual(["a"]);
     useTrackSourceStore.setState({ videoMode: false });
   });
 

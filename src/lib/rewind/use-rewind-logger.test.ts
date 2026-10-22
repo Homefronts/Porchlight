@@ -121,3 +121,18 @@ it("keeps the play in progress safe if the app is killed, and recovers it next l
   expect((append.mock.calls[0][0] as { playedSec: number }).playedSec).toBeGreaterThanOrEqual(115);
   expect(localStorage.getItem(PENDING_KEY)).toBeNull();
 });
+
+it("doesn't count the Rewind's own soundtrack as listening, but keeps what was playing before it", () => {
+  set({ playing: true });
+  vi.advanceTimersByTime(90_000); // a real listen to "a"
+  // A Rewind opens: its soundtrack takes over the queue.
+  set({ snippets: true, queue: [track("s1"), track("s2")], index: 0 });
+  expect(append).toHaveBeenCalledTimes(1);
+  expect(append.mock.calls[0][0]).toMatchObject({ videoId: "a", playedSec: 90 });
+  vi.advanceTimersByTime(25_000);
+  set({ index: 1 });
+  vi.advanceTimersByTime(25_000);
+  // It closes: the user's queue comes back.
+  set({ snippets: false, queue: [track("a"), track("b")], index: 0 });
+  expect(append).toHaveBeenCalledTimes(1); // no soundtrack snippets logged
+});
