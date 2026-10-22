@@ -42,6 +42,8 @@ type State = {
    *  The queue and track already survive a restart; the position does
    *  not, and this is the switch for it. */
   resumePlayback: boolean;
+  /** Tallest music video picture to fetch, in pixels (720 = 720p). */
+  videoQuality: VideoQuality;
   setCrossfadeSec: (v: number) => void;
   setNormalizeVolume: (v: boolean) => void;
   setEqEnabled: (v: boolean) => void;
@@ -52,7 +54,12 @@ type State = {
   setBackButton: (v: BackButtonMode) => void;
   setSmartBackSeconds: (v: number) => void;
   setResumePlayback: (v: boolean) => void;
+  setVideoQuality: (v: VideoQuality) => void;
 };
+
+/** Music video heights offered in Settings > Playback. */
+export const VIDEO_QUALITIES = [360, 480, 720, 1080, 1440, 2160] as const;
+export type VideoQuality = (typeof VIDEO_QUALITIES)[number];
 
 /** The gains currently in force, whichever way they were chosen. */
 export function eqGains(state: {
@@ -87,6 +94,9 @@ export const usePlaybackSettings = create<State>()(
       backButton: "smart",
       smartBackSeconds: 3,
       resumePlayback: true,
+      // Sharp by default: each video plays at the best it has, up to 1440p.
+      videoQuality: 1440,
+      setVideoQuality: (videoQuality) => set({ videoQuality }),
       setCrossfadeSec: (crossfadeSec) =>
         set({
           crossfadeSec: Math.min(12, Math.max(0, Math.round(crossfadeSec))),

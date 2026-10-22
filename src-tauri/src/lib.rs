@@ -3219,6 +3219,157 @@ fn resolve_stream_ytdlp(app: tauri::AppHandle, video_id: String) -> Result<Strin
     String::from_utf8(output.stdout).map_err(|e| format!("stdout not utf8: {e}"))
 }
 
+/// Music video picture for the Song/Video chip: a direct URL to a silent,
+/// progressive stream no taller than `max_height` (Settings > Playback), which
+/// the player syncs to the audio it already streams. H.264 first (plays in
+/// every webview); above 1080p YouTube only has VP9/AV1. Off the main thread:
+/// yt-dlp takes a couple of seconds.
+#[tauri::command]
+async fn resolve_video_ytdlp(app: tauri::AppHandle, video_id: String, max_height: u32) -> Result<String, String> {
+    if !sanitize_video_id(&video_id) {
+        return Err(format!("invalid videoId: {video_id}"));
+    }
+    let h = max_height.clamp(144, 4320);
+    // H.264 tops out at 1080p, so above that it would cap the choice: VP9 then,
+    // which is far lighter to decode than AV1 where there is no AV1 hardware.
+    let format = if h > 1080 {
+        format!("bestvideo[height<={h}][vcodec^=vp9][protocol^=http]/bestvideo[height<={h}][protocol^=http]")
+    } else {
+        format!("bestvideo[height<={h}][vcodec^=avc1][protocol^=http]/bestvideo[height<={h}][protocol^=http]")
+    };
+    let url = format!("https://www.youtube.com/watch?v={video_id}");
+    let program = ytdlp::program(&ytdlp::managed_path(&app));
+    let started = std::time::Instant::now();
+    eprintln!("[video] resolve {video_id} up to {h}p");
+    let id = video_id.clone();
+    let output = tauri::async_runtime::spawn_blocking(move || {
+        let mut command = std::process::Command::new(program);
+        command.args([
+            "--print",
+            "%(format_id)s %(height)sp %(vcodec)s %(ext)s",
+            "-g",
+            "-f",
+            &format,
+            "--no-playlist",
+            "--no-warnings",
+            &url,
+        ]);
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            command.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+        }
+        command.output()
+    })
+    .await
+    .map_err(|e| e.to_string())?
+    .map_err(|e| format!("spawn yt-dlp: {e}"))?;
+    let ms = started.elapsed().as_millis();
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let err = format!("yt-dlp exit {}: {}", output.status, stderr.chars().take(400).collect::<String>());
+        eprintln!("[video] {id} failed after {ms}ms: {err}");
+        return Err(err);
+    }
+    // --print puts the chosen format first, -g the URL after it.
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let picked = stdout.lines().next().unwrap_or("?");
+    let url = stdout.lines().find(|l| l.starts_with("https://")).map(str::to_owned);
+    match &url {
+        Some(u) => eprintln!("[video] {id} -> {picked} in {ms}ms ({})", u.split('/').nth(2).unwrap_or("?")),
+        None => eprintln!("[video] {id}: no URL in yt-dlp output after {ms}ms: {}", stdout.chars().take(300).collect::<String>()),
+    }
+    url.ok_or_else(|| "yt-dlp returned no video URL".into())
+}
+
+/// Most bytes one /video request fetches from YouTube. YouTube throttles an
+/// open-ended read (what a browser's video player sends) to a trickle and
+/// then drops it ("data source error"), while a bounded range arrives at full
+/// speed (measured: 10 MB in 0.3 s vs 40 MB a minute). So each request gets
+/// at most one chunk and the player asks for the next, as yt-dlp does.
+const VIDEO_CHUNK: u64 = 10_000_000;
+
+/// The bytes to fetch for a player's `Range` header: from its start, at most
+/// one chunk, never past the end it asked for.
+fn video_chunk(range: Option<&str>) -> (u64, u64) {
+    let spec = range.and_then(|r| r.strip_prefix("bytes=")).unwrap_or("0-");
+    let mut parts = spec.splitn(2, '-');
+    let start: u64 = parts.next().and_then(|s| s.trim().parse().ok()).unwrap_or(0);
+    let end = parts.next().and_then(|s| s.trim().parse::<u64>().ok());
+    let last = start + VIDEO_CHUNK - 1;
+    (start, end.map_or(last, |e| e.min(last)))
+}
+
+#[derive(serde::Deserialize)]
+struct VideoQuery {
+    u: String,
+}
+
+/// Music video bytes for the player's <video>, fetched from YouTube a chunk
+/// at a time (see VIDEO_CHUNK). Only https googlevideo.com URLs, the kind
+/// `resolve_video_ytdlp` returns, are fetched: never a general proxy.
+async fn video_proxy_handler(
+    axum::extract::Query(q): axum::extract::Query<VideoQuery>,
+    headers: axum::http::HeaderMap,
+) -> Response {
+    static CLIENT: std::sync::OnceLock<reqwest::Client> = std::sync::OnceLock::new();
+    let Ok(url) = reqwest::Url::parse(&q.u) else {
+        return (StatusCode::BAD_REQUEST, "bad url").into_response();
+    };
+    if url.scheme() != "https" || !url.host_str().is_some_and(|h| h.ends_with(".googlevideo.com")) {
+        return (StatusCode::FORBIDDEN, "not a YouTube video URL").into_response();
+    }
+    let range = headers.get(axum::http::header::RANGE).and_then(|v| v.to_str().ok());
+    let (start, last) = video_chunk(range);
+    let client = CLIENT.get_or_init(reqwest::Client::new);
+    let upstream = match client.get(url).header("range", format!("bytes={start}-{last}")).send().await {
+        Ok(r) => r,
+        Err(e) => {
+            eprintln!("[video] proxy: fetch at byte {start} failed: {e}");
+            return (StatusCode::BAD_GATEWAY, "fetch failed").into_response();
+        }
+    };
+    let status = upstream.status();
+    if status == reqwest::StatusCode::RANGE_NOT_SATISFIABLE {
+        return StatusCode::RANGE_NOT_SATISFIABLE.into_response();
+    }
+    if !status.is_success() {
+        eprintln!("[video] proxy: YouTube answered {status} at byte {start}");
+        return (StatusCode::BAD_GATEWAY, "upstream error").into_response();
+    }
+    let content_type = upstream.headers().get("content-type").cloned();
+    let content_range = upstream.headers().get("content-range").cloned();
+    let bytes = match upstream.bytes().await {
+        Ok(b) => b,
+        Err(e) => {
+            eprintln!("[video] proxy: read at byte {start} failed: {e}");
+            return (StatusCode::BAD_GATEWAY, "read failed").into_response();
+        }
+    };
+    let mut res = Response::builder()
+        .status(if content_range.is_some() { StatusCode::PARTIAL_CONTENT } else { StatusCode::OK })
+        .header("accept-ranges", "bytes")
+        // Cached by the webview, so a new <video> for the same link (opening or
+        // leaving fullscreen) starts from bytes already here instead of refetching.
+        .header("cache-control", "private, max-age=3600")
+        .header("content-length", bytes.len());
+    if let Some(v) = content_type {
+        res = res.header("content-type", v);
+    }
+    if let Some(v) = content_range {
+        res = res.header("content-range", v);
+    }
+    res.body(axum::body::Body::from(bytes))
+        .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+}
+
+/// Dev diagnostics: a line from the webview into this process's log (stderr),
+/// where webview console output doesn't reach.
+#[tauri::command]
+fn debug_log(msg: String) {
+    eprintln!("{}", msg.chars().take(500).collect::<String>());
+}
+
 /// Lifecycle of a single track's yt-dlp download. yt-dlp writes
 /// bytes into a `<videoId>.part` file which is renamed to
 /// `<videoId>.webm` on successful completion; stream handlers block on
@@ -4055,6 +4206,7 @@ async fn start_stream_server(
         .route("/stream/:video_id", get(stream_handler))
         .route("/prefetch/:video_id", get(prefetch_handler))
         .route("/cover/:filename", get(cover_serve_handler))
+        .route("/video", get(video_proxy_handler))
         .with_state(server);
     let app = Router::new()
         .nest(&format!("/{token}"), routes)
@@ -4232,6 +4384,8 @@ pub fn run() {
             ensure_ytdlp,
             check_ytdlp_update,
             resolve_stream_ytdlp,
+            resolve_video_ytdlp,
+            debug_log,
             get_stream_base_url,
             downloads::downloads_index,
             downloads::downloads_set_collection,
@@ -4464,12 +4618,23 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
-    use super::generate_stream_token;
+    use super::{generate_stream_token, video_chunk, VIDEO_CHUNK};
     use axum::body::Body;
     use axum::http::{Request, StatusCode};
     use axum::routing::get;
     use axum::Router;
     use tower::ServiceExt;
+
+    #[test]
+    fn video_chunk_asks_youtube_for_one_bounded_chunk() {
+        // What a browser player sends: open-ended. Bounded to one chunk.
+        assert_eq!(video_chunk(Some("bytes=0-")), (0, VIDEO_CHUNK - 1));
+        assert_eq!(video_chunk(Some("bytes=25000000-")), (25_000_000, 25_000_000 + VIDEO_CHUNK - 1));
+        // A smaller ask is kept as is; no header means from the start.
+        assert_eq!(video_chunk(Some("bytes=100-199")), (100, 199));
+        assert_eq!(video_chunk(None), (0, VIDEO_CHUNK - 1));
+        assert_eq!(video_chunk(Some("junk")), (0, VIDEO_CHUNK - 1));
+    }
 
     #[test]
     fn stream_token_is_nonempty_hex_and_varies() {

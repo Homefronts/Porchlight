@@ -27,6 +27,12 @@ type State = {
   setAlternate: (knownId: string, kind: SourceKind, altId: string) => void;
   /** Flip the active source for a track. */
   setSelected: (anyVideoId: string, selected: SourceKind) => void;
+  /**
+   * The Song/Video chip as a mode, like YouTube Music's: on, every track plays
+   * its music video when it has one (see `useVideoModeFollower`).
+   */
+  videoMode: boolean;
+  setVideoMode: (on: boolean) => void;
 };
 
 // Soft cap on `byVideoId`. Each unique track contributes two keys (song
@@ -49,10 +55,22 @@ function capByVideoId(
   return out;
 }
 
+/**
+ * Saved state from an older version. v0 paired songs with the first search
+ * result (sometimes a lyric video, cover or live take), so its pairs are
+ * dropped once and rebuilt by the strict lookup as songs play.
+ */
+export function migrateTrackSources(persisted: unknown, version: number): Pick<State, "byVideoId" | "videoMode"> {
+  if (version < 1) return { byVideoId: {}, videoMode: false };
+  return persisted as Pick<State, "byVideoId" | "videoMode">;
+}
+
 export const useTrackSourceStore = create<State>()(
   persist(
     (set) => ({
       byVideoId: {},
+      videoMode: false,
+      setVideoMode: (videoMode) => set({ videoMode }),
       setAlternate: (knownId, kind, altId) =>
         set((s) => {
           const existing = s.byVideoId[knownId];
@@ -90,6 +108,8 @@ export const useTrackSourceStore = create<State>()(
     {
       name: "ytm-track-source",
       storage: createJSONStorage(() => safeIdbStorage),
+      version: 1,
+      migrate: migrateTrackSources,
     },
   ),
 );
@@ -126,6 +146,9 @@ export function initFloatingTrackSourceBridge(): void {
         selected,
       });
     },
+    setVideoMode: (on) => {
+      void emit("track-source:action", { type: "setVideoMode", on });
+    },
   });
 }
 
@@ -134,6 +157,18 @@ export function initFloatingTrackSourceBridge(): void {
  * (queue) id. Snapshot helper — for reactive subscriptions, read from
  * the store directly.
  */
+type StreamSlot = { videoId?: string; index: number; streamVideoId?: string };
+
+/**
+ * Where a newly loaded stream should start: the old playhead when the same
+ * queue slot only switched between its song and video versions, else null
+ * (from the top). Under a second counts as not started yet.
+ */
+export function resumeOnSourceSwitch(last: StreamSlot | null, now: StreamSlot, currentTime: number): number | null {
+  const switched = !!last && last.videoId === now.videoId && last.index === now.index && last.streamVideoId !== now.streamVideoId;
+  return switched && currentTime >= 1 ? currentTime : null;
+}
+
 export function resolveStreamId(
   displayedId: string,
   byVideoId: Record<string, TrackSources>,

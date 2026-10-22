@@ -7,6 +7,7 @@ import {
   IconCircleFilled,
   IconDeviceSpeakerFilled,
   IconHeadphonesFilled,
+  IconVideoFilled,
   IconPlayerPlayFilled,
   IconTransitionRightFilled,
 } from "@tabler/icons-react";
@@ -25,6 +26,7 @@ import {
   usePlaybackSettings,
   EQ_BANDS,
   EQ_RANGE,
+  VIDEO_QUALITIES,
   type BackButtonMode,
   type EqPreset,
 } from "@/lib/store/playback-settings";
@@ -59,6 +61,9 @@ export function PlaybackTab() {
       <BackButtonGroup />
       <Group>
         <ResumeRow />
+      </Group>
+      <Group>
+        <VideoQualityRow />
       </Group>
       <Group>
         <AiMusicRow />
@@ -507,6 +512,46 @@ function OutputDeviceRow() {
                 {deviceId === d.deviceId ? (
                   <IconCheck className="size-4 text-acc1!" stroke={2.4} />
                 ) : null}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      }
+    />
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Video quality                                                       */
+/* ------------------------------------------------------------------ */
+
+const qualityLabel = (h: number) => (h === 2160 ? "4K" : `${h}p`);
+
+/** How sharp the music video is when the Song/Video chip is on Video. */
+function VideoQualityRow() {
+  const quality = usePlaybackSettings((s) => s.videoQuality);
+  const setQuality = usePlaybackSettings((s) => s.setVideoQuality);
+  return (
+    <SettingRow
+      icon={IconVideoFilled}
+      title="Video Quality"
+      description="Highest quality for music videos. Raise it for 4K, or lower it to save data or battery."
+      control={
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="flex h-8 w-[120px] cursor-pointer items-center gap-2 rounded-[10px] border border-w070 bg-w050 px-2.5 text-[13px] text-t2 transition-colors duration-[140ms] hover:bg-w070"
+            >
+              <span className="min-w-0 flex-1 truncate text-left">{qualityLabel(quality)}</span>
+              <IconChevronDown className="size-3 shrink-0 text-t6" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[120px]">
+            {VIDEO_QUALITIES.map((h) => (
+              <DropdownMenuItem key={h} onSelect={() => setQuality(h)}>
+                <span className="flex-1">{qualityLabel(h)}</span>
+                {quality === h ? <IconCheck className="size-4 text-acc1!" stroke={2.4} /> : null}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>

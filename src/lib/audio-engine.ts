@@ -16,7 +16,7 @@ import { eqGains, usePlaybackSettings } from "@/lib/store/playback-settings";
 import { playbackAllowed, usePlaybackAllowed } from "@/lib/store/premium";
 import { useSettingsStore } from "@/lib/store/settings";
 import { openPremiumGate } from "@/lib/store/premium-gate";
-import { resolveStreamId, useTrackSourceStore } from "@/lib/store/track-source";
+import { resolveStreamId, resumeOnSourceSwitch, useTrackSourceStore } from "@/lib/store/track-source";
 import { pickThumbnail } from "@/components/shared/thumbnail";
 import { IS_MAC } from "@/lib/platform";
 import { isAiHidden } from "@/lib/ai/use-ai";
@@ -90,6 +90,8 @@ export function useAudioEngine() {
     index: number;
     seconds: number;
   } | null>(null);
+  // The stream loaded last, so a song ↔ video switch can be told from a new track.
+  const lastStreamRef = useRef<{ videoId?: string; index: number; streamVideoId?: string } | null>(null);
   // Guard against stale stream resolutions when the user skips mid-fetch.
   const resolveTokenRef = useRef(0);
   // Counts how many tracks have failed in a row without a successful
@@ -455,6 +457,12 @@ export function useAudioEngine() {
   useEffect(() => {
     const el = audioRef.current;
     if (!el) return;
+    // Song ↔ video switch on the playing track: the new stream picks up at
+    // the same second (through the resume path below) instead of from 0:00.
+    const now = { videoId, index, streamVideoId };
+    const carry = resumeOnSourceSwitch(lastStreamRef.current, now, el.currentTime);
+    lastStreamRef.current = now;
+    if (carry !== null && videoId) resumeRef.current = { videoId, index, seconds: carry };
     // A crossfade already has this track playing on the (now active)
     // element: adopt it rather than reloading. The outgoing element keeps
     // fading in the background.

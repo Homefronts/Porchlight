@@ -1,10 +1,8 @@
-import { useState } from "react";
 import { IconCheck } from "@tabler/icons-react";
 import { IconMusicFilled } from "@/components/shared/filled-icons";
 import { IconDotsVertical, IconLoader2, IconVideoFilled } from "@tabler/icons-react";
 import { playerIconButton } from "@/components/layout/player-chrome";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -25,8 +23,7 @@ import {
   dropPrimitives,
   useTrackMenuController,
 } from "@/components/shared/track-context-menu";
-import { findAlternateVideoId } from "@/lib/innertube/alternate-source";
-import { useTrackSourceStore, type SourceKind } from "@/lib/store/track-source";
+import { useSourceSwitch } from "@/lib/video-mode";
 import type { QueueTrack } from "@/lib/store/playback";
 import type { ShelfItem } from "@/lib/innertube/types";
 
@@ -141,40 +138,7 @@ export function PlayerMoreMenu({
  * `findAlternateVideoId` lookup — the menu form is just less wide.
  */
 function SourceMenuItems({ track }: { track: QueueTrack }) {
-  const record = useTrackSourceStore((s) => s.byVideoId[track.videoId]);
-  const setSelected = useTrackSourceStore((s) => s.setSelected);
-  const setAlternate = useTrackSourceStore((s) => s.setAlternate);
-  const [busy, setBusy] = useState<SourceKind | null>(null);
-  const selected: SourceKind = record?.selected ?? "song";
-
-  const switchTo = async (target: SourceKind) => {
-    if (busy || target === selected) return;
-    const cachedAlt = target === "video" ? record?.video : record?.song;
-    if (cachedAlt) {
-      setSelected(track.videoId, target);
-      return;
-    }
-    setBusy(target);
-    try {
-      const artistsLine = track.artists?.map((a) => a.name).join(" ") ?? "";
-      const query = `${track.title} ${artistsLine}`.trim();
-      const altId = await findAlternateVideoId(query, track.videoId, target);
-      if (!altId) {
-        toast.error(
-          target === "video"
-            ? "No video version found"
-            : "No song version found",
-        );
-        return;
-      }
-      setAlternate(track.videoId, target, altId);
-      setSelected(track.videoId, target);
-    } catch (e) {
-      toast.error(`Couldn't switch source: ${(e as Error).message}`);
-    } finally {
-      setBusy(null);
-    }
-  };
+  const { selected, busy, switchTo } = useSourceSwitch(track);
 
   return (
     <>

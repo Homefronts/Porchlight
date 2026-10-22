@@ -16,6 +16,7 @@ const mem = new Map<string, string>();
 };
 
 const { usePlaybackStore, snippetWindow } = await import("@/lib/store/playback");
+const { useTrackSourceStore } = await import("@/lib/store/track-source");
 const { playSoundtrack } = await import("./soundtrack");
 
 const track = (videoId: string): QueueTrack => ({ videoId, title: videoId, thumbnails: [] });
@@ -59,6 +60,18 @@ describe("playSoundtrack", () => {
     // Once the old song has loaded again, it jumps back to where it was.
     usePlaybackStore.setState({ status: "ready", duration: 200 });
     expect(usePlaybackStore.getState().pendingSeek).toBe(42);
+  });
+
+  it("pauses video mode while the Rewind plays, so it gets the songs, and brings it back after", async () => {
+    useTrackSourceStore.setState({ videoMode: true });
+    usePlaybackStore.setState({ queue: [track("a")], index: 0, position: 5, playing: true, status: "ready", volume: 0.8 });
+    const restore = playSoundtrack(rewind);
+    expect(useTrackSourceStore.getState().videoMode).toBe(false);
+    const done = restore();
+    await vi.advanceTimersByTimeAsync(3000);
+    await done;
+    expect(useTrackSourceStore.getState().videoMode).toBe(true);
+    useTrackSourceStore.setState({ videoMode: false });
   });
 
   it("stops the music if nothing was playing before", async () => {

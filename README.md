@@ -20,7 +20,7 @@
 
 <p align="center">
   <a href="../../releases/latest">
-    <img src="https://img.shields.io/badge/%E2%AC%87%20Download%20YTubic-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Download YTubic" height="60" />
+    <img src="https://img.shields.io/badge/%E2%AC%87%20Download%20YTubic%20Plus-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Download YTubic Plus" height="60" />
   </a>
   <a href="https://discord.gg/4gccUpZyYH">
     <img src="https://img.shields.io/badge/Join%20the%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join the YTubic Discord" height="60" />
@@ -39,6 +39,7 @@ Built as a reaction to the sluggish webview-wrapper experience — YTubic talks 
 - **Downloads page** — everything you've saved, in the sidebar, playable with no internet (for up to 30 days between Premium check-ins).
 - **AI music filter** — one button in the top bar hides AI-generated music from search, home and mixes, using community lists checked against Spotify. Songs by AI artists carry an **AI** tag either way.
 - **Rewind** — a year-in-review style recap of your own listening, every quarter: bold full-screen slides of your minutes, top artists, songs and genres, your listening personality, and a share card, with your favourite songs playing underneath. Built and kept on your computer only; you can also import this quarter's plays from a Google Takeout export.
+- **Music videos** — the Song/Video switch actually plays the music video, synced to the song, in the player and in full screen. Video stays on as you skip, like YouTube Music, with quality from 360p to 4K.
 - **Own update channel** — Plus updates itself from [this fork's releases](../../releases), so it never gets replaced by an upstream build.
 
 ## Roadmap
@@ -51,7 +52,8 @@ Ideas for future Plus releases, roughly in order. Not promises.
 - [ ] **Share your AI marks** — turn your Mark as AI choices into a one-click report to the community list.
 - [ ] **Listen together** — a Jams-style shared session with friends on YTubic Plus. Needs a small relay server, so maybe someday.
 - [ ] **Sleep timer** — stop after X minutes or at the end of the current song.
-- [ ] **AI filter polish** — recheck artists sooner when Spotify was unreachable, keep mix songs when a refill page fails, and don't treat library items as "not in library" while it loads.
+- [ ] **Skip non-music parts of videos** — optional [SponsorBlock](https://sponsor.ajay.app) skipping of intros and skits in music videos (its "Non-Music Section" category), credited per its CC BY-NC-SA licence.
+- [ ] **Video quality by GPU** — pick the default music video quality from what your graphics card can decode smoothly.
 
 > **All the credit for the app itself goes to [George Shyshov (NUber)](https://github.com/NUber-dev)**,
 > who designed and built YTubic. Plus only adds features on top. If you enjoy it,
@@ -93,8 +95,8 @@ Download the latest installer from the [Releases](../../releases) page and run i
 - Signing in is optional: browse and playback work anonymously; sign in to get
   your library, likes, and playlists.
 
-> **Linux and macOS builds are in beta.** They are compiled and unit-tested in
-> CI, but get far less real-world testing than the Windows build. If something
+> **Tested on Windows. macOS and Linux builds are included, but haven't been
+> tested on real machines yet.** They are compiled and unit-tested in CI. If something
 > breaks, please [open an issue](../../issues) — or use the in-app reporter
 > (⋯ menu → Report an issue), which attaches your app version and OS
 > automatically.

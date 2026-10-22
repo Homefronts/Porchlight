@@ -35,7 +35,6 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { AiTag } from "@/components/shared/ai-badge";
 import { AnimatePresence, motion } from "motion/react";
-import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,6 +51,7 @@ import { ArtistLinks } from "@/components/shared/artist-links";
 import { EntityLink } from "@/components/shared/entity-link";
 import { PlayerMoreMenu } from "@/components/layout/player-more-menu";
 import { PlayerCoverMenu } from "@/components/layout/player-cover-menu";
+import { MusicVideo } from "@/components/layout/music-video";
 import {
   playerIconButton,
 } from "@/components/layout/player-chrome";
@@ -60,11 +60,7 @@ import { usePlayerCoverDrag } from "@/lib/player-drag";
 import { openFullscreen } from "@/lib/store/fullscreen";
 import { usePlaybackStore, currentTrack } from "@/lib/store/playback";
 import { useScrubStore } from "@/lib/store/scrub";
-import {
-  useTrackSourceStore,
-  type SourceKind,
-} from "@/lib/store/track-source";
-import { findAlternateVideoId } from "@/lib/innertube/alternate-source";
+import { useSourceSwitch } from "@/lib/video-mode";
 import { lookupITunesCover, cacheCoverToDisk } from "@/lib/cover-art";
 import type { QueueTrack, RepeatMode } from "@/lib/store/playback";
 
@@ -128,41 +124,7 @@ export function repeatLabel(repeat: RepeatMode): string {
  * alternate videoId hasn't been resolved yet, we fetch it on demand.
  */
 export function SourceToggle({ track }: { track: QueueTrack }) {
-  const record = useTrackSourceStore((s) => s.byVideoId[track.videoId]);
-  const setSelected = useTrackSourceStore((s) => s.setSelected);
-  const setAlternate = useTrackSourceStore((s) => s.setAlternate);
-  const [busy, setBusy] = useState<SourceKind | null>(null);
-
-  const selected: SourceKind = record?.selected ?? "song";
-
-  const switchTo = async (target: SourceKind) => {
-    if (busy || target === selected) return;
-    const cachedAlt = target === "video" ? record?.video : record?.song;
-    if (cachedAlt) {
-      setSelected(track.videoId, target);
-      return;
-    }
-    setBusy(target);
-    try {
-      const artistsLine = track.artists?.map((a) => a.name).join(" ") ?? "";
-      const query = `${track.title} ${artistsLine}`.trim();
-      const altId = await findAlternateVideoId(query, track.videoId, target);
-      if (!altId) {
-        toast.error(
-          target === "video"
-            ? "No video version found"
-            : "No song version found",
-        );
-        return;
-      }
-      setAlternate(track.videoId, target, altId);
-      setSelected(track.videoId, target);
-    } catch (e) {
-      toast.error(`Couldn't switch source: ${(e as Error).message}`);
-    } finally {
-      setBusy(null);
-    }
-  };
+  const { selected, busy, switchTo } = useSourceSwitch(track);
 
   // Design-system toggle: one moving thumb under two 28px icon slots
   // rather than a fill on the selected half. The thumb is absolutely
@@ -610,6 +572,8 @@ export function PlayerBar({
                   highRes
                   overrideHighRes={iTunesCover}
                 />
+                {/* Not in the mini-player: the main window already decodes this video. */}
+                {variant !== "floating" ? <MusicVideo track={track} where="card" /> : null}
                 <ArtworkOutline className="rounded-md" />
                 {/* Hover pad with the Full screen chip, per the design.
                     Only the chip is clickable, and it stops the pointer

@@ -1,4 +1,5 @@
 import { fisherYates, snippetWindow, usePlaybackStore, type QueueTrack } from "@/lib/store/playback";
+import { useTrackSourceStore } from "@/lib/store/track-source";
 import type { Rewind } from "./types";
 
 const FADE_MS = 1200;
@@ -49,6 +50,10 @@ export function playSoundtrack(r: Rewind): () => Promise<void> {
   }));
   if (!tracks.length) return async () => {};
   const { queue, index, position, playing, radio, queueContinuation, volume } = usePlaybackStore.getState();
+  // Rewind plays the songs: video mode would swap in their music videos (spoken
+  // intros, skits) and decode a picture nobody sees behind the story.
+  const videoMode = useTrackSourceStore.getState().videoMode;
+  if (videoMode) useTrackSourceStore.getState().setVideoMode(false);
 
   usePlaybackStore.setState({ snippets: true, volume: 0 });
   usePlaybackStore.getState().setQueue(fisherYates(tracks));
@@ -63,6 +68,7 @@ export function playSoundtrack(r: Rewind): () => Promise<void> {
     offFirst = () => {};
     await fadeTo(0);
     usePlaybackStore.setState({ snippets: false });
+    if (videoMode) useTrackSourceStore.getState().setVideoMode(true);
     const id = queue[index]?.videoId;
     if (!id) {
       usePlaybackStore.getState().stopPlayback();

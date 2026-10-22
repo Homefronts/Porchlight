@@ -31,6 +31,7 @@ import { usePlaybackNotifications } from "@/lib/playback-notifications";
 import { useLastfmScrobbler } from "@/lib/lastfm-scrobbler";
 import { useRewindLogger } from "@/lib/rewind/use-rewind-logger";
 import { useRewindScheduler } from "@/lib/rewind/seal";
+import { useVideoModeFollower } from "@/lib/video-mode";
 import { useYtdlpSetup } from "@/lib/ytdlp";
 import { useDownloadsBridge } from "@/lib/downloads";
 import { useDownloadsSync } from "@/lib/downloads-sync";
@@ -119,6 +120,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   useLastfmScrobbler();
   useRewindLogger();
   useRewindScheduler();
+  useVideoModeFollower();
   const mode = useLayoutStore((s) => s.mode);
   const setMode = useLayoutStore((s) => s.setMode);
   const sidebarWidth = useLayoutStore((s) => s.sidebarWidth);
