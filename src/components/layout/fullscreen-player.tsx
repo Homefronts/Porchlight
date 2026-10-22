@@ -1,11 +1,11 @@
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { HeartIcon, ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 import { toast } from "sonner";
 import { fetchLikedSongs } from "@/lib/innertube/library";
 import { toggleDisliked, toggleLiked } from "@/lib/like-actions";
 import { useDislikesStore } from "@/lib/store/dislikes";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useAnimate } from "motion/react";
 import { useTheme } from "next-themes";
 import {
   PlayIcon,
@@ -590,6 +590,25 @@ function Cover({
   );
 }
 
+type StageBox = { left: number; top: number; width: number; height: number; radius: string };
+
+const SWITCH = { duration: 0.42, ease: [0.32, 0.72, 0, 1] } as const;
+
+/** The frame the video is showing right now, as an image (null if there's none to take). */
+function snapshot(stage: HTMLElement | null): string | null {
+  const v = stage?.querySelector<HTMLVideoElement>("video[data-front]");
+  if (!v || v.readyState < 2 || !v.videoWidth) return null;
+  const c = document.createElement("canvas");
+  c.width = Math.min(v.videoWidth, 1280);
+  c.height = Math.round((c.width * v.videoHeight) / v.videoWidth);
+  try {
+    c.getContext("2d")?.drawImage(v, 0, 0, c.width, c.height);
+    return c.toDataURL("image/jpeg", 0.85);
+  } catch {
+    return null; // not readable: just skip the crossfade
+  }
+}
+
 /**
  * Fullscreen's one music video, kept mounted across the three layouts so
  * switching never reloads it. Centred and With lyrics mark where it goes with
@@ -597,10 +616,10 @@ function Cover({
  * included; Immersive has no frame, so it fills the view. The cover shows
  * under the video until its first frame.
  *
- * A layout switch morphs it there with a transform (motion's FLIP layout
- * animation: smooth, no relayout per frame, corners corrected as it scales),
- * eased like the view's own open. It runs only when the layout changes
- * (`layoutDependency`): any other move snaps, so it stays on its frame.
+ * A layout switch crossfades instead of sliding (a slide always crossed the
+ * screen and left the frame for a moment): a snapshot of the frame on screen
+ * fades out where the video was, while the live video, still playing, is
+ * already in its new frame and fades and scales in.
  */
 function VideoStage({
   track,
@@ -617,8 +636,26 @@ function VideoStage({
   immersive: boolean;
   tag: FullscreenLayout;
 }) {
-  type Box = { left: number; top: number; width: number; height: number; radius: string; tag: FullscreenLayout };
-  const [box, setBox] = useState<Box | null>(null);
+  const [box, setBox] = useState<StageBox | null>(null);
+  const [ghost, setGhost] = useState<{ id: number; src: string; box: StageBox | null } | null>(null);
+  const [stage, animate] = useAnimate<HTMLDivElement>();
+  const boxRef = useRef<StageBox | null>(null);
+  const where = immersive ? "immersive" : tag;
+  const lastWhere = useRef(where);
+
+  // Effects run in this order within a commit: remember the box on screen,
+  // then on a switch snapshot it, then move to the new frame.
+  useLayoutEffect(() => {
+    boxRef.current = box;
+  });
+
+  useLayoutEffect(() => {
+    if (lastWhere.current === where) return;
+    lastWhere.current = where;
+    const src = snapshot(stage.current);
+    if (src) setGhost({ id: Date.now(), src, box: boxRef.current });
+    if (stage.current) void animate(stage.current, { opacity: [0, 1], scale: [0.96, 1] }, SWITCH);
+  }, [where, animate, stage]);
 
   useLayoutEffect(() => {
     if (immersive || !slot || !host) return setBox(null);
@@ -632,8 +669,8 @@ function VideoStage({
       const r = slot.getBoundingClientRect();
       // The view's open animation scales it; divide that out to get its own pixels.
       const k = host.offsetWidth ? h.width / host.offsetWidth : 1;
-      const next = { left: (r.left - h.left) / k, top: (r.top - h.top) / k, width: r.width / k, height: r.height / k, radius: getComputedStyle(slot).borderRadius, tag };
-      const key = `${next.left.toFixed(1)}|${next.top.toFixed(1)}|${next.width.toFixed(1)}|${next.height.toFixed(1)}|${next.radius}|${tag}`;
+      const next = { left: (r.left - h.left) / k, top: (r.top - h.top) / k, width: r.width / k, height: r.height / k, radius: getComputedStyle(slot).borderRadius };
+      const key = `${next.left.toFixed(1)}|${next.top.toFixed(1)}|${next.width.toFixed(1)}|${next.height.toFixed(1)}|${next.radius}`;
       if (key !== last) {
         last = key;
         setBox(next);
@@ -642,31 +679,41 @@ function VideoStage({
     };
     follow();
     return () => cancelAnimationFrame(raf);
-  }, [slot, host, immersive, tag]);
+  }, [slot, host, immersive]);
+
+  const place = (b: StageBox | null) =>
+    b ? { left: b.left, top: b.top, width: b.width, height: b.height, borderRadius: b.radius } : { left: 0, top: 0, width: "100%", height: "100%", borderRadius: 0 };
 
   return (
-    <motion.div
-      aria-hidden
-      layout
-      // Set in the same render as the new position, so only a layout switch morphs.
-      layoutDependency={box?.tag ?? "immersive"}
-      transition={{ layout: { duration: 0.5, ease: [0.32, 0.72, 0, 1] }, borderRadius: { duration: 0.5, ease: [0.32, 0.72, 0, 1] } }}
-      animate={{ borderRadius: box ? box.radius : "0px" }}
-      className="pointer-events-none absolute overflow-hidden"
-      style={box ? { left: box.left, top: box.top, width: box.width, height: box.height } : { left: 0, top: 0, width: "100%", height: "100%" }}
-    >
-      {box ? (
-        <Thumbnail
-          thumbnails={track.thumbnails}
+    <>
+      <div ref={stage} aria-hidden className="pointer-events-none absolute overflow-hidden" style={place(box)}>
+        {box ? (
+          <Thumbnail
+            thumbnails={track.thumbnails}
+            alt=""
+            className="mx-auto aspect-square h-full rounded-none bg-transparent"
+            targetSize={1024}
+            highRes
+            overrideHighRes={override}
+          />
+        ) : null}
+        <MusicVideo track={track} where="fullscreen" className={box ? "rounded-none" : "rounded-none object-cover"} />
+      </div>
+      {ghost ? (
+        <motion.img
+          key={ghost.id}
+          src={ghost.src}
           alt=""
-          className="mx-auto aspect-square h-full rounded-none bg-transparent"
-          targetSize={1024}
-          highRes
-          overrideHighRes={override}
+          aria-hidden
+          initial={{ opacity: 1, scale: 1 }}
+          animate={{ opacity: 0, scale: 1.03 }}
+          transition={SWITCH}
+          onAnimationComplete={() => setGhost(null)}
+          className={cn("pointer-events-none absolute bg-black", ghost.box ? "object-contain" : "object-cover")}
+          style={place(ghost.box)}
         />
       ) : null}
-      <MusicVideo track={track} where="fullscreen" className={box ? "rounded-none" : "rounded-none object-cover"} />
-    </motion.div>
+    </>
   );
 }
 

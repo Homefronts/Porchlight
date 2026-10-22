@@ -151,6 +151,10 @@ export function MusicVideo({ track, where, className }: { track: QueueTrack; whe
               else els.current.delete(l.url);
             }}
             src={l.url}
+            // Readable by a canvas (the local server allows it), so fullscreen can
+            // snapshot the frame on screen for its layout crossfade.
+            crossOrigin="anonymous"
+            data-front={l.url === layers.front?.url || undefined}
             muted
             playsInline
             preload="auto"
