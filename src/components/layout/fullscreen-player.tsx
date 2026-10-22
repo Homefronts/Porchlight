@@ -602,30 +602,46 @@ function VideoStage({
   immersive: boolean;
 }) {
   const [box, setBox] = useState<{ left: number; top: number; width: number; height: number; radius: string } | null>(null);
+  // Glide only for a layout switch; any other move (lyrics arriving, a title
+  // wrapping, the window resizing) follows the frame instantly.
+  const [gliding, setGliding] = useState(false);
+  useLayoutEffect(() => {
+    setGliding(true);
+    const t = window.setTimeout(() => setGliding(false), 320);
+    return () => window.clearTimeout(t);
+  }, [slot, immersive]);
+
   useLayoutEffect(() => {
     if (immersive || !slot || !host) return setBox(null);
-    const measure = () => {
-      // Layout offsets, not getBoundingClientRect: the view's open animation
-      // scales it, and a transform doesn't fire the ResizeObserver to re-measure.
-      let left = 0;
-      let top = 0;
-      for (let el: HTMLElement | null = slot; el && el !== host; el = el.offsetParent as HTMLElement | null) {
-        left += el.offsetLeft;
-        top += el.offsetTop;
+    // The frame can move without resizing (lyrics load beside it, a title
+    // wraps), which no observer reports, so follow it every frame; it's one
+    // rect read, and state only changes when the frame did.
+    let last = "";
+    let raf = 0;
+    const follow = () => {
+      const h = host.getBoundingClientRect();
+      const r = slot.getBoundingClientRect();
+      // The view's open animation scales it; divide that out to get its own pixels.
+      const k = host.offsetWidth ? h.width / host.offsetWidth : 1;
+      const next = { left: (r.left - h.left) / k, top: (r.top - h.top) / k, width: r.width / k, height: r.height / k, radius: getComputedStyle(slot).borderRadius };
+      const key = `${next.left.toFixed(1)}|${next.top.toFixed(1)}|${next.width.toFixed(1)}|${next.height.toFixed(1)}|${next.radius}`;
+      if (key !== last) {
+        last = key;
+        setBox(next);
       }
-      setBox({ left, top, width: slot.offsetWidth, height: slot.offsetHeight, radius: getComputedStyle(slot).borderRadius });
+      raf = requestAnimationFrame(follow);
     };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(slot);
-    ro.observe(host);
-    return () => ro.disconnect();
+    follow();
+    return () => cancelAnimationFrame(raf);
   }, [slot, host, immersive]);
 
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute overflow-hidden transition-[left,top,width,height,border-radius] duration-300 ease-[cubic-bezier(.32,.72,0,1)]"
+      className={cn(
+        "pointer-events-none absolute overflow-hidden",
+        gliding && "transition-[left,top,width,height,border-radius] duration-300 ease-[cubic-bezier(.32,.72,0,1)]",
+      )}
       style={box ? { left: box.left, top: box.top, width: box.width, height: box.height, borderRadius: box.radius } : { left: 0, top: 0, width: "100%", height: "100%", borderRadius: 0 }}
     >
       {box ? (
