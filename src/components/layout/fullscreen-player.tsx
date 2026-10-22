@@ -169,18 +169,6 @@ function FullscreenView({ track }: { track: QueueTrack }) {
       ? "blur(46px) saturate(0.95) brightness(1.34)"
       : "blur(46px) saturate(1.3) brightness(0.62)";
 
-  const shade = (
-    <div
-      aria-hidden
-      className="absolute inset-0"
-      style={{
-        background: immersive
-          ? "linear-gradient(180deg, var(--g9a) 0%, var(--g9b) 34%, var(--g9c) 100%)"
-          : "var(--g9d)",
-      }}
-    />
-  );
-
   return (
     <TooltipProvider delayDuration={800} skipDelayDuration={0}>
       <motion.div
@@ -223,11 +211,25 @@ function FullscreenView({ track }: { track: QueueTrack }) {
             />
           </>
         ) : null}
-        {/* The shade goes under a boxed video (it dims the backdrop, not the
-            video) and over a full-screen one (it keeps the title readable). */}
-        {immersive ? null : shade}
-        {videoId ? <VideoStage track={track} override={iTunesCover} host={host} slot={slot} immersive={immersive} /> : null}
-        {immersive ? shade : null}
+        {/* Two shades that crossfade on a layout switch: the dim one sits under
+            a boxed video (it dims the backdrop, not the video), the gradient
+            over a full-screen one (it keeps the title readable). */}
+        <div
+          aria-hidden
+          className="absolute inset-0 transition-opacity duration-500"
+          style={{ background: "var(--g9d)", opacity: immersive ? 0 : 1 }}
+        />
+        {videoId ? (
+          <VideoStage track={track} override={iTunesCover} host={host} slot={slot} immersive={immersive} tag={shown} />
+        ) : null}
+        <div
+          aria-hidden
+          className="absolute inset-0 transition-opacity duration-500"
+          style={{
+            background: "linear-gradient(180deg, var(--g9a) 0%, var(--g9b) 34%, var(--g9c) 100%)",
+            opacity: immersive ? 1 : 0,
+          }}
+        />
 
         {/* The title bar is transparent and stays on top, so the body
             starts below it and the cover runs up behind it. */}
@@ -280,7 +282,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
 
           {/* Body, one of three. */}
           {shown === "cover" ? (
-            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-[26px] py-2.5">
+            <motion.div {...FADE_IN} className="flex min-h-0 flex-1 flex-col items-center justify-center gap-[26px] py-2.5">
               <Cover
                 track={track}
                 override={iTunesCover}
@@ -297,11 +299,11 @@ function FullscreenView({ track }: { track: QueueTrack }) {
                 </span>
                 <Subtitle track={track} className="text-[15px]" />
               </div>
-            </div>
+            </motion.div>
           ) : null}
 
           {shown === "lyrics" ? (
-            <div className="mx-auto flex min-h-0 w-full max-w-[1020px] flex-1 items-center gap-14 py-3.5">
+            <motion.div {...FADE_IN} className="mx-auto flex min-h-0 w-full max-w-[1020px] flex-1 items-center gap-14 py-3.5">
               <div className="flex w-[340px] shrink-0 flex-col gap-5">
                 <Cover
                   track={track}
@@ -321,16 +323,16 @@ function FullscreenView({ track }: { track: QueueTrack }) {
               <div className="relative h-[min(400px,100%)] min-w-0 flex-1 overflow-hidden">
                 <LyricsBody state={lyricsState} large />
               </div>
-            </div>
+            </motion.div>
           ) : null}
 
           {immersive ? (
-            <div className="flex min-h-0 flex-1 flex-col justify-end gap-2.5 pb-5 pt-3.5">
+            <motion.div {...FADE_IN} className="flex min-h-0 flex-1 flex-col justify-end gap-2.5 pb-5 pt-3.5">
               <span className="text-[56px] font-bold leading-[1.02] tracking-[-0.035em] text-(--fs-title) [text-wrap:pretty]">
                 {track.title}
               </span>
               <Subtitle track={track} className="text-[17px]" />
-            </div>
+            </motion.div>
           ) : null}
 
           {/* Bottom: progress, then the transport with the side clusters. */}
@@ -546,6 +548,13 @@ function LikePill({ track }: { track: QueueTrack }) {
   );
 }
 
+/** A layout's body fades in as the video morphs into place, so the switch reads as one move. */
+const FADE_IN = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  transition: { duration: 0.4, ease: [0.32, 0.72, 0, 1] },
+} as const;
+
 function Cover({
   track,
   override,
@@ -585,8 +594,13 @@ function Cover({
  * Fullscreen's one music video, kept mounted across the three layouts so
  * switching never reloads it. Centred and With lyrics mark where it goes with
  * an empty Cover frame (`slot`), and it sits exactly on that frame, corners
- * included; Immersive has no frame, so it fills the view. Moving between them
- * glides. The cover shows under the video until its first frame.
+ * included; Immersive has no frame, so it fills the view. The cover shows
+ * under the video until its first frame.
+ *
+ * A layout switch morphs it there with a transform (motion's FLIP layout
+ * animation: smooth, no relayout per frame, corners corrected as it scales),
+ * eased like the view's own open. It runs only when the layout changes
+ * (`layoutDependency`): any other move snaps, so it stays on its frame.
  */
 function VideoStage({
   track,
@@ -594,22 +608,17 @@ function VideoStage({
   host,
   slot,
   immersive,
+  tag,
 }: {
   track: QueueTrack;
   override: string | null;
   host: HTMLElement | null;
   slot: HTMLElement | null;
   immersive: boolean;
+  tag: FullscreenLayout;
 }) {
-  const [box, setBox] = useState<{ left: number; top: number; width: number; height: number; radius: string } | null>(null);
-  // Glide only for a layout switch; any other move (lyrics arriving, a title
-  // wrapping, the window resizing) follows the frame instantly.
-  const [gliding, setGliding] = useState(false);
-  useLayoutEffect(() => {
-    setGliding(true);
-    const t = window.setTimeout(() => setGliding(false), 320);
-    return () => window.clearTimeout(t);
-  }, [slot, immersive]);
+  type Box = { left: number; top: number; width: number; height: number; radius: string; tag: FullscreenLayout };
+  const [box, setBox] = useState<Box | null>(null);
 
   useLayoutEffect(() => {
     if (immersive || !slot || !host) return setBox(null);
@@ -623,8 +632,8 @@ function VideoStage({
       const r = slot.getBoundingClientRect();
       // The view's open animation scales it; divide that out to get its own pixels.
       const k = host.offsetWidth ? h.width / host.offsetWidth : 1;
-      const next = { left: (r.left - h.left) / k, top: (r.top - h.top) / k, width: r.width / k, height: r.height / k, radius: getComputedStyle(slot).borderRadius };
-      const key = `${next.left.toFixed(1)}|${next.top.toFixed(1)}|${next.width.toFixed(1)}|${next.height.toFixed(1)}|${next.radius}`;
+      const next = { left: (r.left - h.left) / k, top: (r.top - h.top) / k, width: r.width / k, height: r.height / k, radius: getComputedStyle(slot).borderRadius, tag };
+      const key = `${next.left.toFixed(1)}|${next.top.toFixed(1)}|${next.width.toFixed(1)}|${next.height.toFixed(1)}|${next.radius}|${tag}`;
       if (key !== last) {
         last = key;
         setBox(next);
@@ -633,16 +642,18 @@ function VideoStage({
     };
     follow();
     return () => cancelAnimationFrame(raf);
-  }, [slot, host, immersive]);
+  }, [slot, host, immersive, tag]);
 
   return (
-    <div
+    <motion.div
       aria-hidden
-      className={cn(
-        "pointer-events-none absolute overflow-hidden",
-        gliding && "transition-[left,top,width,height,border-radius] duration-300 ease-[cubic-bezier(.32,.72,0,1)]",
-      )}
-      style={box ? { left: box.left, top: box.top, width: box.width, height: box.height, borderRadius: box.radius } : { left: 0, top: 0, width: "100%", height: "100%", borderRadius: 0 }}
+      layout
+      // Set in the same render as the new position, so only a layout switch morphs.
+      layoutDependency={box?.tag ?? "immersive"}
+      transition={{ layout: { duration: 0.5, ease: [0.32, 0.72, 0, 1] }, borderRadius: { duration: 0.5, ease: [0.32, 0.72, 0, 1] } }}
+      animate={{ borderRadius: box ? box.radius : "0px" }}
+      className="pointer-events-none absolute overflow-hidden"
+      style={box ? { left: box.left, top: box.top, width: box.width, height: box.height } : { left: 0, top: 0, width: "100%", height: "100%" }}
     >
       {box ? (
         <Thumbnail
@@ -655,7 +666,7 @@ function VideoStage({
         />
       ) : null}
       <MusicVideo track={track} where="fullscreen" className={box ? "rounded-none" : "rounded-none object-cover"} />
-    </div>
+    </motion.div>
   );
 }
 
