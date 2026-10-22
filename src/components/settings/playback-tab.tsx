@@ -535,7 +535,7 @@ function VideoQualityRow() {
     <SettingRow
       icon={IconVideoFilled}
       title="Video Quality"
-      description="Highest quality for music videos. Higher uses more data and battery."
+      description="Highest quality for music videos. Lower it to save data or battery."
       control={
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

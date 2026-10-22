@@ -94,7 +94,8 @@ export const usePlaybackSettings = create<State>()(
       backButton: "smart",
       smartBackSeconds: 3,
       resumePlayback: true,
-      videoQuality: 720,
+      // Highest by default: each video plays at the best it has, up to 4K.
+      videoQuality: 2160,
       setVideoQuality: (videoQuality) => set({ videoQuality }),
       setCrossfadeSec: (crossfadeSec) =>
         set({
