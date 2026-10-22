@@ -7188,7 +7188,7 @@ dependencies = [
 
 [[package]]
 name = "ytubic"
-version = "0.7.2"
+version = "0.7.5"
 dependencies = [
  "aes-gcm",
  "axum",

@@ -38,6 +38,7 @@ Built as a reaction to the sluggish webview-wrapper experience — YTubic talks 
 - **Offline downloads** — a Spotify-style download toggle on every playlist, album and Liked Songs, plus "Download" on single songs. Downloaded playlists stay in sync with new songs automatically.
 - **Downloads page** — everything you've saved, in the sidebar, playable with no internet (for up to 30 days between Premium check-ins).
 - **AI music filter** — one button in the top bar hides AI-generated music from search, home and mixes, using community lists checked against Spotify. Songs by AI artists carry an **AI** tag either way.
+- **Music videos** — the Song/Video switch actually plays the music video, synced to the song, in the player and in full screen. Video stays on as you skip, like YouTube Music, with quality from 360p to 4K.
 - **Own update channel** — Plus updates itself from [this fork's releases](../../releases), so it never gets replaced by an upstream build.
 
 ## Roadmap
@@ -50,6 +51,8 @@ Ideas for future Plus releases, roughly in order. Not promises.
 - [ ] **Share your AI marks** — turn your Mark as AI choices into a one-click report to the community list.
 - [ ] **Listening stats** — your top artists and songs this month.
 - [ ] **Sleep timer** — stop after X minutes or at the end of the current song.
+- [ ] **Skip non-music parts of videos** — optional [SponsorBlock](https://sponsor.ajay.app) skipping of intros and skits in music videos (its "Non-Music Section" category), credited per its CC BY-NC-SA licence.
+- [ ] **Video quality by GPU** — pick the default music video quality from what your graphics card can decode smoothly.
 
 > **All the credit for the app itself goes to [George Shyshov (NUber)](https://github.com/NUber-dev)**,
 > who designed and built YTubic. Plus only adds features on top. If you enjoy it,

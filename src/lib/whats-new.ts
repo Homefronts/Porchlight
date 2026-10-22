@@ -56,6 +56,48 @@ export type WhatsNewEntry = {
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.7.5",
+    date: "October 21, 2026",
+    summary: "The Video Update",
+    changes: [
+      {
+        type: "new",
+        title: "Music videos",
+        text: "Pick Video on the Song/Video switch and the music video plays, in sync with the song, in the player and in full screen. Before, it only swapped the audio.",
+      },
+      {
+        type: "new",
+        title: "Video mode",
+        text: "Video stays on as you skip, like YouTube Music. A song with no video plays as audio, and the next track goes back to video.",
+      },
+      {
+        type: "new",
+        title: "Video quality",
+        text: "Settings > Playback lets you pick anything from 360p to 4K (1440p by default). A change swaps in without interrupting the video.",
+      },
+      {
+        type: "improved",
+        title: "Full screen",
+        text: "One video carries across all three layouts with a smooth crossfade, and Immersive shows it sharp and uncropped.",
+      },
+      {
+        type: "improved",
+        title: "The right video",
+        text: "Videos are matched with YouTube Music's own song/video pairing first, then by exact title and artist, so no lyric videos, covers or live versions.",
+      },
+      {
+        type: "fixed",
+        title: "Song/Video switch",
+        text: "Switching between Song and Video keeps your place instead of restarting the track.",
+      },
+      {
+        type: "new",
+        title: "Report a bug",
+        text: "A bug icon next to the AI button opens the report form, so it's always one click away.",
+      },
+    ],
+  },
+  {
     version: "0.7.2",
     date: "October 21, 2026",
     summary: "AI filter fixes",
