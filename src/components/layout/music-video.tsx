@@ -30,11 +30,27 @@ export function useMusicVideoId(track: QueueTrack | undefined): string | undefin
   });
 }
 
+type Layer = { id: string; url: string };
+
+/**
+ * Which pictures to show: `front` is on screen, `back` loads behind it. A new
+ * quality of the same video loads in the back and the old one keeps playing
+ * until it can take over; another video (or none) replaces it outright.
+ */
+export function layersFor(front: Layer | null, id: string | undefined, url: string | undefined): { front: Layer | null; back: Layer | null } {
+  if (!id) return { front: null, back: null };
+  const same = front?.id === id ? front : null;
+  if (!url) return { front: same, back: null }; // still resolving: keep what plays
+  if (!same) return { front: { id, url }, back: null };
+  return same.url === url ? { front: same, back: null } : { front: same, back: { id, url } };
+}
+
 /**
  * The music video, laid over the cover while the chip is on Video (like YouTube
  * Music). Picture only: it plays muted and follows the audio the engine already
  * streams (play, pause, seeks). Nothing is fetched on Song. The player card's
- * copy steps aside while fullscreen is open, so only one video ever decodes.
+ * copy steps aside while fullscreen is open, so only one video ever decodes
+ * (two, briefly, while a quality change loads behind the playing one).
  */
 export function MusicVideo({ track, where, className }: { track: QueueTrack; where: "card" | "fullscreen"; className?: string }) {
   const id = useMusicVideoId(track);
@@ -51,40 +67,58 @@ export function MusicVideo({ track, where, className }: { track: QueueTrack; whe
     gcTime: 2 * 60 * 60_000,
     retry: 1,
   });
-  const ref = useRef<HTMLVideoElement>(null);
-  const [shown, setShown] = useState(false);
-
-  useEffect(() => setShown(false), [src.data]);
-
+  const [front, setFront] = useState<Layer | null>(null);
+  const [ready, setReady] = useState<string | null>(null);
+  const layers = layersFor(front, on ? id : undefined, src.data);
   useEffect(() => {
-    if (!on || !src.data) return;
+    if (layers.front !== front) setFront(layers.front);
+  }, [layers.front, front]);
+
+  const els = useRef(new Map<string, HTMLVideoElement>());
+  useEffect(() => {
     const sync = () => {
-      if (ref.current) syncPicture(ref.current, usePlaybackStore.getState());
+      for (const v of els.current.values()) syncPicture(v, usePlaybackStore.getState());
     };
     sync();
-    const v = ref.current;
-    v?.addEventListener("loadedmetadata", sync);
-    const off = usePlaybackStore.subscribe(sync);
-    return () => {
-      off();
-      v?.removeEventListener("loadedmetadata", sync);
-    };
-  }, [on, src.data]);
+    return usePlaybackStore.subscribe(sync);
+  }, []);
 
-  if (!on || !src.data) return null;
+  const back = layers.back;
+  // The new quality takes over once it is on the same frame as the audio.
+  const promote = (v: HTMLVideoElement) => {
+    if (!back || v.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) return;
+    if (Math.abs(v.currentTime - usePlaybackStore.getState().position) > MAX_DRIFT_SEC) return;
+    setReady(back.url);
+    setFront(back);
+  };
+
   return (
-    <video
-      ref={ref}
-      src={src.data}
-      muted
-      playsInline
-      preload="auto"
-      onLoadedData={() => setShown(true)}
-      className={cn(
-        "pointer-events-none absolute inset-0 size-full rounded-[inherit] bg-black object-contain transition-opacity duration-300",
-        shown ? "opacity-100" : "opacity-0",
-        className,
+    <>
+      {[layers.front, back].map((l) =>
+        l ? (
+          // Keyed by URL, so the layer that takes over keeps its element (no reload).
+          <video
+            key={l.url}
+            ref={(v) => {
+              if (v) els.current.set(l.url, v);
+              else els.current.delete(l.url);
+            }}
+            src={l.url}
+            muted
+            playsInline
+            preload="auto"
+            onLoadedMetadata={(e) => syncPicture(e.currentTarget, usePlaybackStore.getState())}
+            onLoadedData={() => l.url === layers.front?.url && setReady(l.url)}
+            onCanPlay={(e) => l.url === back?.url && promote(e.currentTarget)}
+            onSeeked={(e) => l.url === back?.url && promote(e.currentTarget)}
+            className={cn(
+              "pointer-events-none absolute inset-0 size-full rounded-[inherit] bg-black object-contain transition-opacity duration-300",
+              l.url === layers.front?.url && ready === l.url ? "opacity-100" : "opacity-0",
+              className,
+            )}
+          />
+        ) : null,
       )}
-    />
+    </>
   );
 }

@@ -192,10 +192,12 @@ function FullscreenView({ track }: { track: QueueTrack }) {
             highRes
             overrideHighRes={iTunesCover}
           />
-          {/* Immersive: the backdrop is the art, so the video fills it too. */}
-          {immersive ? <MusicVideo track={track} where="fullscreen" className="rounded-none object-cover" /> : null}
         </div>
-        {immersive ? (
+        {/* Immersive: the backdrop is the art, so the video fills the screen
+            too, but outside the art's zoom and filter: sharp, uncropped. */}
+        {immersive ? <MusicVideo track={track} where="fullscreen" className="rounded-none object-cover" /> : null}
+        {/* The blur bands soften art behind the chrome; a video stays sharp. */}
+        {immersive && !videoId ? (
           <>
             {/* Blur bands: strongest at the edges, gone by mid-height. */}
             <div
