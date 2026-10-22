@@ -64,6 +64,7 @@ const rings = (c: string) => `repeating-radial-gradient(circle at 85% 0%, ${c} 0
 const stripes = (c: string) => `repeating-linear-gradient(-45deg, ${c} 0 3cqmin, transparent 3cqmin 9cqmin)`;
 const bands = (c: string) => `repeating-linear-gradient(0deg, ${c} 0 2cqmin, transparent 2cqmin 8cqmin)`;
 const dots = (c: string) => `radial-gradient(${c} 1.6cqmin, transparent 1.7cqmin) 0 0 / 8cqmin 8cqmin`;
+const rays = (c: string) => `repeating-conic-gradient(from 0deg, ${c} 0deg 6deg, transparent 6deg 18deg)`;
 const grid = (c: string) => `linear-gradient(${c} 0.6cqmin, transparent 0.6cqmin) 0 0 / 10cqmin 10cqmin, linear-gradient(90deg, ${c} 0.6cqmin, transparent 0.6cqmin) 0 0 / 10cqmin 10cqmin`;
 
 /** Each slide's pattern (CSS background), drawn in a soft shade of its own colour. */
@@ -73,7 +74,7 @@ const PATTERN: Record<SlideSpec["kind"], (c: string) => string> = {
   minutes: rings,
   variety: stripes,
   topArtist: grid,
-  artists: rings,
+  artists: rays,
   songs: stripes,
   topAlbum: dots,
   personality: bands,
@@ -379,7 +380,12 @@ export function Slide({ s, r, current }: { s: SlideSpec; r: Rewind; current: boo
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[60%] overflow-hidden [mask-image:linear-gradient(to_bottom,black_45%,transparent)]">
         {/* Oversized, so drifting by one pattern period loops seamlessly. */}
         <div
-          className="absolute -inset-[25cqmin]"
+          className={
+            s.kind === "artists"
+              ? // Spins: a square wider than the area's diagonal, so no edge ever swings into view.
+                "absolute left-[calc(50%-75cqmax)] top-[calc(50%-75cqmax)] size-[150cqmax]"
+              : "absolute -inset-[25cqmin]"
+          }
           style={{ background: PATTERN[s.kind](t.dark ? "rgb(0 0 0 / 0.13)" : "rgb(255 255 255 / 0.14)"), ...MOTION[s.kind] } as CSSProperties}
         />
       </div>
