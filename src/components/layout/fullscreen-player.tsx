@@ -40,6 +40,7 @@ import {
   repeatLabel,
   useITunesCover,
 } from "@/components/layout/player-bar";
+import { MusicVideo, useMusicVideoId } from "@/components/layout/music-video";
 import { PlayerMoreMenu } from "@/components/layout/player-more-menu";
 import { QueuePopover } from "@/components/layout/queue-panel";
 import { LyricsSourceButton } from "@/components/layout/lyrics-view";
@@ -131,6 +132,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
   const loading = status === "loading" && playing;
 
   const iTunesCover = useITunesCover(track);
+  const videoId = useMusicVideoId(track);
   const lyricsState = useLyricsView(track);
   // "With lyrics" only means something when there are some. A track the
   // sources came back empty for shows as Centered instead; the setting
@@ -190,6 +192,8 @@ function FullscreenView({ track }: { track: QueueTrack }) {
             highRes
             overrideHighRes={iTunesCover}
           />
+          {/* Immersive: the backdrop is the art, so the video fills it too. */}
+          {immersive ? <MusicVideo track={track} where="fullscreen" className="rounded-none object-cover" /> : null}
         </div>
         {immersive ? (
           <>
@@ -269,7 +273,11 @@ function FullscreenView({ track }: { track: QueueTrack }) {
               <Cover
                 track={track}
                 override={iTunesCover}
-                className="w-[300px] rounded-[14px] shadow-[0_40px_80px_-28px_var(--k900),inset_0_0_0_1px_var(--w140)]"
+                className={cn(
+                  // A music video plays wide; the cover stays square.
+                  videoId ? "w-[min(880px,76vw)]" : "w-[300px]",
+                  "rounded-[14px] shadow-[0_40px_80px_-28px_var(--k900),inset_0_0_0_1px_var(--w140)]",
+                )}
               />
               <div className="flex flex-col items-center gap-2 text-center">
                 <span className="text-[34px] font-bold leading-tight tracking-[-0.03em] text-(--fs-title)">
@@ -534,8 +542,9 @@ function Cover({
   override: string | null;
   className?: string;
 }) {
+  const video = !!useMusicVideoId(track);
   return (
-    <div className={cn("relative isolate aspect-square shrink-0", className)}>
+    <div className={cn("relative isolate shrink-0", video ? "aspect-video" : "aspect-square", className)}>
       <Thumbnail
         thumbnails={track.thumbnails}
         alt={track.title}
@@ -544,6 +553,7 @@ function Cover({
         highRes
         overrideHighRes={override}
       />
+      <MusicVideo track={track} where="fullscreen" />
       <ArtworkOutline className="rounded-[inherit]" />
     </div>
   );

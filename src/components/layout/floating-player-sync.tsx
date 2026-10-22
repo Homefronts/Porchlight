@@ -117,7 +117,8 @@ type PlaybackAction =
 
 type TrackSourceAction =
   | { type: "setSelected"; id: string; selected: SourceKind }
-  | { type: "setAlternate"; knownId: string; kind: SourceKind; altId: string };
+  | { type: "setAlternate"; knownId: string; kind: SourceKind; altId: string }
+  | { type: "setVideoMode"; on: boolean };
 
 export function FloatingPlayerSync() {
   // Outbound: stream state changes to the floating window. Split into
@@ -252,6 +253,9 @@ export function FloatingPlayerSync() {
             break;
           case "setAlternate":
             store.setAlternate(a.knownId, a.kind, a.altId);
+            break;
+          case "setVideoMode":
+            store.setVideoMode(a.on);
             break;
         }
       }),

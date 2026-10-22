@@ -27,6 +27,12 @@ type State = {
   setAlternate: (knownId: string, kind: SourceKind, altId: string) => void;
   /** Flip the active source for a track. */
   setSelected: (anyVideoId: string, selected: SourceKind) => void;
+  /**
+   * The Song/Video chip as a mode, like YouTube Music's: on, every track plays
+   * its music video when it has one (see `useVideoModeFollower`).
+   */
+  videoMode: boolean;
+  setVideoMode: (on: boolean) => void;
 };
 
 // Soft cap on `byVideoId`. Each unique track contributes two keys (song
@@ -53,6 +59,8 @@ export const useTrackSourceStore = create<State>()(
   persist(
     (set) => ({
       byVideoId: {},
+      videoMode: false,
+      setVideoMode: (videoMode) => set({ videoMode }),
       setAlternate: (knownId, kind, altId) =>
         set((s) => {
           const existing = s.byVideoId[knownId];
@@ -125,6 +133,9 @@ export function initFloatingTrackSourceBridge(): void {
         id,
         selected,
       });
+    },
+    setVideoMode: (on) => {
+      void emit("track-source:action", { type: "setVideoMode", on });
     },
   });
 }

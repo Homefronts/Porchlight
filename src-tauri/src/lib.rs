@@ -3198,6 +3198,58 @@ fn resolve_stream_ytdlp(app: tauri::AppHandle, video_id: String) -> Result<Strin
     String::from_utf8(output.stdout).map_err(|e| format!("stdout not utf8: {e}"))
 }
 
+/// Music video picture for the Song/Video chip: a direct URL to a silent,
+/// progressive stream no taller than `max_height` (Settings > Playback), which
+/// the player syncs to the audio it already streams. H.264 first (plays in
+/// every webview); above 1080p YouTube only has VP9/AV1. Off the main thread:
+/// yt-dlp takes a couple of seconds.
+#[tauri::command]
+async fn resolve_video_ytdlp(app: tauri::AppHandle, video_id: String, max_height: u32) -> Result<String, String> {
+    if !sanitize_video_id(&video_id) {
+        return Err(format!("invalid videoId: {video_id}"));
+    }
+    let h = max_height.clamp(144, 4320);
+    // H.264 tops out at 1080p, so above that it would cap the choice: VP9 then,
+    // which is far lighter to decode than AV1 where there is no AV1 hardware.
+    let format = if h > 1080 {
+        format!("bestvideo[height<={h}][vcodec^=vp9][protocol^=http]/bestvideo[height<={h}][protocol^=http]")
+    } else {
+        format!("bestvideo[height<={h}][vcodec^=avc1][protocol^=http]/bestvideo[height<={h}][protocol^=http]")
+    };
+    let url = format!("https://www.youtube.com/watch?v={video_id}");
+    let program = ytdlp::program(&ytdlp::managed_path(&app));
+    let output = tauri::async_runtime::spawn_blocking(move || {
+        let mut command = std::process::Command::new(program);
+        command.args([
+            "-g",
+            "-f",
+            &format,
+            "--no-playlist",
+            "--no-warnings",
+            &url,
+        ]);
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            command.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+        }
+        command.output()
+    })
+    .await
+    .map_err(|e| e.to_string())?
+    .map_err(|e| format!("spawn yt-dlp: {e}"))?;
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("yt-dlp exit {}: {}", output.status, stderr.chars().take(400).collect::<String>()));
+    }
+    String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .next()
+        .filter(|l| l.starts_with("https://"))
+        .map(str::to_owned)
+        .ok_or_else(|| "yt-dlp returned no video URL".into())
+}
+
 /// Lifecycle of a single track's yt-dlp download. yt-dlp writes
 /// bytes into a `<videoId>.part` file which is renamed to
 /// `<videoId>.webm` on successful completion; stream handlers block on
@@ -4210,6 +4262,7 @@ pub fn run() {
             ensure_ytdlp,
             check_ytdlp_update,
             resolve_stream_ytdlp,
+            resolve_video_ytdlp,
             get_stream_base_url,
             downloads::downloads_index,
             downloads::downloads_set_collection,
