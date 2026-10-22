@@ -134,6 +134,18 @@ export function initFloatingTrackSourceBridge(): void {
  * (queue) id. Snapshot helper — for reactive subscriptions, read from
  * the store directly.
  */
+type StreamSlot = { videoId?: string; index: number; streamVideoId?: string };
+
+/**
+ * Where a newly loaded stream should start: the old playhead when the same
+ * queue slot only switched between its song and video versions, else null
+ * (from the top). Under a second counts as not started yet.
+ */
+export function resumeOnSourceSwitch(last: StreamSlot | null, now: StreamSlot, currentTime: number): number | null {
+  const switched = !!last && last.videoId === now.videoId && last.index === now.index && last.streamVideoId !== now.streamVideoId;
+  return switched && currentTime >= 1 ? currentTime : null;
+}
+
 export function resolveStreamId(
   displayedId: string,
   byVideoId: Record<string, TrackSources>,
