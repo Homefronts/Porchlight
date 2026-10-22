@@ -4,8 +4,10 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ArrowLeftIcon, ArrowRightIcon, MoreHorizontalIcon } from "lucide-react";
 import {
+  IconBug,
   IconBugFilled,
   IconDeviceDesktopFilled,
   IconExternalLink,
@@ -217,9 +219,26 @@ export function TopBar() {
 
         {/* Clear of the fixed window controls (3 x w-11) off macOS. */}
         {fullscreen ? null : (
-          <AiToggleButton
-            className={cn(NAV_BTN_CLS, IS_MAC ? "mr-2" : "mr-[140px]")}
-          />
+          <>
+            {/* Always one click away; the ⋯ menu has the same item. */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Report a bug"
+                  onClick={() => setReportOpen(true)}
+                  className={NAV_BTN_CLS}
+                >
+                  <IconBug />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Report a bug</TooltipContent>
+            </Tooltip>
+            <AiToggleButton
+              className={cn(NAV_BTN_CLS, IS_MAC ? "mr-2" : "mr-[140px]")}
+            />
+          </>
         )}
       </header>
 
