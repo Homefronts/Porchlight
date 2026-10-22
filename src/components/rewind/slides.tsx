@@ -60,6 +60,28 @@ export const THEME: Record<SlideSpec["kind"], { bg: string; dark?: true; hi: str
   summary: { bg: "#2b4bff", hi: "#2b4bff" },
 };
 
+const rings = (c: string) => `repeating-radial-gradient(circle at 85% 0%, ${c} 0 2.5cqw, transparent 2.5cqw 7cqw)`;
+const stripes = (c: string) => `repeating-linear-gradient(-45deg, ${c} 0 3cqw, transparent 3cqw 9cqw)`;
+const bands = (c: string) => `repeating-linear-gradient(0deg, ${c} 0 2cqw, transparent 2cqw 8cqw)`;
+const dots = (c: string) => `radial-gradient(${c} 1.6cqw, transparent 1.7cqw) 0 0 / 8cqw 8cqw`;
+const grid = (c: string) => `linear-gradient(${c} 0.6cqw, transparent 0.6cqw) 0 0 / 10cqw 10cqw, linear-gradient(90deg, ${c} 0.6cqw, transparent 0.6cqw) 0 0 / 10cqw 10cqw`;
+
+/** Each slide's pattern (CSS background), drawn in a soft shade of its own colour. */
+const PATTERN: Record<SlideSpec["kind"], (c: string) => string> = {
+  intro: dots,
+  setup: dots,
+  minutes: rings,
+  variety: stripes,
+  topArtist: grid,
+  artists: rings,
+  songs: stripes,
+  topAlbum: dots,
+  personality: bands,
+  genres: grid,
+  newArtists: stripes,
+  summary: dots,
+};
+
 /** The Home card and Rewind list share the intro's look. */
 export const REWIND_COVER = THEME.intro;
 
@@ -131,8 +153,8 @@ function Body({ s, r }: { s: SlideSpec; r: Rewind }) {
       return (
         <>
           <Kicker>{quarterLabel(r)}</Kicker>
-          <Huge className="text-[17cqw]">Your quarter, on repeat.</Huge>
-          <Line>Let's see what you've been up to.</Line>
+          <Huge className="text-[24cqw]">Your Rewind</Huge>
+          <Line>Your quarter, on repeat. Let's see what you've been up to.</Line>
         </>
       );
     case "setup":
@@ -313,12 +335,17 @@ export function Slide({ s, r, current }: { s: SlideSpec; r: Rewind; current: boo
       className={cn("@container absolute inset-0 overflow-hidden", t.dark ? "text-[#111]" : "text-white")}
       style={{ background: t.bg, "--rw-hi": t.hi, visibility: current ? "visible" : "hidden" } as CSSProperties}
     >
+      {/* A pattern in the top half, faded out before it reaches the words. */}
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[60%] [mask-image:linear-gradient(to_bottom,black_45%,transparent)]"
+        style={{ background: PATTERN[s.kind](t.dark ? "rgb(0 0 0 / 0.13)" : "rgb(255 255 255 / 0.14)") }}
+      />
       {s.kind === "intro" ? (
-        <div className="absolute -left-[6cqw] -top-[3cqw] h-[58cqw] overflow-hidden text-[27cqw] font-black uppercase leading-[0.8] tracking-[-0.06em] text-[#ffd84d]">
-          {/* Fenced into the top third: never behind the words. */}
-          {Array.from({ length: 3 }, (_, i) => (
-            <div key={i}>Rewind</div>
-          ))}
+        // A vinyl record spinning in from the corner, the quarter on its label.
+        <div className="absolute -right-[30cqw] -top-[24cqw] grid size-[100cqw] place-items-center rounded-full bg-[#111] shadow-[0_14px_40px_rgb(0_0_0/0.35)] [background-image:repeating-radial-gradient(circle,#111_0_1.1cqw,#2a2a2a_1.1cqw_1.5cqw)] motion-safe:animate-[spin_14s_linear_infinite]">
+          <div className="grid size-[34cqw] place-items-center rounded-full bg-[#ffd84d] text-[12cqw] font-black tracking-[-0.05em] text-[#111]">
+            {r.quarter.split("-")[1]}
+          </div>
         </div>
       ) : null}
       {s.kind === "setup" ? <div className="absolute -right-[25cqw] -top-[25cqw] size-[80cqw] rounded-full bg-[#111]" /> : null}
