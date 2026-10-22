@@ -5,7 +5,7 @@ import { IconPhotoDown, IconX } from "@tabler/icons-react";
 import type { Rewind } from "@/lib/rewind/types";
 import { Slide, slidesFor } from "./slides";
 
-const SLIDE_MS = 6000;
+const SLIDE_MS = 9000;
 
 // Slide motion (see slides.tsx), transform and opacity only. Reduced motion: all still.
 const STORY_CSS = `
@@ -85,14 +85,9 @@ export function RewindStory({
   const s = slides[i];
   const next = slides[i + 1];
   return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black px-4 pb-4 pt-[calc(var(--titlebar-h)+3.5rem)]"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Rewind"
-    >
-      {/* A portrait card, like a phone story, whatever the window's shape. */}
-      <div className="relative aspect-[9/16] h-full max-w-full overflow-hidden rounded-2xl">
+    <div className="fixed inset-0 z-50 bg-black" role="dialog" aria-modal="true" aria-label="Rewind">
+      {/* The whole window, like the fullscreen player. */}
+      <div className="absolute inset-0">
       <div
         ref={stage}
         className={reduced ? "absolute inset-0" : "absolute inset-0 animate-in fade-in duration-300"}
@@ -105,7 +100,7 @@ export function RewindStory({
         {next ? <Slide s={next} r={rewind} current={false} /> : null}
       </div>
 
-      <div className="pointer-events-none absolute inset-x-3 top-3 flex gap-1">
+      <div className="pointer-events-none absolute inset-x-4 top-[calc(var(--titlebar-h)+0.5rem)] flex gap-1">
         {slides.map((_, n) => (
           <div key={n} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/35 shadow-[0_0_3px_rgb(0_0_0/0.35)]">
             <div

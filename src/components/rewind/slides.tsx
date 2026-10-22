@@ -60,11 +60,11 @@ export const THEME: Record<SlideSpec["kind"], { bg: string; dark?: true; hi: str
   summary: { bg: "#2b4bff", hi: "#2b4bff" },
 };
 
-const rings = (c: string) => `repeating-radial-gradient(circle at 85% 0%, ${c} 0 2.5cqw, transparent 2.5cqw 7cqw)`;
-const stripes = (c: string) => `repeating-linear-gradient(-45deg, ${c} 0 3cqw, transparent 3cqw 9cqw)`;
-const bands = (c: string) => `repeating-linear-gradient(0deg, ${c} 0 2cqw, transparent 2cqw 8cqw)`;
-const dots = (c: string) => `radial-gradient(${c} 1.6cqw, transparent 1.7cqw) 0 0 / 8cqw 8cqw`;
-const grid = (c: string) => `linear-gradient(${c} 0.6cqw, transparent 0.6cqw) 0 0 / 10cqw 10cqw, linear-gradient(90deg, ${c} 0.6cqw, transparent 0.6cqw) 0 0 / 10cqw 10cqw`;
+const rings = (c: string) => `repeating-radial-gradient(circle at 85% 0%, ${c} 0 2.5cqmin, transparent 2.5cqmin 7cqmin)`;
+const stripes = (c: string) => `repeating-linear-gradient(-45deg, ${c} 0 3cqmin, transparent 3cqmin 9cqmin)`;
+const bands = (c: string) => `repeating-linear-gradient(0deg, ${c} 0 2cqmin, transparent 2cqmin 8cqmin)`;
+const dots = (c: string) => `radial-gradient(${c} 1.6cqmin, transparent 1.7cqmin) 0 0 / 8cqmin 8cqmin`;
+const grid = (c: string) => `linear-gradient(${c} 0.6cqmin, transparent 0.6cqmin) 0 0 / 10cqmin 10cqmin, linear-gradient(90deg, ${c} 0.6cqmin, transparent 0.6cqmin) 0 0 / 10cqmin 10cqmin`;
 
 /** Each slide's pattern (CSS background), drawn in a soft shade of its own colour. */
 const PATTERN: Record<SlideSpec["kind"], (c: string) => string> = {
@@ -82,23 +82,23 @@ const PATTERN: Record<SlideSpec["kind"], (c: string) => string> = {
   summary: dots,
 };
 
-// Diagonal stripes repeat every 9cqw across, which is 12.73cqw along x or y.
+// Diagonal stripes repeat every 9cqmin across, which is 12.73cqmin along x or y.
 const drift = (dx: string, dy: string, sec: number) => ({ "--dx": dx, "--dy": dy, animation: `rw-drift ${sec}s linear infinite` });
 
 /** How each slide's pattern moves: every slide its own direction, speed or motion. */
 const MOTION: Record<SlideSpec["kind"], CSSProperties> = {
-  intro: drift("-8cqw", "8cqw", 9),
-  setup: drift("8cqw", "-8cqw", 7),
+  intro: drift("-8cqmin", "8cqmin", 9),
+  setup: drift("8cqmin", "-8cqmin", 7),
   minutes: { animation: "rw-breathe 6s ease-in-out infinite" },
-  variety: drift("12.73cqw", "0", 4),
-  topArtist: drift("10cqw", "10cqw", 8),
+  variety: drift("12.73cqmin", "0", 4),
+  topArtist: drift("10cqmin", "10cqmin", 8),
   artists: { animation: "rw-turn 40s linear infinite" },
-  songs: drift("-12.73cqw", "0", 5),
-  topAlbum: drift("8cqw", "0", 6),
-  personality: drift("0", "-8cqw", 5),
-  genres: drift("-10cqw", "10cqw", 9),
-  newArtists: drift("0", "-12.73cqw", 6),
-  summary: drift("8cqw", "8cqw", 12),
+  songs: drift("-12.73cqmin", "0", 5),
+  topAlbum: drift("8cqmin", "0", 6),
+  personality: drift("0", "-8cqmin", 5),
+  genres: drift("-10cqmin", "10cqmin", 9),
+  newArtists: drift("0", "-12.73cqmin", 6),
+  summary: drift("8cqmin", "8cqmin", 12),
 };
 
 /** The Home card and Rewind list share the intro's look. */
@@ -358,7 +358,12 @@ function coverOf(s: SlideSpec): string | undefined {
   return undefined;
 }
 
-/** One slide: flat colour, big type at the bottom, a few shapes. Sized to the card (cqw). */
+/**
+ * One slide, filling the window: flat colour and a moving pattern edge to edge,
+ * the words in a frame bottom-left and the shapes in one top-right. Each frame
+ * is a container no wider than 1/1.2 of the window's height, and everything
+ * inside is sized in % of it (cqw), so text stays big but always fits.
+ */
 export function Slide({ s, r, current }: { s: SlideSpec; r: Rewind; current: boolean }) {
   const t = THEME[s.kind];
   const cover = useBlob(coverOf(s));
@@ -367,17 +372,18 @@ export function Slide({ s, r, current }: { s: SlideSpec; r: Rewind; current: boo
       data-slide={s.kind}
       {...(current && { "data-slide-current": s.kind })}
       aria-hidden={!current}
-      className={cn("@container absolute inset-0 overflow-hidden", t.dark ? "text-[#111]" : "text-white")}
+      className={cn("absolute inset-0 overflow-hidden [container-type:size]", t.dark ? "text-[#111]" : "text-white")}
       style={{ background: t.bg, "--rw-hi": t.hi, visibility: current ? "visible" : "hidden" } as CSSProperties}
     >
       {/* A pattern in the top half, faded out before it reaches the words. */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[60%] overflow-hidden [mask-image:linear-gradient(to_bottom,black_45%,transparent)]">
         {/* Oversized, so drifting by one pattern period loops seamlessly. */}
         <div
-          className="absolute -inset-[25cqw]"
+          className="absolute -inset-[25cqmin]"
           style={{ background: PATTERN[s.kind](t.dark ? "rgb(0 0 0 / 0.13)" : "rgb(255 255 255 / 0.14)"), ...MOTION[s.kind] } as CSSProperties}
         />
       </div>
+      <div className="@container absolute right-0 top-0 h-full w-[min(100cqw,83.3cqh)]">
       {s.kind === "intro" ? (
         // A vinyl record spinning in from the corner, the quarter on its label.
         <div className="absolute -right-[30cqw] -top-[24cqw] grid size-[100cqw] place-items-center rounded-full bg-[#111] shadow-[0_14px_40px_rgb(0_0_0/0.35)] [background-image:repeating-radial-gradient(circle,#111_0_1.1cqw,#2a2a2a_1.1cqw_1.5cqw)] motion-safe:animate-[spin_14s_linear_infinite]">
@@ -399,9 +405,10 @@ export function Slide({ s, r, current }: { s: SlideSpec; r: Rewind; current: boo
           }}
         />
       ) : null}
+      </div>
       {/* Light grain over the flat colour. */}
       <div className="pointer-events-none absolute inset-0 opacity-20 [background:repeating-radial-gradient(circle_at_30%_30%,rgb(0_0_0/0.25)_0_1px,transparent_1px_3px)]" />
-      <div className="absolute inset-x-0 bottom-0 px-[8cqw] pb-[10cqw]">
+      <div className="@container absolute bottom-0 left-0 w-[min(100cqw,83.3cqh)] px-[8cqw] pb-[10cqw]">
         <Body s={s} r={r} />
       </div>
     </div>
