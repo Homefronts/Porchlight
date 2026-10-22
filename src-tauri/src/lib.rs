@@ -3261,6 +3261,84 @@ async fn resolve_video_ytdlp(app: tauri::AppHandle, video_id: String, max_height
     url.ok_or_else(|| "yt-dlp returned no video URL".into())
 }
 
+/// Most bytes one /video request fetches from YouTube. YouTube throttles an
+/// open-ended read (what a browser's video player sends) to a trickle and
+/// then drops it ("data source error"), while a bounded range arrives at full
+/// speed (measured: 10 MB in 0.3 s vs 40 MB a minute). So each request gets
+/// at most one chunk and the player asks for the next, as yt-dlp does.
+const VIDEO_CHUNK: u64 = 10_000_000;
+
+/// The bytes to fetch for a player's `Range` header: from its start, at most
+/// one chunk, never past the end it asked for.
+fn video_chunk(range: Option<&str>) -> (u64, u64) {
+    let spec = range.and_then(|r| r.strip_prefix("bytes=")).unwrap_or("0-");
+    let mut parts = spec.splitn(2, '-');
+    let start: u64 = parts.next().and_then(|s| s.trim().parse().ok()).unwrap_or(0);
+    let end = parts.next().and_then(|s| s.trim().parse::<u64>().ok());
+    let last = start + VIDEO_CHUNK - 1;
+    (start, end.map_or(last, |e| e.min(last)))
+}
+
+#[derive(serde::Deserialize)]
+struct VideoQuery {
+    u: String,
+}
+
+/// Music video bytes for the player's <video>, fetched from YouTube a chunk
+/// at a time (see VIDEO_CHUNK). Only https googlevideo.com URLs, the kind
+/// `resolve_video_ytdlp` returns, are fetched: never a general proxy.
+async fn video_proxy_handler(
+    axum::extract::Query(q): axum::extract::Query<VideoQuery>,
+    headers: axum::http::HeaderMap,
+) -> Response {
+    static CLIENT: std::sync::OnceLock<reqwest::Client> = std::sync::OnceLock::new();
+    let Ok(url) = reqwest::Url::parse(&q.u) else {
+        return (StatusCode::BAD_REQUEST, "bad url").into_response();
+    };
+    if url.scheme() != "https" || !url.host_str().is_some_and(|h| h.ends_with(".googlevideo.com")) {
+        return (StatusCode::FORBIDDEN, "not a YouTube video URL").into_response();
+    }
+    let range = headers.get(axum::http::header::RANGE).and_then(|v| v.to_str().ok());
+    let (start, last) = video_chunk(range);
+    let client = CLIENT.get_or_init(reqwest::Client::new);
+    let upstream = match client.get(url).header("range", format!("bytes={start}-{last}")).send().await {
+        Ok(r) => r,
+        Err(e) => {
+            eprintln!("[video] proxy: fetch at byte {start} failed: {e}");
+            return (StatusCode::BAD_GATEWAY, "fetch failed").into_response();
+        }
+    };
+    let status = upstream.status();
+    if status == reqwest::StatusCode::RANGE_NOT_SATISFIABLE {
+        return StatusCode::RANGE_NOT_SATISFIABLE.into_response();
+    }
+    if !status.is_success() {
+        eprintln!("[video] proxy: YouTube answered {status} at byte {start}");
+        return (StatusCode::BAD_GATEWAY, "upstream error").into_response();
+    }
+    let content_type = upstream.headers().get("content-type").cloned();
+    let content_range = upstream.headers().get("content-range").cloned();
+    let bytes = match upstream.bytes().await {
+        Ok(b) => b,
+        Err(e) => {
+            eprintln!("[video] proxy: read at byte {start} failed: {e}");
+            return (StatusCode::BAD_GATEWAY, "read failed").into_response();
+        }
+    };
+    let mut res = Response::builder()
+        .status(if content_range.is_some() { StatusCode::PARTIAL_CONTENT } else { StatusCode::OK })
+        .header("accept-ranges", "bytes")
+        .header("content-length", bytes.len());
+    if let Some(v) = content_type {
+        res = res.header("content-type", v);
+    }
+    if let Some(v) = content_range {
+        res = res.header("content-range", v);
+    }
+    res.body(axum::body::Body::from(bytes))
+        .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+}
+
 /// Dev diagnostics: a line from the webview into this process's log (stderr),
 /// where webview console output doesn't reach.
 #[tauri::command]
@@ -4104,6 +4182,7 @@ async fn start_stream_server(
         .route("/stream/:video_id", get(stream_handler))
         .route("/prefetch/:video_id", get(prefetch_handler))
         .route("/cover/:filename", get(cover_serve_handler))
+        .route("/video", get(video_proxy_handler))
         .with_state(server);
     let app = Router::new()
         .nest(&format!("/{token}"), routes)
@@ -4513,12 +4592,23 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
-    use super::generate_stream_token;
+    use super::{generate_stream_token, video_chunk, VIDEO_CHUNK};
     use axum::body::Body;
     use axum::http::{Request, StatusCode};
     use axum::routing::get;
     use axum::Router;
     use tower::ServiceExt;
+
+    #[test]
+    fn video_chunk_asks_youtube_for_one_bounded_chunk() {
+        // What a browser player sends: open-ended. Bounded to one chunk.
+        assert_eq!(video_chunk(Some("bytes=0-")), (0, VIDEO_CHUNK - 1));
+        assert_eq!(video_chunk(Some("bytes=25000000-")), (25_000_000, 25_000_000 + VIDEO_CHUNK - 1));
+        // A smaller ask is kept as is; no header means from the start.
+        assert_eq!(video_chunk(Some("bytes=100-199")), (100, 199));
+        assert_eq!(video_chunk(None), (0, VIDEO_CHUNK - 1));
+        assert_eq!(video_chunk(Some("junk")), (0, VIDEO_CHUNK - 1));
+    }
 
     #[test]
     fn stream_token_is_nonempty_hex_and_varies() {

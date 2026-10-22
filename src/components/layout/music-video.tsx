@@ -6,6 +6,7 @@ import { usePlaybackStore, type QueueTrack } from "@/lib/store/playback";
 import { usePlaybackSettings } from "@/lib/store/playback-settings";
 import { usePlaybackAllowed } from "@/lib/store/premium";
 import { useTrackSourceStore } from "@/lib/store/track-source";
+import { getStreamBaseUrl } from "@/lib/stream";
 import { cn } from "@/lib/utils";
 
 /** Dev builds: a line in the terminal log, where webview console output doesn't reach. */
@@ -94,7 +95,15 @@ export function MusicVideo({ track, where, className }: { track: QueueTrack; whe
   const on = !!id && !hidden && allowed;
   const src = useQuery({
     queryKey: ["music-video", id, quality],
-    queryFn: () => invoke<string>("resolve_video_ytdlp", { videoId: id, maxHeight: quality }),
+    // Through the local stream server, which fetches YouTube in fast chunks:
+    // YouTube throttles a browser player's open-ended read and then drops it.
+    queryFn: async () => {
+      const [url, base] = await Promise.all([
+        invoke<string>("resolve_video_ytdlp", { videoId: id, maxHeight: quality }),
+        getStreamBaseUrl(),
+      ]);
+      return `${base}/video?u=${encodeURIComponent(url)}`;
+    },
     enabled: on,
     // Stream links expire after about six hours.
     staleTime: 2 * 60 * 60_000,
