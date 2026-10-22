@@ -3328,6 +3328,9 @@ async fn video_proxy_handler(
     let mut res = Response::builder()
         .status(if content_range.is_some() { StatusCode::PARTIAL_CONTENT } else { StatusCode::OK })
         .header("accept-ranges", "bytes")
+        // Cached by the webview, so a new <video> for the same link (opening or
+        // leaving fullscreen) starts from bytes already here instead of refetching.
+        .header("cache-control", "private, max-age=3600")
         .header("content-length", bytes.len());
     if let Some(v) = content_type {
         res = res.header("content-type", v);

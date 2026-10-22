@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { HeartIcon, ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -133,6 +133,9 @@ function FullscreenView({ track }: { track: QueueTrack }) {
 
   const iTunesCover = useITunesCover(track);
   const videoId = useMusicVideoId(track);
+  // Where the VideoStage sits: the view, and in the boxed layouts the Cover frame.
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  const [slot, setSlot] = useState<HTMLDivElement | null>(null);
   const lyricsState = useLyricsView(track);
   // "With lyrics" only means something when there are some. A track the
   // sources came back empty for shows as Centered instead; the setting
@@ -166,9 +169,22 @@ function FullscreenView({ track }: { track: QueueTrack }) {
       ? "blur(46px) saturate(0.95) brightness(1.34)"
       : "blur(46px) saturate(1.3) brightness(0.62)";
 
+  const shade = (
+    <div
+      aria-hidden
+      className="absolute inset-0"
+      style={{
+        background: immersive
+          ? "linear-gradient(180deg, var(--g9a) 0%, var(--g9b) 34%, var(--g9c) 100%)"
+          : "var(--g9d)",
+      }}
+    />
+  );
+
   return (
     <TooltipProvider delayDuration={800} skipDelayDuration={0}>
       <motion.div
+        ref={setHost}
         initial={{ opacity: 0, y: 10, scale: 0.985 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 10, scale: 0.985 }}
@@ -193,9 +209,6 @@ function FullscreenView({ track }: { track: QueueTrack }) {
             overrideHighRes={iTunesCover}
           />
         </div>
-        {/* Immersive: the backdrop is the art, so the video fills the screen
-            too, but outside the art's zoom and filter: sharp, uncropped. */}
-        {immersive ? <MusicVideo track={track} where="fullscreen" className="rounded-none object-cover" /> : null}
         {/* The blur bands soften art behind the chrome; a video stays sharp. */}
         {immersive && !videoId ? (
           <>
@@ -210,15 +223,11 @@ function FullscreenView({ track }: { track: QueueTrack }) {
             />
           </>
         ) : null}
-        <div
-          aria-hidden
-          className="absolute inset-0"
-          style={{
-            background: immersive
-              ? "linear-gradient(180deg, var(--g9a) 0%, var(--g9b) 34%, var(--g9c) 100%)"
-              : "var(--g9d)",
-          }}
-        />
+        {/* The shade goes under a boxed video (it dims the backdrop, not the
+            video) and over a full-screen one (it keeps the title readable). */}
+        {immersive ? null : shade}
+        {videoId ? <VideoStage track={track} override={iTunesCover} host={host} slot={slot} immersive={immersive} /> : null}
+        {immersive ? shade : null}
 
         {/* The title bar is transparent and stays on top, so the body
             starts below it and the cover runs up behind it. */}
@@ -280,6 +289,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
                   videoId ? "w-[min(880px,76vw)]" : "w-[300px]",
                   "rounded-[14px] shadow-[0_40px_80px_-28px_var(--k900),inset_0_0_0_1px_var(--w140)]",
                 )}
+                onSlot={setSlot}
               />
               <div className="flex flex-col items-center gap-2 text-center">
                 <span className="text-[34px] font-bold leading-tight tracking-[-0.03em] text-(--fs-title)">
@@ -297,6 +307,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
                   track={track}
                   override={iTunesCover}
                   className="w-full rounded-xl shadow-[0_30px_60px_-26px_var(--k900),inset_0_0_0_1px_var(--w140)]"
+                  onSlot={setSlot}
                 />
                 <div className="flex min-w-0 flex-col gap-[7px]">
                   <span className="truncate text-[27px] font-bold leading-tight tracking-[-0.025em] text-(--fs-title)">
@@ -539,25 +550,95 @@ function Cover({
   track,
   override,
   className,
+  onSlot,
 }: {
   track: QueueTrack;
   override: string | null;
   className?: string;
+  /** Video mode: this box is only a frame, and the VideoStage sits on it. */
+  onSlot: (el: HTMLDivElement | null) => void;
 }) {
   const video = !!useMusicVideoId(track);
+  if (video) {
+    return (
+      <div ref={onSlot} className={cn("relative isolate aspect-video shrink-0", className)}>
+        <ArtworkOutline className="rounded-[inherit]" />
+      </div>
+    );
+  }
   return (
-    <div className={cn("relative isolate shrink-0", video ? "aspect-video" : "aspect-square", className)}>
+    <div className={cn("relative isolate aspect-square shrink-0", className)}>
       <Thumbnail
         thumbnails={track.thumbnails}
         alt={track.title}
-        // In the wide video box the square cover sits centred, whole, until the video's first frame.
-        className={cn("pointer-events-none rounded-[inherit]", video ? "mx-auto aspect-square h-full" : "size-full")}
+        className="pointer-events-none size-full rounded-[inherit]"
         targetSize={1024}
         highRes
         overrideHighRes={override}
       />
-      <MusicVideo track={track} where="fullscreen" />
       <ArtworkOutline className="rounded-[inherit]" />
+    </div>
+  );
+}
+
+/**
+ * Fullscreen's one music video, kept mounted across the three layouts so
+ * switching never reloads it. Centred and With lyrics mark where it goes with
+ * an empty Cover frame (`slot`), and it sits exactly on that frame, corners
+ * included; Immersive has no frame, so it fills the view. Moving between them
+ * glides. The cover shows under the video until its first frame.
+ */
+function VideoStage({
+  track,
+  override,
+  host,
+  slot,
+  immersive,
+}: {
+  track: QueueTrack;
+  override: string | null;
+  host: HTMLElement | null;
+  slot: HTMLElement | null;
+  immersive: boolean;
+}) {
+  const [box, setBox] = useState<{ left: number; top: number; width: number; height: number; radius: string } | null>(null);
+  useLayoutEffect(() => {
+    if (immersive || !slot || !host) return setBox(null);
+    const measure = () => {
+      // Layout offsets, not getBoundingClientRect: the view's open animation
+      // scales it, and a transform doesn't fire the ResizeObserver to re-measure.
+      let left = 0;
+      let top = 0;
+      for (let el: HTMLElement | null = slot; el && el !== host; el = el.offsetParent as HTMLElement | null) {
+        left += el.offsetLeft;
+        top += el.offsetTop;
+      }
+      setBox({ left, top, width: slot.offsetWidth, height: slot.offsetHeight, radius: getComputedStyle(slot).borderRadius });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(slot);
+    ro.observe(host);
+    return () => ro.disconnect();
+  }, [slot, host, immersive]);
+
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute overflow-hidden transition-[left,top,width,height,border-radius] duration-300 ease-[cubic-bezier(.32,.72,0,1)]"
+      style={box ? { left: box.left, top: box.top, width: box.width, height: box.height, borderRadius: box.radius } : { left: 0, top: 0, width: "100%", height: "100%", borderRadius: 0 }}
+    >
+      {box ? (
+        <Thumbnail
+          thumbnails={track.thumbnails}
+          alt=""
+          className="mx-auto aspect-square h-full rounded-none bg-transparent"
+          targetSize={1024}
+          highRes
+          overrideHighRes={override}
+        />
+      ) : null}
+      <MusicVideo track={track} where="fullscreen" className={box ? "rounded-none" : "rounded-none object-cover"} />
     </div>
   );
 }
