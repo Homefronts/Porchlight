@@ -58,7 +58,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
   {
     version: "0.8.1",
     date: "October 23, 2026",
-    summary: "No more stray highlighting",
+    summary: "Add to library, and fixes",
     changes: [
       {
         type: "fixed",
@@ -70,7 +70,13 @@ export const WHATS_NEW: WhatsNewEntry[] = [
         title: "YTubic Plus",
         text: "The sidebar logo now says YTubic Plus.",
       },
+      {
+        type: "new",
+        title: "Add to library",
+        text: "Right-click any playlist, or use the bookmark button on its page, to add it to the app's own library. It shows up in Library and the sidebar.",
+      },
     ],
+    note: "Some of your YouTube Music playlists may be missing from Library. We're still working out why they don't come through automatically. You can find them on Home under \"From your library\", and right-click one there to add it to the app's library in the meantime.",
   },
   {
     version: "0.8.0",

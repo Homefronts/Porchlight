@@ -34,6 +34,8 @@ import {
   ChurchIcon,
   SnowflakeIcon,
   GlobeIcon,
+  BookmarkPlusIcon,
+  BookmarkMinusIcon,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -58,6 +60,7 @@ import {
   useIsPinned,
   usePinnedPlaylistsStore,
 } from "@/lib/store/pinned-playlists";
+import { usePlaylistInAppLibrary } from "@/lib/ai/use-in-library";
 import { ExplicitBadge } from "@/components/shared/explicit-badge";
 import { AiTag } from "@/components/shared/ai-badge";
 import type { ShelfItem } from "@/lib/innertube/types";
@@ -458,11 +461,35 @@ function PlaylistPinContextMenu({
   const unpin = usePinnedPlaylistsStore((s) => s.unpin);
   const hide = usePinnedPlaylistsStore((s) => s.hide);
   const unhide = usePinnedPlaylistsStore((s) => s.unhide);
+  const saved = usePlaylistInAppLibrary(item.id);
+  const signedIn = usePinnedPlaylistsStore((s) => s.activeAccountId !== null);
+  const save = usePinnedPlaylistsStore((s) => s.save);
+  const unsave = usePinnedPlaylistsStore((s) => s.unsave);
 
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
       <ContextMenuContent>
+        {!signedIn ? null : saved ? (
+          <ContextMenuItem onSelect={() => unsave(item.id)}>
+            <BookmarkMinusIcon />
+            Remove from library
+          </ContextMenuItem>
+        ) : (
+          <ContextMenuItem
+            onSelect={() =>
+              save({
+                id: item.id,
+                title: item.title,
+                thumbnailUrl:
+                  item.thumbnails[item.thumbnails.length - 1]?.url,
+              })
+            }
+          >
+            <BookmarkPlusIcon />
+            Add to library
+          </ContextMenuItem>
+        )}
         {pinned ? (
           <ContextMenuItem onSelect={() => unpin(item.id)}>
             <PinOffIcon />

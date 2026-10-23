@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CollectionDownloadButton } from "@/components/shared/download-button";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { AlertCircleIcon, RefreshCwIcon } from "lucide-react";
+import { AlertCircleIcon, BookmarkCheckIcon, BookmarkPlusIcon, RefreshCwIcon } from "lucide-react";
 import {
   IconCheck,
   IconLoader2,
@@ -46,7 +46,8 @@ import {
   usePlaylistSortStore,
   type PlaylistSortMode,
 } from "@/lib/store/playlist-sort";
-import { useInLibrary } from "@/lib/ai/use-in-library";
+import { useInLibrary, usePlaylistInAppLibrary } from "@/lib/ai/use-in-library";
+import { usePinnedPlaylistsStore } from "@/lib/store/pinned-playlists";
 
 export const Route = createFileRoute("/playlist/$id")({
   component: PlaylistPageView,
@@ -340,6 +341,11 @@ function PlaylistPageView() {
               <CollectionDownloadButton
                 kind="playlist"
                 id={id.startsWith("VL") ? id.slice(2) : id}
+              />
+              <SaveToLibraryButton
+                id={id}
+                title={header.title}
+                thumbnailUrl={header.thumbnails[header.thumbnails.length - 1]?.url}
               />
               {/* One link for everyone: the share page opens the playlist in
                   YTubic when it's installed and falls back to YouTube Music
@@ -644,5 +650,26 @@ function PlaylistSkeleton() {
         <Skeleton key={i} className="h-12 w-full" />
       ))}
     </div>
+  );
+}
+
+/** Adds the playlist to the app's own library (Library > Playlists and the sidebar). */
+function SaveToLibraryButton({ id, title, thumbnailUrl }: { id: string; title: string; thumbnailUrl?: string }) {
+  const saved = usePlaylistInAppLibrary(id);
+  const label = saved ? "Remove from library" : "Add to library";
+  return (
+    <Button
+      variant="outline"
+      size="icon"
+      aria-label={label}
+      title={label}
+      onClick={() => {
+        const store = usePinnedPlaylistsStore.getState();
+        if (saved) store.unsave(id);
+        else store.save({ id, title, thumbnailUrl });
+      }}
+    >
+      {saved ? <BookmarkCheckIcon /> : <BookmarkPlusIcon />}
+    </Button>
   );
 }

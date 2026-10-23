@@ -21,6 +21,8 @@ import {
   type PlaylistNextPage,
 } from "@/lib/innertube/playlist";
 import { openSettings } from "@/lib/store/settings-dialog";
+import { bare, useRemoved, useSaved } from "@/lib/store/pinned-playlists";
+import type { ShelfItem } from "@/lib/innertube/types";
 
 export const Route = createFileRoute("/library")({
   component: LibraryPage,
@@ -34,6 +36,18 @@ function LibraryPage() {
   });
 
   const [tab, setTab] = useState("playlists");
+  const saved = useSaved();
+  const removed = useRemoved();
+  const savedItems = useMemo<ShelfItem[]>(
+    () =>
+      saved.map((p) => ({
+        kind: "playlist",
+        id: p.id,
+        title: p.title,
+        thumbnails: p.thumbnailUrl ? [{ url: p.thumbnailUrl }] : [],
+      })),
+    [saved],
+  );
 
   if (loggedIn.data === false) {
     return <LoggedOutState />;
@@ -57,6 +71,8 @@ function LibraryPage() {
           <SectionsView
             queryKey={["library", "playlists"]}
             fetcher={fetchLibraryPlaylists}
+            extra={savedItems}
+            removed={removed}
           />
         )}
         {tab === "songs" && <LikedSongsView />}
@@ -96,9 +112,15 @@ function LoggedOutState() {
 function SectionsView({
   queryKey,
   fetcher,
+  extra = [],
+  removed = [],
 }: {
   queryKey: readonly string[];
   fetcher: () => Promise<LibrarySection[]>;
+  /** Items added to the app library, shown first unless YouTube already lists them. */
+  extra?: ShelfItem[];
+  /** Ids removed from the app library: hidden even when YouTube lists them. */
+  removed?: string[];
 }) {
   const { data, isLoading, error } = useQuery({
     queryKey,
@@ -107,14 +129,16 @@ function SectionsView({
 
   if (error) return <ErrorCard message={(error as Error).message} />;
   if (isLoading) return <SectionsSkeleton />;
-  if (!data || data.length === 0) {
-    return <p className="text-sm text-muted-foreground">Nothing here yet.</p>;
-  }
-
   // Flatten all sections into a single grid. Library shelves come back with
   // auto-generated "Section N" titles from the parser fallback, so a flat
   // grid reads cleaner than multiple titled rows.
-  const items = data.flatMap((s) => s.items);
+  const gone = new Set(removed.map(bare));
+  const fetched = (data ?? []).flatMap((s) => s.items).filter((it) => !gone.has(bare(it.id)));
+  const listed = new Set(fetched.map((it) => bare(it.id)));
+  const items = [...extra.filter((it) => !listed.has(bare(it.id))), ...fetched];
+  if (items.length === 0) {
+    return <p className="text-sm text-muted-foreground">Nothing here yet.</p>;
+  }
 
   return (
     <div className="grid w-full gap-2 grid-cols-[repeat(auto-fill,minmax(min(100%,11rem),1fr))] [&>*]:max-w-[20rem]">

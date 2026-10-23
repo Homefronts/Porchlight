@@ -79,6 +79,16 @@ export function fetchLibraryPlaylists(): Promise<LibrarySection[]> {
   return browseSections("FEmusic_liked_playlists");
 }
 
+/** The library playlists query. Every observer of this key must use this one definition. */
+export function libraryPlaylistsQuery(enabled: boolean) {
+  return {
+    queryKey: ["library", "playlists"] as const,
+    queryFn: fetchLibraryPlaylists,
+    enabled,
+    staleTime: 5 * 60_000,
+  };
+}
+
 export function fetchLibraryAlbums(): Promise<LibrarySection[]> {
   return browseSections("FEmusic_liked_albums");
 }

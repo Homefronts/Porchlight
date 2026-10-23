@@ -29,7 +29,7 @@
 
 Built as a reaction to the sluggish webview-wrapper experience — YTubic talks to YouTube's InnerTube API directly, renders its own UI, and caches aggressively, so navigation and playback feel instant.
 
-![YTubic — artist page with the player and synced lyrics](assets/screenshots/artist-page.jpg)
+![YTubic Plus — your library with the player and synced lyrics](assets/screenshots/library.jpg)
 
 ## What's new in Plus
 

@@ -69,14 +69,17 @@ import {
 import {
   useHidden,
   usePinned,
+  bare,
   usePinnedPlaylistsStore,
+  useRemoved,
+  useSaved,
 } from "@/lib/store/pinned-playlists";
 import { IS_BETA_PLATFORM } from "@/lib/platform";
 import { openChannelPicker } from "@/lib/store/channel-picker";
 import { openSettings } from "@/lib/store/settings-dialog";
 import { UpdateBanner } from "@/components/layout/update-banner";
 import { LikedCover } from "@/components/shared/liked-cover";
-import { fetchLibraryPlaylists } from "@/lib/innertube/library";
+import { libraryPlaylistsQuery } from "@/lib/innertube/library";
 import type { ShelfItem } from "@/lib/innertube/types";
 import { pickThumbnail } from "@/components/shared/thumbnail";
 import { resetInnertube } from "@/lib/innertube/client";
@@ -312,15 +315,12 @@ function SidebarPlaylists({
   onScrollableChange: (scrollable: boolean) => void;
 }) {
   const loggedIn = useQuery(authLoggedInQuery);
-  const library = useQuery({
-    queryKey: ["library", "playlists"],
-    queryFn: fetchLibraryPlaylists,
-    enabled: loggedIn.data === true,
-    staleTime: 5 * 60_000,
-  });
+  const library = useQuery(libraryPlaylistsQuery(loggedIn.data === true));
 
   const pinned = usePinned();
   const hidden = useHidden();
+  const saved = useSaved();
+  const removed = useRemoved();
   const pin = usePinnedPlaylistsStore((s) => s.pin);
   const unpin = usePinnedPlaylistsStore((s) => s.unpin);
   const hide = usePinnedPlaylistsStore((s) => s.hide);
@@ -332,7 +332,7 @@ function SidebarPlaylists({
     // playlists are dropped entirely (un-hidden from the Library).
     const libItems = (library.data ?? [])
       .flatMap((s) => s.items)
-      .filter((it) => it.id !== LIKED_ID && !hiddenIds.has(it.id));
+      .filter((it) => it.id !== LIKED_ID && !hiddenIds.has(it.id) && !removed.some((r) => bare(r) === bare(it.id)));
     const libById = new Map(libItems.map((it) => [it.id, it]));
     const pinnedIds = new Set(pinned.map((p) => p.id));
 
@@ -363,8 +363,13 @@ function SidebarPlaylists({
         pinned: false,
       }));
 
-    return [...pinnedRows, ...restRows];
-  }, [library.data, pinned, hidden]);
+    // Added to the app library but missing from YouTube's listing.
+    const savedRows: PlaylistRow[] = saved
+      .filter((p) => p.id !== LIKED_ID && !hiddenIds.has(p.id) && !pinnedIds.has(p.id) && !libById.has(p.id))
+      .map((p) => ({ id: p.id, title: p.title, thumbnailUrl: p.thumbnailUrl, pinned: false }));
+
+    return [...pinnedRows, ...savedRows, ...restRows];
+  }, [library.data, pinned, hidden, saved, removed]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 

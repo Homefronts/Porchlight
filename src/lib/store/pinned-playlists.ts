@@ -10,6 +10,25 @@ export type PinnedPlaylist = {
   thumbnailUrl?: string;
 };
 
+/** A playlist id without YouTube's `VL` browse prefix, for comparing ids from different places. */
+export const bare = (id: string) => (id.startsWith("VL") ? id.slice(2) : id);
+
+/**
+ * Whether a playlist is in the app library: added in the app wins, then a
+ * removal in the app, then whether YouTube lists it.
+ */
+export function inAppLibrary(
+  id: string,
+  saved: PinnedPlaylist[],
+  removed: string[],
+  listed: (bareId: string) => boolean,
+): boolean {
+  const want = bare(id);
+  if (saved.some((p) => bare(p.id) === want)) return true;
+  if (removed.some((r) => bare(r) === want)) return false;
+  return listed(want);
+}
+
 // Bucket sentinel for pre-multi-account pins. Real account ids start
 // with `acct-` from `generate_account_id`, so the `__legacy__` key
 // can't collide.
@@ -44,12 +63,25 @@ type State = {
    * always in exactly one of {pinned, normal, hidden}.
    */
   hiddenByAccount: Record<string, string[]>;
+  /**
+   * Playlists added to the app's own library, keyed by account. They show
+   * in Library > Playlists and the sidebar even when YouTube's library
+   * listing leaves them out (it omits some owned and imported playlists).
+   */
+  savedByAccount: Record<string, PinnedPlaylist[]>;
+  /**
+   * Playlist ids removed from the app library, keyed by account. Hides one
+   * YouTube still lists from Library and the sidebar; adding it back clears it.
+   */
+  removedByAccount: Record<string, string[]>;
   setActiveAccount: (id: string | null) => void;
   pin: (p: PinnedPlaylist) => void;
   unpin: (id: string) => void;
   hide: (id: string) => void;
   unhide: (id: string) => void;
   reorder: (from: number, to: number) => void;
+  save: (p: PinnedPlaylist) => void;
+  unsave: (id: string) => void;
 };
 
 /**
@@ -65,6 +97,8 @@ export const usePinnedPlaylistsStore = create<State>()(
       activeAccountId: null,
       byAccount: {},
       hiddenByAccount: {},
+      savedByAccount: {},
+      removedByAccount: {},
       setActiveAccount: (id) =>
         set((s) => {
           const next = { ...s.byAccount };
@@ -164,6 +198,30 @@ export const usePinnedPlaylistsStore = create<State>()(
           next.splice(to, 0, moved);
           return { byAccount: { ...s.byAccount, [key]: next } };
         }),
+      save: (p) =>
+        set((s) => {
+          if (s.activeAccountId === null) return s;
+          const key = s.activeAccountId;
+          const list = s.savedByAccount[key] ?? [];
+          const removed = s.removedByAccount[key] ?? [];
+          const want = bare(p.id);
+          return {
+            savedByAccount: list.some((x) => bare(x.id) === want) ? s.savedByAccount : { ...s.savedByAccount, [key]: [...list, p] },
+            removedByAccount: { ...s.removedByAccount, [key]: removed.filter((x) => bare(x) !== want) },
+          };
+        }),
+      unsave: (id) =>
+        set((s) => {
+          if (s.activeAccountId === null) return s;
+          const key = s.activeAccountId;
+          const list = s.savedByAccount[key] ?? [];
+          const removed = s.removedByAccount[key] ?? [];
+          const want = bare(id);
+          return {
+            savedByAccount: { ...s.savedByAccount, [key]: list.filter((x) => bare(x.id) !== want) },
+            removedByAccount: removed.some((x) => bare(x) === want) ? s.removedByAccount : { ...s.removedByAccount, [key]: [...removed, id] },
+          };
+        }),
     }),
     {
       name: "ytm-pinned-playlists",
@@ -173,12 +231,14 @@ export const usePinnedPlaylistsStore = create<State>()(
       partialize: (s) => ({
         byAccount: s.byAccount,
         hiddenByAccount: s.hiddenByAccount,
+        savedByAccount: s.savedByAccount,
+        removedByAccount: s.removedByAccount,
       }),
       // v0/v1: `{ pinned: [...] }` (no version field, the absence
       //         counts as version 0). Promote the list into the
       //         `__legacy__` bucket so the first sign-in claims it.
       // v2:    `{ byAccount: { ... } }` (current).
-      // `hiddenByAccount` (added after v2) is an additive field: older
+      // `hiddenByAccount`, `savedByAccount` and `removedByAccount` (added after v2) are additive fields: older
       // persisted blobs simply omit it and the store's initial `{}`
       // fills the gap via persist's shallow merge — no version bump
       // needed.
@@ -197,6 +257,8 @@ export const usePinnedPlaylistsStore = create<State>()(
         return persistedState as {
           byAccount: Record<string, PinnedPlaylist[]>;
           hiddenByAccount?: Record<string, string[]>;
+          savedByAccount?: Record<string, PinnedPlaylist[]>;
+          removedByAccount?: Record<string, string[]>;
         };
       },
     },
@@ -231,6 +293,22 @@ export function useIsHidden(id: string): boolean {
   return usePinnedPlaylistsStore((s) => {
     if (s.activeAccountId === null) return false;
     return (s.hiddenByAccount[s.activeAccountId] ?? []).includes(id);
+  });
+}
+
+/** Current account's app-library playlists. `[]` when signed out. */
+export function useSaved(): PinnedPlaylist[] {
+  return usePinnedPlaylistsStore((s) => {
+    if (s.activeAccountId === null) return EMPTY;
+    return s.savedByAccount[s.activeAccountId] ?? EMPTY;
+  });
+}
+
+/** Current account's playlist ids removed from the app library. `[]` when signed out. */
+export function useRemoved(): string[] {
+  return usePinnedPlaylistsStore((s) => {
+    if (s.activeAccountId === null) return EMPTY_IDS;
+    return s.removedByAccount[s.activeAccountId] ?? EMPTY_IDS;
   });
 }
 
