@@ -538,7 +538,13 @@
     -webkit-font-smoothing: antialiased;
   }
   body {
-    @apply overflow-hidden;
+    /* Feels like a native app: no drag-highlighting the whole UI; text fields stay selectable. */
+    @apply overflow-hidden select-none;
+  }
+  input,
+  textarea,
+  [contenteditable="true"] {
+    @apply select-text;
   }
 
   /* Push the floating shadcn sidebar below the custom title bar so the

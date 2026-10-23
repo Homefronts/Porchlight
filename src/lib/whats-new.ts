@@ -56,6 +56,18 @@ export type WhatsNewEntry = {
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.8.1",
+    date: "October 23, 2026",
+    summary: "No more stray highlighting",
+    changes: [
+      {
+        type: "fixed",
+        title: "Text selection",
+        text: "Clicking and dragging no longer highlights text across the whole app. Search and other text boxes still select as usual.",
+      },
+    ],
+  },
+  {
     version: "0.8.0",
     date: "October 23, 2026",
     summary: "Rewind",
