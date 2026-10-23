@@ -65,6 +65,11 @@ export const WHATS_NEW: WhatsNewEntry[] = [
         title: "Text selection",
         text: "Clicking and dragging no longer highlights text across the whole app. Search and other text boxes still select as usual.",
       },
+      {
+        type: "improved",
+        title: "YTubic Plus",
+        text: "The sidebar logo now says YTubic Plus.",
+      },
     ],
   },
   {

@@ -169,14 +169,14 @@ export function AppSidebar() {
          *  hopping to a centered row. */}
         <img
           src="/ytubic-icon.svg"
-          alt="YTubic"
+          alt="YTubic Plus"
           className="size-7 shrink-0 rounded-full"
         />
         <span
           data-sidebar-label
           className="shrink-0 text-[17px] font-semibold leading-none tracking-[-0.015em] text-t1"
         >
-          YTubic
+          YTubic Plus
         </span>
         {IS_BETA_PLATFORM && (
           <span
