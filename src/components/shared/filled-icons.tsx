@@ -5,7 +5,7 @@ import { useId, type SVGProps } from "react";
  *
  * Every one of these is an adaptation of the outline glyph the app used
  * before, drawn so the menus can be uniformly filled — see
- * docs/ui-refresh-backlog.md for which shape each one is built from and
+ * docs/upstream/ui-refresh-backlog.md for which shape each one is built from and
  * why. Geometry lives on Tabler's own 24x24 grid, so they drop in
  * wherever a Tabler icon did.
  *

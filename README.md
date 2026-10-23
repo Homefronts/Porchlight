@@ -178,6 +178,7 @@ src/
 │   ├── layout/          # AppShell, sidebar, topbar, player bar, floating player, lyrics
 │   └── shared/          # Track list/rows, cards, shelves, context menus
 ├── lib/
+│   ├── ai/              # AI music filter: matching, data sync, overrides
 │   ├── innertube/        # Raw InnerTube client + parsers
 │   ├── lyrics/          # LRCLIB / Musixmatch / Genius sources + LRC parser
 │   ├── store/           # Zustand stores
@@ -186,6 +187,8 @@ src/
 │   └── utils.ts         # cn() and friends
 └── hooks/
 src-tauri/               # Rust backend (axum stream proxy, cookies, tray)
+scripts/ai-data/         # Daily job that builds the AI artist list (runs in CI)
+docs/                    # Design docs, build plans, upstream notes (see docs/README.md)
 ```
 
 ## Credits
