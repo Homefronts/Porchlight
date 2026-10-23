@@ -56,29 +56,6 @@ export type WhatsNewEntry = {
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
-    version: "0.8.1",
-    date: "October 23, 2026",
-    summary: "Add to library, and fixes",
-    changes: [
-      {
-        type: "fixed",
-        title: "Text selection",
-        text: "Clicking and dragging no longer highlights text across the whole app. Search and other text boxes still select as usual.",
-      },
-      {
-        type: "improved",
-        title: "YTubic Plus",
-        text: "The sidebar logo now says YTubic Plus.",
-      },
-      {
-        type: "new",
-        title: "Add to library",
-        text: "Right-click any playlist, or use the bookmark button on its page, to add it to the app's own library. It shows up in Library and the sidebar.",
-      },
-    ],
-    note: "Some of your YouTube Music playlists may be missing from Library. We're still working out why they don't come through automatically. You can find them on Home under \"From your library\", and right-click one there to add it to the app's library in the meantime.",
-  },
-  {
     version: "0.8.0",
     date: "October 23, 2026",
     summary: "Rewind",
@@ -98,7 +75,28 @@ export const WHATS_NEW: WhatsNewEntry[] = [
         title: "Stays on your computer",
         text: "Your listening history is kept on this computer only and never uploaded. Pause it or clear it any time in Settings > Storage.",
       },
+      {
+        type: "new",
+        title: "Add to library",
+        text: "Right-click any playlist, or use the bookmark button on its page, to add it to the app's own library. It shows up in Library and the sidebar.",
+      },
+      {
+        type: "new",
+        title: "Rename and delete playlists",
+        text: "Your own playlists get rename and delete buttons at the top of the page. Changes show in YouTube Music too.",
+      },
+      {
+        type: "fixed",
+        title: "Text selection",
+        text: "Clicking and dragging no longer highlights text across the whole app. Search and other text boxes still select as usual.",
+      },
+      {
+        type: "improved",
+        title: "YTubic Plus",
+        text: "The sidebar logo now says YTubic Plus.",
+      },
     ],
+    note: "Some of your YouTube Music playlists may be missing from Library. We're still working out why they don't come through automatically. You can find them on Home under \"From your library\", and right-click one there to add it to the app's library in the meantime.",
   },
   {
     version: "0.7.5",

@@ -206,6 +206,30 @@ export async function removeFromPlaylist(
   }
 }
 
+/** Rename a playlist the user owns. */
+export async function renamePlaylist(
+  playlistId: string,
+  title: string,
+): Promise<void> {
+  const json = await innertubePost("browse/edit_playlist", {
+    playlistId,
+    actions: [{ action: "ACTION_SET_PLAYLIST_NAME", playlistName: title }],
+  });
+  const status = json?.status as string | undefined;
+  if (status && status !== "STATUS_SUCCEEDED") {
+    throw new Error(`edit_playlist failed: ${status}`);
+  }
+}
+
+/** Delete a playlist the user owns, on YouTube Music itself. */
+export async function deletePlaylist(playlistId: string): Promise<void> {
+  const json = await innertubePost("playlist/delete", { playlistId });
+  const status = json?.status as string | undefined;
+  if (status && status !== "STATUS_SUCCEEDED") {
+    throw new Error(`playlist/delete failed: ${status}`);
+  }
+}
+
 /**
  * Create a brand-new private playlist containing the given track as
  * its first entry. Returns the new playlistId so callers can navigate

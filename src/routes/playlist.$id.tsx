@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CollectionDownloadButton } from "@/components/shared/download-button";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { AlertCircleIcon, BookmarkCheckIcon, BookmarkPlusIcon, RefreshCwIcon } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertCircleIcon, BookmarkCheckIcon, BookmarkPlusIcon, PencilIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
 import {
   IconCheck,
   IconLoader2,
@@ -32,6 +32,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { deletePlaylist, renamePlaylist } from "@/lib/innertube/mutations";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -47,7 +56,7 @@ import {
   type PlaylistSortMode,
 } from "@/lib/store/playlist-sort";
 import { useInLibrary, usePlaylistInAppLibrary } from "@/lib/ai/use-in-library";
-import { usePinnedPlaylistsStore } from "@/lib/store/pinned-playlists";
+import { bare, usePinnedPlaylistsStore } from "@/lib/store/pinned-playlists";
 
 export const Route = createFileRoute("/playlist/$id")({
   component: PlaylistPageView,
@@ -270,7 +279,7 @@ function PlaylistPageView() {
   // aren't playlists the user can edit either.
   const removal =
     header.isEditable && !isLikedSongs && !isArtistTopSongs && !openedFromArtist
-      ? { playlistId: id.startsWith("VL") ? id.slice(2) : id }
+      ? { playlistId: bare(id) }
       : undefined;
 
   const metadataParts = [
@@ -340,8 +349,22 @@ function PlaylistPageView() {
             <>
               <CollectionDownloadButton
                 kind="playlist"
-                id={id.startsWith("VL") ? id.slice(2) : id}
+                id={bare(id)}
               />
+              {header.isEditable && (
+                <>
+                  <RenamePlaylistButton
+                    playlistId={bare(id)}
+                    routeId={id}
+                    title={header.title}
+                  />
+                  <DeletePlaylistButton
+                    playlistId={bare(id)}
+                    routeId={id}
+                    title={header.title}
+                  />
+                </>
+              )}
               <SaveToLibraryButton
                 id={id}
                 title={header.title}
@@ -359,7 +382,7 @@ function PlaylistPageView() {
                   void copyLink(
                     universalShareUrl(
                       "playlist",
-                      id.startsWith("VL") ? id.slice(2) : id,
+                      bare(id),
                       header.title,
                       header.thumbnails[header.thumbnails.length - 1]?.url,
                     ),
@@ -671,5 +694,144 @@ function SaveToLibraryButton({ id, title, thumbnailUrl }: { id: string; title: s
     >
       {saved ? <BookmarkCheckIcon /> : <BookmarkPlusIcon />}
     </Button>
+  );
+}
+
+/** A cached playlist page for this playlist, under either id form (`PL…` or `VLPL…`). */
+const isPageOf = (key: readonly unknown[], id: string) =>
+  key[0] === "playlist-pages" && typeof key[1] === "string" && bare(key[1]) === bare(id);
+
+/** Rename a playlist you own (YouTube Music's own rename, so it sticks everywhere). */
+function RenamePlaylistButton({ playlistId, routeId, title }: { playlistId: string; routeId: string; title: string }) {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(title);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    const t = name.trim();
+    if (!t || busy) return;
+    if (t === title) return setOpen(false);
+    setBusy(true);
+    try {
+      await renamePlaylist(playlistId, t);
+      usePinnedPlaylistsStore.getState().retitle(routeId, t);
+      toast.success(`Renamed to "${t}"`);
+      setOpen(false);
+      void qc.invalidateQueries({ predicate: (q) => isPageOf(q.queryKey, routeId) });
+      void qc.invalidateQueries({ queryKey: ["library"] });
+      void qc.invalidateQueries({ queryKey: ["user-playlists"] });
+    } catch (e) {
+      toast.error(`Rename failed: ${String(e)}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="icon"
+        aria-label="Rename playlist"
+        title="Rename playlist"
+        onClick={() => {
+          setName(title);
+          setOpen(true);
+        }}
+      >
+        <PencilIcon />
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename playlist</DialogTitle>
+            <DialogDescription>The new name shows in YouTube Music too.</DialogDescription>
+          </DialogHeader>
+          <Input
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.nativeEvent.isComposing) void submit();
+            }}
+            placeholder="Playlist name"
+            disabled={busy}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={busy}>
+              Cancel
+            </Button>
+            <Button onClick={() => void submit()} disabled={busy || !name.trim()}>
+              {busy && <IconLoader2 className="animate-spin" />}
+              Rename
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+/** Delete a playlist you own from YouTube Music, after a confirmation. */
+function DeletePlaylistButton({ playlistId, routeId, title }: { playlistId: string; routeId: string; title: string }) {
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const confirm = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await deletePlaylist(playlistId);
+      toast.success(`Deleted "${title}"`);
+      setOpen(false);
+      // Leave first: dropping the page's query while it's mounted would refetch the deleted playlist.
+      await navigate({ to: "/library" });
+      const store = usePinnedPlaylistsStore.getState();
+      store.unpin(routeId);
+      store.unsave(routeId);
+      qc.removeQueries({ predicate: (q) => isPageOf(q.queryKey, routeId) });
+      void qc.invalidateQueries({ queryKey: ["library"] });
+      void qc.invalidateQueries({ queryKey: ["user-playlists"] });
+    } catch (e) {
+      toast.error(`Delete failed: ${String(e)}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="icon"
+        aria-label="Delete playlist"
+        title="Delete playlist"
+        onClick={() => setOpen(true)}
+      >
+        <Trash2Icon />
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete "{title}"?</DialogTitle>
+            <DialogDescription>
+              This deletes the playlist from YouTube Music for good. The songs themselves stay where they are, and a downloaded copy stays in Downloads until you remove it.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={busy}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={() => void confirm()} disabled={busy}>
+              {busy && <IconLoader2 className="animate-spin" />}
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

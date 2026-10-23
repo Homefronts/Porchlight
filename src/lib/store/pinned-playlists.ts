@@ -82,6 +82,8 @@ type State = {
   reorder: (from: number, to: number) => void;
   save: (p: PinnedPlaylist) => void;
   unsave: (id: string) => void;
+  /** Update the stored title of a pinned or saved playlist after a rename. */
+  retitle: (id: string, title: string) => void;
 };
 
 /**
@@ -182,7 +184,7 @@ export const usePinnedPlaylistsStore = create<State>()(
           return {
             byAccount: {
               ...s.byAccount,
-              [key]: list.filter((x) => x.id !== id),
+              [key]: list.filter((x) => bare(x.id) !== bare(id)),
             },
           };
         }),
@@ -208,6 +210,17 @@ export const usePinnedPlaylistsStore = create<State>()(
           return {
             savedByAccount: list.some((x) => bare(x.id) === want) ? s.savedByAccount : { ...s.savedByAccount, [key]: [...list, p] },
             removedByAccount: { ...s.removedByAccount, [key]: removed.filter((x) => bare(x) !== want) },
+          };
+        }),
+      retitle: (id, title) =>
+        set((s) => {
+          if (s.activeAccountId === null) return s;
+          const key = s.activeAccountId;
+          const want = bare(id);
+          const fix = (list: PinnedPlaylist[] = []) => list.map((p) => (bare(p.id) === want ? { ...p, title } : p));
+          return {
+            byAccount: { ...s.byAccount, [key]: fix(s.byAccount[key]) },
+            savedByAccount: { ...s.savedByAccount, [key]: fix(s.savedByAccount[key]) },
           };
         }),
       unsave: (id) =>

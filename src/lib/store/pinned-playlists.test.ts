@@ -60,3 +60,26 @@ describe("removing a playlist saved under another id form", () => {
     expect(usePinnedPlaylistsStore.getState().removedByAccount["acct-d"]).toEqual([]);
   });
 });
+
+describe("retitle", () => {
+  it("renames a pinned and a saved playlist, whichever id form they were stored under", () => {
+    const s = usePinnedPlaylistsStore.getState();
+    s.setActiveAccount("acct-e");
+    s.pin({ id: "VLPLr", title: "old" });
+    s.save({ id: "PLr", title: "old" });
+    s.retitle("VLPLr", "new");
+    const st = usePinnedPlaylistsStore.getState();
+    expect(st.byAccount["acct-e"]?.[0]?.title).toBe("new");
+    expect(st.savedByAccount["acct-e"]?.[0]?.title).toBe("new");
+  });
+});
+
+describe("unpin", () => {
+  it("removes a VL pin when called with the bare id (a playlist opened from a share link)", () => {
+    const s = usePinnedPlaylistsStore.getState();
+    s.setActiveAccount("acct-f");
+    s.pin({ id: "VLPLs", title: "shared" });
+    s.unpin("PLs");
+    expect(usePinnedPlaylistsStore.getState().byAccount["acct-f"]).toEqual([]);
+  });
+});
