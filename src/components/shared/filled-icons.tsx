@@ -4,9 +4,8 @@ import { useId, type SVGProps } from "react";
  * Filled icons Tabler doesn't ship.
  *
  * Every one of these is an adaptation of the outline glyph the app used
- * before, drawn so the menus can be uniformly filled — see
- * docs/upstream/ui-refresh-backlog.md for which shape each one is built from and
- * why. Geometry lives on Tabler's own 24x24 grid, so they drop in
+ * before, drawn so the menus can be uniformly filled. Geometry lives on
+ * Tabler's own 24x24 grid, so they drop in
  * wherever a Tabler icon did.
  *
  * Sign-out and sign-in are deliberately absent: a door is defined by its

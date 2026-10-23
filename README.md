@@ -188,7 +188,7 @@ src/
 └── hooks/
 src-tauri/               # Rust backend (axum stream proxy, cookies, tray)
 scripts/ai-data/         # Daily job that builds the AI artist list (runs in CI)
-docs/                    # Design docs, build plans, upstream notes (see docs/README.md)
+docs/                    # Design docs and build plans (see docs/README.md)
 ```
 
 ## Credits
