@@ -53,7 +53,7 @@ Ideas for future Plus releases, roughly in order. Not promises.
 - [ ] **Sleep timer** — stop after X minutes or at the end of the current song.
 - [ ] **Skip non-music parts of videos** — optional [SponsorBlock](https://sponsor.ajay.app) skipping of intros and skits in music videos (its "Non-Music Section" category), credited per its CC BY-NC-SA licence.
 - [ ] **Video quality by GPU** — pick the default music video quality from what your graphics card can decode smoothly.
-- [ ] **Custom themes** — make the app your own: pick accent and background colours, or load a theme someone else made and share yours.
+- [ ] **Themes and add-ons, built in** — like [Spicetify](https://spicetify.app) for Spotify, but part of the app: browse and install community themes and add-ons from Settings, or make and share your own. No patching the client.
 
 > **All the credit for the app itself goes to [George Shyshov (NUber)](https://github.com/NUber-dev)**,
 > who designed and built YTubic. Plus only adds features on top. If you enjoy it,
