@@ -526,7 +526,9 @@ export function PlayerBar({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.07 }}
-            className="flex min-h-0 flex-1 flex-col"
+            // Without lyrics the cover and controls sit centred in the card
+            // rather than leaving all the spare height under the controls.
+            className={cn("flex min-h-0 flex-1 flex-col", !cardLyrics && "justify-center")}
           >
       {/* Top fixed section: cover, meta, progress, controls.
           Floating variant drops the top padding so the cover sits
