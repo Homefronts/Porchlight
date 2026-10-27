@@ -541,9 +541,11 @@
     /* Feels like a native app: no drag-highlighting the whole UI; text fields stay selectable. */
     @apply overflow-hidden select-none;
   }
+  /* Toasts too: an error should be copyable into a bug report. */
   input,
   textarea,
-  [contenteditable="true"] {
+  [contenteditable="true"],
+  [data-sonner-toast] {
     @apply select-text;
   }
 

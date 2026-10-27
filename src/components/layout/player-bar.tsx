@@ -539,7 +539,7 @@ export function PlayerBar({
         )}
       >
         {status === "error" && error ? (
-          <div className="truncate rounded-md bg-destructive/90 px-3 py-1 text-xs text-destructive-foreground shadow">
+          <div className="truncate rounded-md bg-destructive/90 px-3 py-1 text-xs text-destructive-foreground shadow select-text">
             Playback error: {error}
           </div>
         ) : null}

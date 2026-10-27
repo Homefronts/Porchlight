@@ -414,7 +414,7 @@ function TimedLyrics({
           // on the active line alone keeps every line wrapping at the same
           // width, so nothing reflows at the moment a line lights up.
           // Percentage, not a fixed inset: the player card is resizable.
-          "lyrics-no-scrollbar flex h-full flex-col gap-1 overflow-y-auto pl-1 pr-[6%] pt-0 pb-16",
+          "lyrics-no-scrollbar flex h-full select-text flex-col gap-1 overflow-y-auto pl-1 pr-[6%] pt-0 pb-16",
           // The top fade kicks in only after the karaoke has moved past
           // the first line — that way the first line stays crisp at the
           // top of the column while the song hasn't started or is on
@@ -499,7 +499,7 @@ function PlainLyrics({
   return (
     <div
       className={cn(
-        "lyrics-mask app-scroll h-full overflow-y-auto whitespace-pre-wrap px-2 pt-0 pb-12 font-medium leading-relaxed text-foreground/90",
+        "lyrics-mask app-scroll h-full select-text overflow-y-auto whitespace-pre-wrap px-2 pt-0 pb-12 font-medium leading-relaxed text-foreground/90",
         large ? "text-[26px] leading-normal" : "text-lg",
       )}
     >

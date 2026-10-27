@@ -126,7 +126,7 @@ export function PlayerBarBottom() {
       className="relative z-10 mr-2 mb-2 flex shrink-0 flex-col gap-2 rounded-[14px] border border-sidebar-border bg-surface px-4 py-3 shadow-sm"
     >
       {status === "error" && error ? (
-        <div className="absolute -top-9 left-3 right-3 truncate rounded-md bg-destructive/90 px-3 py-1 text-xs text-destructive-foreground shadow">
+        <div className="absolute -top-9 left-3 right-3 truncate rounded-md bg-destructive/90 px-3 py-1 text-xs text-destructive-foreground shadow select-text">
           Playback error: {error}
         </div>
       ) : null}

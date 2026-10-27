@@ -4235,12 +4235,12 @@ async fn start_stream_server(
     }
 }
 
-/// A `ytubic://` link with `background=1` (e.g. from a remote-control app)
+/// A `ytubic-plus://` (or `ytubic://`) link with `background=1` (e.g. from a remote-control app)
 /// still plays, but leaves the window where it is. Windows and Linux only:
 /// macOS hands links to the running app without a second instance.
 fn is_background_link(arg: &str) -> bool {
     let arg = arg.to_ascii_lowercase();
-    arg.starts_with("ytubic:")
+    (arg.starts_with("ytubic-plus:") || arg.starts_with("ytubic:"))
         && arg
             .split_once('?')
             .is_some_and(|(_, query)| query.split('&').any(|p| p == "background=1"))
@@ -4642,6 +4642,7 @@ mod tests {
     fn background_links_are_matched_on_the_exact_param() {
         assert!(is_background_link("ytubic://watch?v=abcdefg&background=1"));
         assert!(is_background_link("YTUBIC://watch?background=1&v=abcdefg"));
+        assert!(is_background_link("ytubic-plus://watch?v=abcdefg&background=1"));
         assert!(!is_background_link("ytubic://watch?v=abcdefg&background=10"));
         assert!(!is_background_link("ytubic://watch?v=abcdefg"));
         assert!(!is_background_link("--background=1"));
