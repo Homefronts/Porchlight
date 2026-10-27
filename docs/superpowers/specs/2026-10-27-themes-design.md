@@ -104,6 +104,23 @@ one-click reset. At minimum (from the mockup):
 The full list is the builder's call (see below); the rule is that anything a shipped
 look changes must be reachable here.
 
+## Welcome
+
+Shown once, on the first launch after the update (and on a fresh install), right
+before "Make it yours", in the Liner notes style whatever look is active:
+
+1. A record slides out of its sleeve and spins up, the app logo as its label.
+2. "Welcome to {App name}." in the headline serif.
+3. "YouTube Music, made yours." under it.
+4. Small mono line at the bottom: "FORMERLY YTUBIC PLUS · BUILT ON YTUBIC BY NUBER" (the
+   origin always stays visible; drop "FORMERLY…" if the app keeps its current name).
+5. Updaters also see: "Same library, same settings. Nothing changes until you pick a look."
+6. It fades into "Make it yours".
+
+Skippable with a button or any key. With reduced motion on, the text simply fades in.
+`{App name}` is whatever the app is called when this ships (a rename is planned with
+the split from YTubic; decided by the user, name not chosen yet).
+
 ## First launch: "Make it yours"
 
 Shown once, as a single screen when the app first opens (the step strip in the

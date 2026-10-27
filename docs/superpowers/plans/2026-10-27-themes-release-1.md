@@ -214,7 +214,8 @@ Each task moves one area onto the typography roles (`font-headline` for page tit
 **Interfaces:**
 - Consumes: `LookEditor`, `LookPreview`, `useThemeStore`, `initialLookFor`.
 - Produces: a full-window screen: heading "Make it yours.", lead "Pick a starting point. You can change any of this later in Settings > Appearance.", the editor, the preview, and **Continue**. Preselection from `initialLookFor`. Sample is the user's library when signed in (Listen again covers, sidebar playlists, current track), else `placeholderSample`. Continue or Esc calls `markPickerSeen()`; Esc keeps whatever is preselected (Review Focus 5). Not shown in the floating window.
-- [ ] **Step 1:** run-app with `ytm-looks` cleared and `ytm-settings` present: picker shows Classic selected; press Esc; restart; picker does not show and the app is Classic.
+- Before the picker, `src/components/theme/welcome.tsx` plays the Welcome sequence from the spec's "Welcome" section (copy fixed there; app name from one constant `APP_NAME` in `src/lib/app-name.ts`), skippable with a button or any key, text-only fade under `prefers-reduced-motion`.
+- [ ] **Step 1:** run-app with `ytm-looks` cleared and `ytm-settings` present: the welcome plays (and can be skipped), then the picker shows Classic selected; press Esc; restart; picker does not show and the app is Classic.
 - [ ] **Step 2:** run-app with all storage cleared: Sleeve preselected; Continue; app is Sleeve everywhere.
 - [ ] **Step 3:** Commit `feat(theme): first-launch picker`.
 
