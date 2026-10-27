@@ -68,7 +68,8 @@ Bigger pieces of work.
 - [ ] **Drag to reorder playlists** — drag songs around in your own playlists, or drop them onto one in the sidebar.
 - [ ] **Share cards** — turn a playlist, an artist or a Rewind into one picture with its covers and top songs, sized for social apps.
 - [ ] **Weekly and monthly Rewinds** — a recap for every week and month as well as every quarter, with your listening sessions named by what they were.
-- [ ] **Playlist import** — bring in a playlist from a Spotify export (CSV), an M3U file or a pasted list, matched to YouTube Music.
+- [ ] **Bring your Spotify library** — move playlists, liked songs and followed artists to YouTube Music for free, no Soundiiz needed. Load Spotify's own data export (or an Exportify CSV, M3U file or pasted list), check the matches on a review screen ("312 matched, 9 unsure, 4 not found"), and the playlists are created on your YouTube Music account. Each song is matched to the same recording, never a cover or live version.
+- [ ] **Sign in with Spotify** — an optional extra for an instant import and playlists that stay in sync. Spotify limits new apps to a few users, so this uses your own free Spotify developer key, with a short guide.
 - [ ] **Smart playlists** — playlists made of rules (liked, played often, not heard in a while, genre, length) that keep themselves up to date.
 - [ ] **Now-playing API for overlays** — a local WebSocket that OBS and stream overlays can read, for music credits on stream.
 - [ ] **Video quality by GPU** — pick the default music video quality from what your graphics card can decode smoothly.
