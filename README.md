@@ -54,6 +54,13 @@ Ideas for future Plus releases, roughly in order. Not promises.
 - [ ] **Sleep timer** — stop after X minutes or at the end of the current song.
 - [ ] **Skip non-music parts of videos** — optional [SponsorBlock](https://sponsor.ajay.app) skipping of intros and skits in music videos (its "Non-Music Section" category), credited per its CC BY-NC-SA licence.
 - [ ] **Video quality by GPU** — pick the default music video quality from what your graphics card can decode smoothly.
+- [ ] **Multiple languages** — English, Spanish, Brazilian Portuguese, French, German, Italian, Ukrainian, Russian, Turkish, Indonesian, Hindi, Japanese, Korean and Simplified Chinese, with a language picker in Settings that starts on your system language. Every string is English in the code today, so they move into language files first; after that each new language is one file, and native speakers are welcome to fix or add one.
+- [ ] **Cast to devices on your network** — send playback to a Chromecast or a DLNA/UPnP speaker or TV. YouTube's audio links are tied to your connection, so the app would stream through a small local server.
+- [ ] **Android TV app** — a remote-friendly YTubic Plus for the big screen. Voice search and the Now Playing tile on the ATV home screen come first, since the existing apps miss them. A separate app, so maybe someday.
+- [ ] **Drag to reorder playlists** — drag songs around in your own playlists, or drop them onto one in the sidebar.
+- [ ] **Word-by-word lyrics** — karaoke-style highlighting where the provider has word timings.
+- [ ] **Now-playing API for overlays** — a local WebSocket that OBS and stream overlays can read, for music credits on stream.
+- [ ] **Libre.fm scrobbling** — next to Last.fm, which it mirrors.
 - [ ] **Themes and add-ons, built in** — like [Spicetify](https://spicetify.app) for Spotify, but part of the app: browse and install community themes and add-ons from Settings, or make and share your own. No patching the client.
 
 > **All the credit for the app itself goes to [George Shyshov (NUber)](https://github.com/NUber-dev)**,
