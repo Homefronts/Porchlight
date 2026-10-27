@@ -14,8 +14,8 @@ body:
     id: app-version
     attributes:
       label: App version
-      description: Shown in the About dialog (☰ → About).
-      placeholder: "0.1.0"
+      description: Shown in the About dialog (⋯ → About).
+      placeholder: "0.8.1"
     validations:
       required: true
   - type: dropdown

@@ -56,6 +56,43 @@ export type WhatsNewEntry = {
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.8.1",
+    date: "October 27, 2026",
+    summary: "Your requests",
+    changes: [
+      {
+        type: "new",
+        title: "Lyrics in Player",
+        text: "Turn lyrics off in the side card and floating player in Settings > Appearance. The cover and controls move to the middle of the card.",
+      },
+      {
+        type: "new",
+        title: "Share YouTube Music links",
+        text: "Settings > General can make Share copy a plain music.youtube.com link instead of the YTubic Plus page.",
+      },
+      {
+        type: "improved",
+        title: "Radio skips your dislikes",
+        text: "Songs you've disliked in the app no longer turn up in radio, mixes or autoplay.",
+      },
+      {
+        type: "improved",
+        title: "Share links open YTubic Plus",
+        text: "Shared links now open a YTubic Plus page and the ytubic-plus:// link, so they reach this app even with the original YTubic installed.",
+      },
+      {
+        type: "improved",
+        title: "Window titles",
+        text: "Every window's title ends in YTubic Plus, so window managers and Alt+Tab can tell them apart.",
+      },
+      {
+        type: "fixed",
+        title: "Copy lyrics and errors",
+        text: "Lyrics, playback errors and notifications can be selected and copied again, handy for bug reports.",
+      },
+    ],
+  },
+  {
     version: "0.8.0",
     date: "October 23, 2026",
     summary: "Rewind",
