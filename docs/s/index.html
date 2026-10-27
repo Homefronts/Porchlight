@@ -147,6 +147,7 @@
         return;
       }
       var appUrl = kind === "watch" ? "ytubic://watch?v=" + id : "ytubic://" + kind + "/" + id;
+      // Keep in sync with ytMusicUrl in src/lib/deep-link.ts.
       var ytmPath = { watch: "watch?v=", artist: "channel/", album: "browse/", playlist: "playlist?list=" }[kind];
       document.getElementById("app").href = appUrl;
       document.getElementById("ytm").href = "https://music.youtube.com/" + ytmPath + id;

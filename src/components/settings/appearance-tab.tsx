@@ -6,6 +6,7 @@ import {
   IconHeart,
   IconHeartFilled,
   IconLayoutFilled,
+  IconMicrophoneFilled,
   IconPaletteFilled,
   IconPhotoFilled,
   IconThumbDown,
@@ -65,6 +66,8 @@ export function AppearanceTab() {
   const setBackground = useSettingsStore((s) => s.setBackground);
   const rating = useSettingsStore((s) => s.ratingButtons);
   const setRating = useSettingsStore((s) => s.setRatingButtons);
+  const cardLyrics = useSettingsStore((s) => s.cardLyrics);
+  const setCardLyrics = useSettingsStore((s) => s.setCardLyrics);
 
   return (
     <TabPane>
@@ -112,6 +115,18 @@ export function AppearanceTab() {
           }
         />
         <PlayerLayoutRow />
+        <SettingRow
+          icon={IconMicrophoneFilled}
+          title="Lyrics in Player"
+          description="Show synced lyrics under the controls in the side card and floating player."
+          control={
+            <Switch
+              checked={cardLyrics}
+              onCheckedChange={setCardLyrics}
+              aria-label="Lyrics in Player"
+            />
+          }
+        />
         <FullscreenLayoutRow />
       </Group>
     </TabPane>

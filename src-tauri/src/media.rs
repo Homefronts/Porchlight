@@ -171,13 +171,14 @@ fn apply(app: &AppHandle, now: NowPlaying) {
             if changed {
                 // The window title is what Windows prints above the taskbar
                 // thumbnail preview (and in Alt+Tab), so it carries the track
-                // like Apple Music's does instead of repeating the app name.
+                // like Apple Music's does. The app name stays at the end so
+                // window-grouping tools can still match on it.
                 set_window_title(
                     app,
                     &if artist.is_empty() {
-                        title.clone()
+                        format!("{title} · YTubic Plus")
                     } else {
-                        format!("{title} - {artist}")
+                        format!("{title} - {artist} · YTubic Plus")
                     },
                 );
                 let _ = controls.set_metadata(MediaMetadata {
@@ -215,7 +216,7 @@ fn apply(app: &AppHandle, now: NowPlaying) {
 
 fn clear(app: &AppHandle) {
     LAST_META.with(|m| *m.borrow_mut() = None);
-    set_window_title(app, "YTubic");
+    set_window_title(app, "YTubic Plus");
     #[cfg(windows)]
     crate::thumbbar::set_state(false, false, crate::thumbbar::Repeat::Off, false);
     CONTROLS.with(|cell| {

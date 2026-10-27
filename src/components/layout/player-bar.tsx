@@ -60,6 +60,7 @@ import { usePlayerCoverDrag } from "@/lib/player-drag";
 import { openFullscreen } from "@/lib/store/fullscreen";
 import { usePlaybackStore, currentTrack } from "@/lib/store/playback";
 import { useScrubStore } from "@/lib/store/scrub";
+import { useSettingsStore } from "@/lib/store/settings";
 import { useSourceSwitch } from "@/lib/video-mode";
 import { lookupITunesCover, cacheCoverToDisk } from "@/lib/cover-art";
 import type { QueueTrack, RepeatMode } from "@/lib/store/playback";
@@ -441,7 +442,9 @@ export function PlayerBar({
   const [compactControls, setCompactControls] = useState(false);
   const playerRef = useRef<HTMLElement>(null);
   const iTunesCover = useITunesCover(track);
-  const lyricsState = useLyricsView(track);
+  const cardLyrics = useSettingsStore((s) => s.cardLyrics);
+  // No track while hidden, so nothing is fetched for a pane nobody sees.
+  const lyricsState = useLyricsView(cardLyrics ? track : undefined);
 
   // At compact widths the horizontal volume popup runs into the
   // Song/Video switch. Shorten it while keeping the same interaction.
@@ -734,9 +737,11 @@ export function PlayerBar({
             {/* Lyrics flow — fills the rest of the cover-branch flex
                 column. Lives inside the same motion.div as the cover
                 so the whole non-queue body crossfades as one unit. */}
-            <div className="flex min-h-0 flex-1 flex-col px-3">
-              <LyricsBody state={lyricsState} />
-            </div>
+            {cardLyrics ? (
+              <div className="flex min-h-0 flex-1 flex-col px-3">
+                <LyricsBody state={lyricsState} />
+              </div>
+            ) : null}
           </motion.div>
         )}
       </AnimatePresence>
@@ -749,7 +754,7 @@ export function PlayerBar({
           a router). */}
       <div className="flex items-center justify-between gap-2 px-3 pt-2 pb-3">
         <div className="flex items-center gap-0.5">
-          <LyricsSourceButton state={lyricsState} />
+          {cardLyrics ? <LyricsSourceButton state={lyricsState} /> : null}
           <QueueToggleButton
             open={queueOpen}
             onToggle={() => setQueueOpen((v) => !v)}

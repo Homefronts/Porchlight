@@ -9,6 +9,7 @@ import {
   IconBoltFilled,
   IconCircleArrowDownFilled,
   IconCircleCheckFilled,
+  IconLinkFilled,
   IconLoader2,
   IconLogin,
   IconSquareXFilled,
@@ -125,6 +126,10 @@ function BehaviorGroup() {
   const setPlaybackNotifications = useSettingsStore(
     (s) => s.setPlaybackNotifications,
   );
+  const shareYtMusicLinks = useSettingsStore((s) => s.shareYtMusicLinks);
+  const setShareYtMusicLinks = useSettingsStore(
+    (s) => s.setShareYtMusicLinks,
+  );
   const autoUpdate = useSettingsStore((s) => s.autoUpdate);
   const setAutoUpdate = useSettingsStore((s) => s.setAutoUpdate);
 
@@ -187,6 +192,18 @@ function BehaviorGroup() {
             checked={playbackNotifications}
             onCheckedChange={setPlaybackNotifications}
             aria-label="Playback Notifications"
+          />
+        }
+      />
+      <SettingRow
+        icon={IconLinkFilled}
+        title="Share YouTube Music Links"
+        description="Share copies a music.youtube.com link instead of the YTubic page that opens the app."
+        control={
+          <Switch
+            checked={shareYtMusicLinks}
+            onCheckedChange={setShareYtMusicLinks}
+            aria-label="Share YouTube Music Links"
           />
         }
       />

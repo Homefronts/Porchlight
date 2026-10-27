@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { isDisliked } from "@/lib/store/dislikes";
 import { useSettingsStore } from "@/lib/store/settings";
 import { currentAiIndex, useAiIndex } from "./data";
 import { classifyArtists, isLookalike, type AiClass } from "./match";
@@ -26,6 +27,11 @@ export function isAiBlocked(item: HasArtists): boolean {
 export function isAiHidden(item: HasArtists): boolean {
   if (useSettingsStore.getState().aiMusic) return false;
   return isAiBlocked(item) || isLookalike(item.artists, currentAiIndex(), useAiOverridesStore.getState().byChannel);
+}
+
+/** `isAiHidden` plus tracks disliked here: what radio and autoplay leave out. */
+export function isUnwanted(item: HasArtists & { id: string }): boolean {
+  return isAiHidden(item) || isDisliked(item.id);
 }
 
 /** Hook form of `isAiBlocked`, re-rendering on any input change. */

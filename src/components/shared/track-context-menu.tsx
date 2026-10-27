@@ -84,7 +84,7 @@ import { toggleDisliked, toggleLiked } from "@/lib/like-actions";
 import { useSettingsStore } from "@/lib/store/settings";
 import { usePlaybackStore } from "@/lib/store/playback";
 import type { ShelfItem } from "@/lib/innertube/types";
-import { isAiHidden, useAiBlocked, useAiClass } from "@/lib/ai/use-ai";
+import { isUnwanted, useAiBlocked, useAiClass } from "@/lib/ai/use-ai";
 import { useAiOverridesStore } from "@/lib/ai/overrides";
 import { askPlayAnyway } from "@/components/layout/ai-toggle-button";
 
@@ -342,7 +342,7 @@ export function TrackMenuItems({
         onSelect={async () => {
           try {
             const radio = await fetchRadio(item.id);
-            const rest = radio.filter((t) => t.id !== item.id && !isAiHidden(t));
+            const rest = radio.filter((t) => t.id !== item.id && !isUnwanted(t));
             store().playShelfItems([item, ...rest], 0);
           } catch {
             store().playNow(item);

@@ -2318,7 +2318,7 @@ async fn open_player_window(
         "player",
         WebviewUrl::App("index.html?floating-player=1".into()),
     )
-    .title("YTubic — player")
+    .title("YTubic Plus · Player")
     .decorations(false)
     .inner_size(360.0, 720.0)
     .min_inner_size(320.0, 560.0)
@@ -4235,6 +4235,17 @@ async fn start_stream_server(
     }
 }
 
+/// A `ytubic://` link with `background=1` (e.g. from a remote-control app)
+/// still plays, but leaves the window where it is. Windows and Linux only:
+/// macOS hands links to the running app without a second instance.
+fn is_background_link(arg: &str) -> bool {
+    let arg = arg.to_ascii_lowercase();
+    arg.starts_with("ytubic:")
+        && arg
+            .split_once('?')
+            .is_some_and(|(_, query)| query.split('&').any(|p| p == "background=1"))
+}
+
 /// Show + focus the main window (from tray click or single-instance
 /// re-launch).
 fn show_main_window(app: &tauri::AppHandle) {
@@ -4338,8 +4349,10 @@ pub fn run() {
         // The `deep-link` feature forwards the second instance's argv
         // (a `ytubic://` URL) to the deep-link plugin, so the running app
         // receives it as a `deep-link://new-url` event.
-        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
-            show_main_window(app);
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            if !argv.iter().any(|a| is_background_link(a)) {
+                show_main_window(app);
+            }
         }))
         .plugin(tauri_plugin_deep_link::init())
         .plugin(
@@ -4618,12 +4631,21 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
-    use super::{generate_stream_token, video_chunk, VIDEO_CHUNK};
+    use super::{generate_stream_token, is_background_link, video_chunk, VIDEO_CHUNK};
     use axum::body::Body;
     use axum::http::{Request, StatusCode};
     use axum::routing::get;
     use axum::Router;
     use tower::ServiceExt;
+
+    #[test]
+    fn background_links_are_matched_on_the_exact_param() {
+        assert!(is_background_link("ytubic://watch?v=abcdefg&background=1"));
+        assert!(is_background_link("YTUBIC://watch?background=1&v=abcdefg"));
+        assert!(!is_background_link("ytubic://watch?v=abcdefg&background=10"));
+        assert!(!is_background_link("ytubic://watch?v=abcdefg"));
+        assert!(!is_background_link("--background=1"));
+    }
 
     #[test]
     fn video_chunk_asks_youtube_for_one_bounded_chunk() {

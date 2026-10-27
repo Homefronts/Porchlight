@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { listenDeepLinks } from "@/lib/deep-link";
 import { fetchRadio } from "@/lib/innertube/radio";
 import { usePlaybackStore } from "@/lib/store/playback";
-import { isAiHidden } from "@/lib/ai/use-ai";
+import { isUnwanted } from "@/lib/ai/use-ai";
 
 /** Route `ytubic://` links into the app: play a track or open a page. */
 export function useDeepLinks() {
@@ -40,7 +40,7 @@ async function playVideoId(videoId: string) {
       const rest = tracks
         .filter(
           (x) =>
-            x !== seed && (x.kind === "song" || x.kind === "video") && !isAiHidden(x),
+            x !== seed && (x.kind === "song" || x.kind === "video") && !isUnwanted(x),
         )
         .map((x) => ({
           videoId: x.id,

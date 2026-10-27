@@ -31,7 +31,7 @@ import type {
   ShelfMore,
   WatchTarget,
 } from "@/lib/innertube/types";
-import { useAiBlocked } from "@/lib/ai/use-ai";
+import { isUnwanted, useAiBlocked } from "@/lib/ai/use-ai";
 
 export const Route = createFileRoute("/artist/$id")({
   component: ArtistPageView,
@@ -174,11 +174,13 @@ function ArtistActions({ artist }: { artist: ArtistPage }) {
     if (!target || pending) return;
     setPending(kind);
     try {
-      const tracks = target.playlistId
+      const fetched = target.playlistId
         ? await fetchWatchQueue(target.playlistId, target.videoId)
         : target.videoId
           ? await fetchRadio(target.videoId)
           : [];
+      // The mix is radio; Shuffle is the artist's own songs, left as is.
+      const tracks = kind === "mix" ? fetched.filter((t) => !isUnwanted(t)) : fetched;
       if (tracks.length) {
         usePlaybackStore.getState().playShelfItems(tracks, 0);
       } else {

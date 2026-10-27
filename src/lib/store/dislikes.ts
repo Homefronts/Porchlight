@@ -37,6 +37,10 @@ export const useDislikesStore = create<State>()(
   ),
 );
 
+/** Disliked here (see `isUnwanted` in `lib/ai/use-ai.ts`). */
+export const isDisliked = (videoId: string) =>
+  !!useDislikesStore.getState().ids[videoId];
+
 // A dislike toggled in the main window shows in the floating player (and
 // the other way round) through the shared localStorage key.
 if (typeof window !== "undefined") {

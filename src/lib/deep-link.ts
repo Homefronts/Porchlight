@@ -1,4 +1,5 @@
 import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
+import { useSettingsStore } from "@/lib/store/settings";
 
 /**
  * `ytubic://` links. The scheme is registered by the installer (and at
@@ -33,6 +34,9 @@ export function universalShareUrl(
   title?: string,
   cover?: string,
 ): string {
+  if (useSettingsStore.getState().shareYtMusicLinks) {
+    return ytMusicUrl(kind, id);
+  }
   const q = new URLSearchParams();
   q.set(kind === "watch" ? "v" : kind, id);
   if (kind !== "watch" && title) q.set("t", title);
@@ -40,6 +44,18 @@ export function universalShareUrl(
   // has to carry it in the link (the page whitelists YouTube CDN hosts).
   if (kind !== "watch" && cover) q.set("c", cover);
   return `${SHARE_BASE}?${q.toString()}`;
+}
+
+/** The same YouTube Music page the share page falls back to; keep the
+ *  paths in sync with `ytmPath` in docs/s/index.html. */
+function ytMusicUrl(kind: DeepLinkTarget["kind"], id: string): string {
+  const path = {
+    watch: "watch?v=",
+    artist: "channel/",
+    album: "browse/",
+    playlist: "playlist?list=",
+  }[kind];
+  return `https://music.youtube.com/${path}${id}`;
 }
 
 export function parseDeepLink(raw: string): DeepLinkTarget | null {

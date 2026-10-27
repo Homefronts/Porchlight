@@ -5,7 +5,7 @@ import {
   type RadioStation,
 } from "@/lib/innertube/radio";
 import { currentTrack, usePlaybackStore } from "@/lib/store/playback";
-import { isAiHidden } from "@/lib/ai/use-ai";
+import { isUnwanted } from "@/lib/ai/use-ai";
 import { refillFiltered } from "@/lib/ai/filter";
 
 /** The station minus confirmed AI (when AI music is off), refilled. */
@@ -17,7 +17,7 @@ function withoutAi(station: RadioStation, seed: string) {
       const p = await fetchWatchQueueContinuation(t);
       return { tracks: p.tracks, continuation: p.continuationToken };
     },
-    (t) => t.id === seed || !isAiHidden(t),
+    (t) => t.id === seed || !isUnwanted(t),
   );
 }
 
