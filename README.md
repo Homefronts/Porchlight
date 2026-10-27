@@ -46,6 +46,10 @@ Built as a reaction to the sluggish webview-wrapper experience — YTubic talks 
 
 Ideas for future Plus releases. Not promises.
 
+### Coming in 1.0 (maybe sooner)
+
+- [ ] **Themes and customization** — a look of our own, "Liner notes": record-sleeve typography, serif headlines and one red accent, across every screen. Pick from ready-made looks (Sleeve, Paper, Ink and more) on first launch, change any colour, font or detail, and export your look as a file to share. The original look stays available as Classic. New layouts (Gatefold, Index, Crate, Panels) follow in later updates.
+
 ### Next up
 
 Small, quick to build.
@@ -81,7 +85,7 @@ Complicated changes, some needing new servers or apps.
 - [ ] **Sign in with Spotify** — an optional extra for an instant import and playlists that stay in sync. Spotify limits new apps to a few users, so this uses your own free Spotify developer key, with a short guide.
 - [ ] **Cast to devices on your network** — send playback to a Chromecast, Google TV or DLNA/UPnP speaker or TV, keeping the queue, shuffle and media keys. YouTube's audio links are tied to your connection, so the app would stream through a small local server. On a TV, a YTubic Plus screen shows what's playing, Up Next and the lyrics.
 - [ ] **Phone remote** — control YTubic Plus from your phone on the same Wi-Fi, by scanning a QR code.
-- [ ] **Themes and add-ons, built in** — like [Spicetify](https://spicetify.app) for Spotify, but part of the app: browse and install community themes and add-ons from Settings, or make and share your own. No patching the client.
+- [ ] **Community add-ons** — browse and install add-ons and shared looks from inside the app, like [Spicetify](https://spicetify.app) for Spotify but built in. No patching the client.
 - [ ] **Listen together** — a Jams-style shared session with friends on YTubic Plus. Needs a small relay server, so maybe someday.
 - [ ] **Android TV app** — a remote-friendly YTubic Plus for the big screen. Voice search and the Now Playing tile on the ATV home screen come first, since the existing apps miss them. A separate app, so maybe someday.
 
