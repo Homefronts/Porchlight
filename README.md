@@ -62,14 +62,13 @@ Small, quick to build.
 
 Bigger pieces of work.
 
+- [ ] **Bring your Spotify library** — move playlists, liked songs and followed artists to YouTube Music for free, no Soundiiz needed. Load Spotify's own data export (or an Exportify CSV, M3U file or pasted list), check the matches on a review screen ("312 matched, 9 unsure, 4 not found"), and the playlists are created on your YouTube Music account. Each song is matched to the same recording, never a cover or live version.
 - [ ] **Word-by-word lyrics** — karaoke-style highlighting from more lyrics sources, in an order you choose, with translation, romanization (Japanese, Korean, Chinese and more) and duets laid out left and right.
 - [ ] **New releases from artists you follow** — the latest albums, EPs and singles from your YouTube Music subscriptions on Home, marked New for their first week.
 - [ ] **Multiple languages** — English, Spanish, Brazilian Portuguese, French, German, Italian, Ukrainian, Russian, Turkish, Indonesian, Hindi, Japanese, Korean and Simplified Chinese, with a language picker in Settings that starts on your system language. Every string is English in the code today, so they move into language files first; after that each new language is one file, and native speakers are welcome to fix or add one.
 - [ ] **Drag to reorder playlists** — drag songs around in your own playlists, or drop them onto one in the sidebar.
 - [ ] **Share cards** — turn a playlist, an artist or a Rewind into one picture with its covers and top songs, sized for social apps.
 - [ ] **Weekly and monthly Rewinds** — a recap for every week and month as well as every quarter, with your listening sessions named by what they were.
-- [ ] **Bring your Spotify library** — move playlists, liked songs and followed artists to YouTube Music for free, no Soundiiz needed. Load Spotify's own data export (or an Exportify CSV, M3U file or pasted list), check the matches on a review screen ("312 matched, 9 unsure, 4 not found"), and the playlists are created on your YouTube Music account. Each song is matched to the same recording, never a cover or live version.
-- [ ] **Sign in with Spotify** — an optional extra for an instant import and playlists that stay in sync. Spotify limits new apps to a few users, so this uses your own free Spotify developer key, with a short guide.
 - [ ] **Smart playlists** — playlists made of rules (liked, played often, not heard in a while, genre, length) that keep themselves up to date.
 - [ ] **Now-playing API for overlays** — a local WebSocket that OBS and stream overlays can read, for music credits on stream.
 - [ ] **Video quality by GPU** — pick the default music video quality from what your graphics card can decode smoothly.
@@ -79,6 +78,7 @@ Bigger pieces of work.
 
 Complicated changes, some needing new servers or apps.
 
+- [ ] **Sign in with Spotify** — an optional extra for an instant import and playlists that stay in sync. Spotify limits new apps to a few users, so this uses your own free Spotify developer key, with a short guide.
 - [ ] **Cast to devices on your network** — send playback to a Chromecast, Google TV or DLNA/UPnP speaker or TV, keeping the queue, shuffle and media keys. YouTube's audio links are tied to your connection, so the app would stream through a small local server. On a TV, a YTubic Plus screen shows what's playing, Up Next and the lyrics.
 - [ ] **Phone remote** — control YTubic Plus from your phone on the same Wi-Fi, by scanning a QR code.
 - [ ] **Themes and add-ons, built in** — like [Spicetify](https://spicetify.app) for Spotify, but part of the app: browse and install community themes and add-ons from Settings, or make and share your own. No patching the client.
