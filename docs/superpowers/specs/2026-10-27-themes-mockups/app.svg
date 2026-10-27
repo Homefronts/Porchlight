@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800">
+  <!-- Placeholder stand-in for a screenshot of the app: same layout and cover positions, no real library. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#121826"/><stop offset=".6" stop-color="#1d1420"/><stop offset="1" stop-color="#2a1612"/></linearGradient>
+    <linearGradient id="c1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7b5ea7"/><stop offset="1" stop-color="#e3a3c6"/></linearGradient>
+    <linearGradient id="c2" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#8a5a2b"/><stop offset="1" stop-color="#e9c48a"/></linearGradient>
+    <linearGradient id="c3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff4d6d"/><stop offset="1" stop-color="#c9184a"/></linearGradient>
+    <linearGradient id="c4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2b4c7e"/><stop offset="1" stop-color="#9ec5e8"/></linearGradient>
+    <linearGradient id="c5" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2d6a4f"/><stop offset="1" stop-color="#d8f3dc"/></linearGradient>
+    <linearGradient id="c6" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6c757d"/><stop offset="1" stop-color="#e9ecef"/></linearGradient>
+    <radialGradient id="c7" cx=".5" cy=".35" r=".8"><stop offset="0" stop-color="#4cc9f0"/><stop offset=".45" stop-color="#3a0ca3"/><stop offset="1" stop-color="#10002b"/></radialGradient>
+  </defs>
+  <rect width="1280" height="800" fill="url(#bg)"/>
+  <!-- title bar and sidebar -->
+  <rect x="8" y="36" width="232" height="756" rx="14" fill="#000" opacity=".25"/>
+  <circle cx="38" cy="67" r="13" fill="#ff0033"/><rect x="58" y="60" width="96" height="14" rx="4" fill="#f4f4f5"/>
+  <g fill="#a1a1aa" opacity=".8"><rect x="52" y="125" width="70" height="10" rx="3"/><rect x="52" y="155" width="70" height="10" rx="3"/><rect x="52" y="185" width="60" height="10" rx="3"/><rect x="52" y="215" width="64" height="10" rx="3"/><rect x="52" y="245" width="84" height="10" rx="3"/><rect x="52" y="275" width="62" height="10" rx="3"/></g>
+  <g><rect x="25" y="342" width="20" height="20" rx="4" fill="url(#c3)"/><rect x="25" y="378" width="20" height="20" rx="4" fill="url(#c1)"/><rect x="25" y="414" width="20" height="20" rx="4" fill="url(#c2)"/><rect x="25" y="450" width="20" height="20" rx="4" fill="url(#c5)"/><rect x="25" y="486" width="20" height="20" rx="4" fill="url(#c4)"/></g>
+  <g fill="#a1a1aa" opacity=".7"><rect x="53" y="347" width="80" height="10" rx="3"/><rect x="53" y="383" width="140" height="10" rx="3"/><rect x="53" y="419" width="104" height="10" rx="3"/><rect x="53" y="455" width="48" height="10" rx="3"/><rect x="53" y="491" width="90" height="10" rx="3"/></g>
+  <!-- page -->
+  <rect x="274" y="56" width="82" height="26" rx="5" fill="#f4f4f5"/>
+  <rect x="277" y="131" width="104" height="16" rx="4" fill="#f4f4f5"/>
+  <rect x="281" y="172" width="192" height="192" rx="6" fill="url(#c1)"/><circle cx="377" cy="268" r="46" fill="#fff" opacity=".18"/>
+  <rect x="497" y="172" width="192" height="192" rx="6" fill="url(#c2)"/><rect x="537" y="212" width="112" height="112" fill="#fff" opacity=".15"/>
+  <rect x="713" y="172" width="192" height="192" rx="6" fill="url(#c3)"/><path d="M809 300 l-38 -36 a22 22 0 0 1 38 -24 a22 22 0 0 1 38 24 z" fill="#fff" opacity=".9"/>
+  <g fill="#f4f4f5" opacity=".85"><rect x="281" y="376" width="150" height="10" rx="3"/><rect x="497" y="376" width="100" height="10" rx="3"/><rect x="713" y="376" width="90" height="10" rx="3"/></g>
+  <rect x="277" y="478" width="122" height="16" rx="4" fill="#f4f4f5"/>
+  <rect x="281" y="519" width="192" height="192" rx="6" fill="url(#c4)"/><path d="M281 650 l60 -50 l50 40 l82 -70 v141 h-192z" fill="#000" opacity=".2"/>
+  <rect x="497" y="519" width="192" height="192" rx="6" fill="url(#c5)"/><circle cx="593" cy="615" r="60" fill="none" stroke="#fff" stroke-width="10" opacity=".25"/>
+  <rect x="713" y="519" width="192" height="192" rx="6" fill="url(#c6)"/><rect x="713" y="600" width="192" height="30" fill="#fff" opacity=".25"/>
+  <!-- now playing card -->
+  <rect x="921" y="36" width="352" height="756" rx="14" fill="#000" opacity=".3"/>
+  <rect x="937" y="53" width="318" height="318" rx="6" fill="url(#c7)"/>
+  <g fill="#fff" opacity=".85"><circle cx="1000" cy="120" r="5"/><circle cx="1060" cy="95" r="4"/><circle cx="1180" cy="110" r="6"/><circle cx="1210" cy="160" r="4"/></g>
+  <rect x="1020" y="230" width="150" height="26" rx="4" fill="#fff" opacity=".9"/><rect x="1040" y="268" width="110" height="20" rx="4" fill="#fff" opacity=".7"/>
+  <rect x="937" y="389" width="120" height="14" rx="4" fill="#f4f4f5"/><rect x="937" y="411" width="150" height="10" rx="3" fill="#a1a1aa"/>
+  <circle cx="1237" cy="404" r="7" fill="#ff0033"/>
+  <rect x="937" y="447" width="318" height="4" rx="2" fill="#3f3f46"/><circle cx="941" cy="449" r="6" fill="#fff"/>
+  <circle cx="1096" cy="506" r="24" fill="#ff0033"/><path d="M1090 494 l16 12 l-16 12z" fill="#fff"/>
+  <g fill="#a1a1aa" opacity=".6"><rect x="945" y="595" width="30" height="10" rx="3"/><rect x="945" y="676" width="200" height="12" rx="3"/><rect x="945" y="715" width="240" height="12" rx="3"/></g>
+</svg>

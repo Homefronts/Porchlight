@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>First launch: choose your look</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Archivo:wght@500;800;900&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #0b0b0c; color: #e9e7e2; font: 15px/1.5 Inter, system-ui, sans-serif; padding: 28px 40px 60px; }
+  .note { color: #9a978f; max-width: 860px; margin: 0 0 18px; }
+  .note b { color: #e9e7e2; }
+
+  /* The onboarding window itself */
+  .win { width: 1180px; height: 720px; border-radius: 14px; overflow: hidden; display: grid; grid-template-columns: 420px 1fr; background: #141312; box-shadow: 0 24px 70px rgb(0 0 0 / .55); }
+  .ctl { padding: 28px 28px; overflow-y: auto; border-right: 1px solid #262320; }
+  .ctl h1 { font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 40px; line-height: 1; margin: 0; }
+  .ctl .lead { color: #8a8378; font-size: 13px; margin: 6px 0 20px; }
+  .steps { display: flex; gap: 6px; font: 11px 'JetBrains Mono', monospace; letter-spacing: .1em; color: #5d574e; margin-bottom: 18px; }
+  .steps span.on { color: #ff3b5c; }
+  .lbl { font: 11px 'JetBrains Mono', monospace; letter-spacing: .1em; color: #8a8378; margin: 18px 0 8px; display: flex; justify-content: space-between; }
+  .lbl em { font-style: normal; color: #5d574e; }
+
+  .looks { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .look { border: 1px solid #2a2622; border-radius: 10px; padding: 8px; cursor: pointer; }
+  .look.on { border-color: #ff3b5c; box-shadow: 0 0 0 1px #ff3b5c; }
+  .look .sw { height: 54px; border-radius: 6px; display: flex; overflow: hidden; }
+  .look .sw i { flex: 1; } .look .sw i:first-child { flex: 3; }
+  .look .n { font-size: 13px; font-weight: 600; margin-top: 6px; }
+  .look .d { font-size: 11px; color: #8a8378; }
+
+  .layouts { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .lay { border: 1px solid #2a2622; border-radius: 8px; padding: 6px; text-align: center; font-size: 11px; cursor: pointer; }
+  .lay.on { border-color: #ff3b5c; }
+  .lay.soon { opacity: .4; cursor: default; }
+  .lay svg { width: 100%; height: 36px; display: block; margin-bottom: 4px; }
+  .lay small { display: block; color: #5d574e; font-size: 9px; font-family: 'JetBrains Mono', monospace; }
+
+  .colors { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .col { display: flex; align-items: center; gap: 10px; font-size: 12px; color: #c9c2b5; border: 1px solid #2a2622; border-radius: 8px; padding: 6px 8px; }
+  .col input { width: 26px; height: 26px; border: 0; padding: 0; background: none; cursor: pointer; }
+  .col .def { margin-left: auto; font: 10px 'JetBrains Mono', monospace; color: #5d574e; cursor: pointer; }
+  .col .def.changed { color: #ff3b5c; }
+
+  .adv-toggle { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; padding: 10px 12px; border: 1px dashed #3a3530; border-radius: 8px; cursor: pointer; font-size: 13px; }
+  .adv-toggle b { font-weight: 600; } .adv-toggle span { color: #8a8378; font-size: 12px; }
+  .adv { display: none; margin-top: 8px; }
+  .adv.open { display: block; }
+  .adv .r { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #c9c2b5; padding: 6px 0; border-bottom: 1px solid #221f1c; }
+  .adv select, .adv input[type=range] { background: #1d1b19; color: #e9e7e2; border: 1px solid #2a2622; border-radius: 6px; font-size: 12px; padding: 3px 6px; width: 150px; }
+  .tog { width: 32px; height: 18px; border-radius: 99px; background: #3a3530; position: relative; cursor: pointer; flex: none; }
+  .tog::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: left .15s; }
+  .tog.on { background: #ff3b5c; } .tog.on::after { left: 16px; }
+  .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 22px; }
+  .foot .skip { font-size: 12px; color: #8a8378; }
+  .btn { background: #ece6da; color: #141312; font-weight: 700; border-radius: 99px; padding: 9px 20px; font-size: 13px; }
+
+  /* Live preview: the real app layout, driven only by tokens */
+  .pv { position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #0b0b0c; }
+  .pv .tag { position: absolute; top: 14px; left: 18px; font: 11px 'JetBrains Mono', monospace; letter-spacing: .1em; color: #5d574e; }
+  .app { width: 700px; height: 520px; border-radius: var(--radius); overflow: hidden; position: relative; background: var(--bg); color: var(--fg);
+    box-shadow: 0 16px 50px rgb(0 0 0 / .5); transition: background .2s, color .2s; font-family: var(--body); }
+  .app nav { border-right: 1px solid var(--line); padding: 18px 14px; font-size: 10px; color: var(--dim); display: flex; flex-direction: column; gap: 5px; font-family: var(--meta); }
+  .app nav .logo { font-family: var(--display); font-weight: 900; font-size: 16px; line-height: .95; color: var(--fg); margin-bottom: 14px; text-transform: var(--case); }
+  .app nav .logo i { color: var(--acc); font-style: normal; }
+  .app nav .on { color: var(--fg); } .app nav .on::before { content: var(--marker); color: var(--acc); }
+  .app main { padding: 18px 18px; overflow: hidden; }
+  .app h2 { font-family: var(--headline); font-weight: var(--hw); font-size: 34px; line-height: 1; margin: 0; letter-spacing: -.01em; }
+  .app h2 i { color: var(--dim); }
+  .app .rule { font-size: 9px; color: var(--faint); border-top: 1px solid var(--line); padding-top: 5px; margin: 12px 0 9px; letter-spacing: .08em; display: flex; justify-content: space-between; font-family: var(--meta); }
+  .app .row { display: flex; gap: 12px; }
+  .app .tile { width: 92px; position: relative; }
+  .app .tile .cv { border-radius: var(--cover-radius); box-shadow: var(--cover-shadow); position: relative; z-index: 1; }
+  .app .vinyl { position: absolute; top: 4px; left: 22px; width: 86px; height: 86px; border-radius: 50%; background: radial-gradient(circle, var(--acc) 0 13%, #111 14% 16%, #0a0a0a 17% 100%); display: var(--vinyl); }
+  .app .tile .n { font-size: 9px; color: var(--faint); margin-top: 6px; font-family: var(--meta); display: var(--numbers); }
+  .app .tile .t { font-family: var(--display); font-weight: var(--tw); font-size: 10px; line-height: 1.15; text-transform: var(--case); margin-top: 5px; }
+  .app aside { border-left: 1px solid var(--line); padding: 16px 14px; }
+  .app aside .k { font-size: 9px; color: var(--acc); letter-spacing: .1em; font-family: var(--meta); }
+  .app aside .cv { border-radius: var(--cover-radius); margin-top: 8px; }
+  .app aside .t { font-family: var(--display); font-weight: var(--tw); font-size: 17px; line-height: 1; margin-top: 10px; text-transform: var(--case); }
+  .app aside .s { font-family: var(--headline); font-style: italic; font-size: 14px; color: var(--dim); }
+  .app .counter { margin-top: 9px; font-size: 9px; color: var(--dim); display: flex; align-items: center; gap: 6px; font-family: var(--meta); }
+  .app .counter .track { flex: 1; height: 2px; background: var(--line); position: relative; }
+  .app .counter .track b { position: absolute; inset: 0 66% 0 0; background: var(--acc); }
+  .app .xport { display: flex; justify-content: space-between; margin-top: 9px; font-size: 8px; letter-spacing: .1em; font-family: var(--meta); color: var(--dim); }
+  .app .xport .p { background: var(--fg); color: var(--bg); padding: 3px 7px; border-radius: var(--btn-radius); }
+  .app .lyr { margin-top: 12px; font-family: var(--headline); font-size: 15px; line-height: 1.3; color: var(--faint); }
+  .app .lyr .now { color: var(--fg); }
+  .cv { background-image: url(app.svg); background-repeat: no-repeat; flex: none; }
+  .L-sidebar { display: grid; grid-template-columns: 150px 1fr 210px; }
+  .real { position: absolute; inset: 0; background: url(app.svg) center / 100% 100% no-repeat; }
+  .app.is-real { height: 438px; }
+  .soon-pill { position: absolute; right: 12px; bottom: 12px; font: 10px 'JetBrains Mono', monospace; letter-spacing: .08em; background: rgb(0 0 0 / .7); color: #ece6da; padding: 5px 10px; border-radius: 99px; z-index: 5; }
+  .m { font-family: var(--meta); } .hd { font-family: var(--headline); font-weight: var(--hw); } .ds { font-family: var(--display); font-weight: var(--tw); text-transform: var(--case); }
+  .tabs2 { display: flex; gap: 12px; font-family: var(--meta); font-size: 8px; letter-spacing: .1em; color: var(--dim); }
+  .tabs2 .on { color: var(--fg); border-bottom: 2px solid var(--acc); padding-bottom: 2px; }
+  .ctr { font-family: var(--meta); font-size: 8px; color: var(--dim); display: flex; align-items: center; gap: 6px; }
+  .ctr .track { flex: 1; height: 2px; background: var(--line); position: relative; }
+  .ctr .track b { position: absolute; inset: 0 66% 0 0; background: var(--acc); }
+  .pbtn { background: var(--fg); color: var(--bg); padding: 2px 7px; border-radius: var(--btn-radius); }
+  .rule2 { font-family: var(--meta); font-size: 8px; color: var(--faint); border-top: 1px solid var(--line); padding-top: 4px; margin: 10px 0 8px; letter-spacing: .08em; display: flex; justify-content: space-between; }
+  .L-gatefold .cv, .L-crate .cv, .L-index .cv, .L-panels .cv { border-radius: var(--cover-radius); }
+  /* Gatefold */
+  .L-gatefold { display: grid; grid-template-columns: 1fr 1fr; }
+  .L-gatefold .lp { padding: 18px 20px; border-right: 1px solid var(--line); display: flex; flex-direction: column; }
+  .L-gatefold .rp { padding: 16px 18px; overflow: hidden; }
+  .L-gatefold .np { display: flex; gap: 12px; margin-top: 10px; }
+  .L-gatefold .lyr2 { margin-top: 14px; font-family: var(--headline); font-size: 17px; line-height: 1.25; color: var(--faint); }
+  .L-gatefold .lyr2 .now { color: var(--fg); }
+  .L-gatefold .grid { display: flex; gap: 9px; flex-wrap: wrap; }
+  .L-gatefold .grid > div { width: 68px; font-size: 8px; }
+  /* Crate */
+  .L-crate { display: flex; flex-direction: column; }
+  .L-crate header { display: flex; align-items: center; gap: 18px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+  .L-crate .stage { flex: 1; padding: 12px 16px; position: relative; overflow: hidden; }
+  .L-crate .flip { position: relative; height: 190px; margin-top: 10px; perspective: 900px; }
+  .L-crate .flip .sl { position: absolute; top: 14px; box-shadow: -5px 0 12px rgb(0 0 0 / .55); }
+  .L-crate footer { height: 74px; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 12px; padding: 0 16px; overflow: hidden; }
+  .vin { width: 90px; height: 90px; border-radius: 50%; background: repeating-radial-gradient(circle, #0a0a0a 0 2px, #151515 2px 3px); position: relative; margin-top: 30px; flex: none; animation: spin 6s linear infinite; }
+  .vin .lab { position: absolute; left: 31px; top: 31px; border-radius: 50%; overflow: hidden; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  /* Index */
+  .L-index { display: flex; flex-direction: column; }
+  .L-index .strip { display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: var(--fg); color: var(--bg); }
+  .L-index .strip .ctr { color: var(--bg); } .L-index .strip .ctr .track { background: rgb(128 128 128 / .3); }
+  .L-index .body { flex: 1; display: grid; grid-template-columns: 1fr 160px; overflow: hidden; }
+  .L-index .toc { padding: 14px 20px; overflow: hidden; }
+  .L-index .entry { display: grid; grid-template-columns: 26px 1fr auto; gap: 8px; border-top: 1px solid var(--line); padding: 8px 0; align-items: baseline; }
+  .L-index .apx { border-left: 1px solid var(--line); padding: 14px 12px; font-family: var(--meta); font-size: 9px; color: var(--dim); }
+  .L-index .apx div { padding: 3px 0; border-bottom: 1px dotted var(--line); }
+  /* Panels */
+  .L-panels { display: grid; grid-template-columns: 140px 1fr 170px; grid-template-rows: 1fr 50px; gap: 6px; padding: 6px; box-sizing: border-box; background: color-mix(in srgb, var(--bg) 70%, #000); }
+  .L-panels .pn { background: var(--bg); border-radius: calc(var(--radius) / 2 + 2px); overflow: hidden; padding: 12px; border: 1px solid var(--line); }
+  .L-panels footer { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; padding: 0 8px; }
+  .L-panels .q { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 10px 0 12px; }
+  .L-panels .q div { display: flex; align-items: center; gap: 7px; background: color-mix(in srgb, var(--fg) 8%, transparent); font-size: 9px; font-family: var(--display); font-weight: var(--tw); border-radius: var(--cover-radius); overflow: hidden; }
+</style>
+</head>
+<body>
+<p class="note"><b>A clickable mock of the first-launch screen.</b> Try it: pick a look, change any colour (each shows its default, click "default" to reset), pick a layout, and open Advanced. The preview on the right is driven only by those settings, which is how the real theme engine would work. Every layout previews live in your chosen look; the ones marked "later update" would arrive after the first themes release. Classic + Sidebar shows a stand-in for today's app (a real screenshot in the working mockup).</p>
+
+<div class="win">
+  <div class="ctl">
+    <div class="steps"><span class="on">● CHOOSE YOUR LOOK</span><span>·</span><span>SIGN IN</span><span>·</span><span>DONE</span></div>
+    <h1>Make it yours.</h1>
+    <div class="lead">Pick a starting point. You can change any of this later in Settings → Appearance.</div>
+
+    <div class="lbl"><span>LOOK</span><em>5 PRESETS</em></div>
+    <div class="looks" id="looks"></div>
+
+    <div class="lbl"><span>LAYOUT</span><em>PREVIEW ANY OF THEM</em></div>
+    <div class="layouts">
+      <div class="lay on" data-layout="sidebar"><svg viewBox="0 0 60 36"><rect x="1" y="1" width="58" height="34" rx="3" fill="none" stroke="currentColor" opacity=".4"/><rect x="3" y="3" width="10" height="30" fill="currentColor" opacity=".35"/><rect x="45" y="3" width="12" height="30" fill="currentColor" opacity=".35"/></svg>Sidebar</div>
+      <div class="lay" data-layout="gatefold"><svg viewBox="0 0 60 36"><rect x="1" y="1" width="58" height="34" rx="3" fill="none" stroke="currentColor" opacity=".4"/><rect x="3" y="3" width="26" height="30" fill="currentColor" opacity=".35"/></svg>Gatefold<small>LATER UPDATE</small></div>
+      <div class="lay" data-layout="index"><svg viewBox="0 0 60 36"><rect x="1" y="1" width="58" height="34" rx="3" fill="none" stroke="currentColor" opacity=".4"/><rect x="3" y="3" width="54" height="5" fill="currentColor" opacity=".35"/></svg>Index<small>LATER UPDATE</small></div>
+      <div class="lay" data-layout="crate"><svg viewBox="0 0 60 36"><rect x="1" y="1" width="58" height="34" rx="3" fill="none" stroke="currentColor" opacity=".4"/><rect x="3" y="27" width="54" height="6" fill="currentColor" opacity=".35"/><rect x="20" y="8" width="16" height="16" fill="currentColor" opacity=".35"/></svg>Crate<small>LATER UPDATE</small></div>
+      <div class="lay" data-layout="panels"><svg viewBox="0 0 60 36"><rect x="1" y="1" width="58" height="34" rx="3" fill="none" stroke="currentColor" opacity=".4"/><rect x="3" y="3" width="12" height="24" rx="2" fill="currentColor" opacity=".35"/><rect x="17" y="3" width="40" height="24" rx="2" fill="currentColor" opacity=".2"/><rect x="3" y="29" width="54" height="4" rx="1" fill="currentColor" opacity=".35"/></svg>Panels<small>LATER UPDATE</small></div>
+    </div>
+
+    <div class="lbl"><span>COLOURS</span><em>DEFAULTS SHOWN</em></div>
+    <div class="colors" id="colors"></div>
+
+    <div class="adv-toggle" id="advToggle"><div><b>Advanced</b><br><span>Fonts, shapes, the small touches</span></div><span id="advArrow">▸</span></div>
+    <div class="adv" id="adv">
+      <div class="r">Headline font <select data-k="headline"><option value="'Instrument Serif', serif">Instrument Serif</option><option value="Archivo, sans-serif">Archivo</option><option value="Inter, sans-serif">Inter</option></select></div>
+      <div class="r">Title font <select data-k="display"><option value="Archivo, sans-serif">Archivo Black</option><option value="Inter, sans-serif">Inter</option><option value="'Instrument Serif', serif">Instrument Serif</option></select></div>
+      <div class="r">Detail font <select data-k="meta"><option value="'JetBrains Mono', monospace">JetBrains Mono</option><option value="Inter, sans-serif">Inter</option></select></div>
+      <div class="r">Window corners <input type="range" min="0" max="24" value="12" data-k="radius" data-unit="px"></div>
+      <div class="r">Cover corners <input type="range" min="0" max="16" value="0" data-k="cover-radius" data-unit="px"></div>
+      <div class="r">Vinyl peeking out <div class="tog" data-k="vinyl" data-on="block" data-off="none"></div></div>
+      <div class="r">Section numbers (A1, B2) <div class="tog" data-k="numbers" data-on="block" data-off="none"></div></div>
+      <div class="r">Uppercase titles <div class="tog" data-k="case" data-on="uppercase" data-off="none"></div></div>
+      <div class="r">Offset cover shadows <div class="tog" data-k="cover-shadow" data-on="3px 3px 0 var(--fg)" data-off="none"></div></div>
+    </div>
+
+    <div class="foot"><span class="skip">Export / import a theme file later in Settings</span><span class="btn">Continue ▸</span></div>
+  </div>
+
+  <div class="pv">
+    <div class="tag">LIVE PREVIEW</div>
+    <div class="app" id="app"></div>
+  </div>
+</div>
+
+
+<template id="t-sidebar">
+      <nav>
+        <div class="logo">YTUBIC<br>PLUS<i>.</i></div>
+        <div class="on">Home</div><div>Explore</div><div>Search</div><div>Library</div><div>Rewind</div>
+        <div style="height:10px"></div><div>Liked songs</div><div>Road Trip</div><div>Late Night Drive</div><div>focus.</div>
+      </nav>
+      <main>
+        <h2>Good evening, <i>Alex.</i></h2>
+        <div class="rule"><span>SIDE A · LISTEN AGAIN</span><span>03</span></div>
+        <div class="row">
+          <div class="tile"><div class="vinyl"></div><div class="cv" data-c="sun" data-s="92"></div><div class="n">A1</div><div class="t">Sunday Morning Coffee</div></div>
+          <div class="tile"><div class="cv" data-c="lover" data-s="92"></div><div class="n">A2</div><div class="t">Golden Hour</div></div>
+          <div class="tile"><div class="cv" data-c="liked" data-s="92"></div><div class="n">A3</div><div class="t">Liked Music</div></div>
+        </div>
+        <div class="rule"><span>SIDE B · MIXED FOR YOU</span><span>03</span></div>
+        <div class="row">
+          <div class="tile"><div class="cv" data-c="mix03" data-s="92"></div><div class="n">B1</div><div class="t">My Mix 03</div></div>
+          <div class="tile"><div class="cv" data-c="supermix" data-s="92"></div><div class="n">B2</div><div class="t">My Supermix</div></div>
+          <div class="tile"><div class="cv" data-c="mix0x" data-s="92"></div><div class="n">B3</div><div class="t">My Mix 04</div></div>
+        </div>
+      </main>
+      <aside>
+        <div class="k">● NOW PLAYING</div>
+        <div class="cv" data-c="np" data-s="180"></div>
+        <div class="t">Night Signals</div>
+        <div class="s">The Placeholders</div>
+        <div class="counter"><span>01:13</span><div class="track"><b></b></div><span>03:36</span></div>
+        <div class="xport"><span>◂◂</span><span class="p">❚❚ PAUSE</span><span>▸▸</span></div>
+        <div class="lyr"><div>Hold on</div><div class="now">Streetlights hum the second verse</div></div>
+      </aside></template>
+
+<template id="t-gatefold">
+  <div class="lp">
+    <div class="m" style="font-size:8px;color:var(--acc);letter-spacing:.1em">● NOW PLAYING</div>
+    <div class="np"><div class="cv" data-c="np" data-s="120"></div><div><div class="ds" style="font-size:20px;line-height:.95">Night<br>Signals</div><div class="hd" style="font-style:italic;font-size:15px;color:var(--dim)">The Placeholders</div><div class="m" style="font-size:8px;color:var(--dim);margin-top:8px">TIME 3:36 · FROM LATE NIGHT</div></div></div>
+    <div class="lyr2"><div>Hold on</div><div class="now">Streetlights hum the second verse</div><div>Every window lit like a radio</div></div>
+    <div style="margin-top:auto"><div class="ctr"><span>01:13</span><div class="track"><b></b></div><span>03:36</span></div>
+    <div class="tabs2" style="justify-content:space-between;margin-top:8px"><span>◂◂ PREV</span><span class="pbtn">❚❚ PAUSE</span><span>NEXT ▸▸</span><span>QUEUE</span></div></div>
+  </div>
+  <div class="rp">
+    <div style="display:flex;justify-content:space-between"><div class="tabs2"><span class="on">HOME</span><span>EXPLORE</span><span>SEARCH</span><span>LIBRARY</span></div><span class="ds" style="font-size:10px">YTUBIC PLUS<span style="color:var(--acc)">.</span></span></div>
+    <div class="hd" style="font-size:28px;line-height:1;margin-top:12px">Good evening, <i style="color:var(--dim)">Alex.</i></div>
+    <div class="rule2"><span>SIDE A · LISTEN AGAIN</span><span>03</span></div>
+    <div class="grid"><div><div class="cv" data-c="sun" data-s="68"></div><div class="ds" style="margin-top:4px">Sunday Morning Coffee</div></div><div><div class="cv" data-c="lover" data-s="68"></div><div class="ds" style="margin-top:4px">Golden Hour</div></div><div><div class="cv" data-c="liked" data-s="68"></div><div class="ds" style="margin-top:4px">Liked Music</div></div><div><div class="cv" data-c="mix03" data-s="68"></div><div class="ds" style="margin-top:4px">My Mix 03</div></div></div>
+    <div class="rule2"><span>YOUR PLAYLISTS</span><span>04</span></div>
+    <div class="m" style="font-size:9px;color:var(--dim);columns:2"><div>01 Liked songs</div><div>02 Road Trip</div><div>03 Late Night Drive</div><div>04 focus.</div></div>
+  </div>
+</template>
+
+<template id="t-crate">
+  <header><div class="ds" style="font-size:12px;line-height:.9">YTUBIC<br>PLUS<span style="color:var(--acc)">.</span></div><div class="tabs2"><span class="on">HOME</span><span>EXPLORE</span><span>LIBRARY</span><span>REWIND</span></div><div class="m" style="margin-left:auto;font-size:8px;color:var(--faint);border:1px solid var(--line);padding:4px 8px;width:120px">⌕ SEARCH THE CRATE…</div></header>
+  <div class="stage">
+    <div class="hd" style="font-size:28px;line-height:1">Good evening, <i style="color:var(--dim)">Alex.</i></div>
+    <div class="flip">
+      <div class="sl cv" data-c="mix0x" data-s="130" style="left:0;transform:rotateX(12deg) rotateY(38deg) scale(.82)"></div>
+      <div class="sl cv" data-c="supermix" data-s="130" style="left:45px;transform:rotateX(10deg) rotateY(32deg) scale(.88)"></div>
+      <div class="sl cv" data-c="mix03" data-s="130" style="left:90px;transform:rotateX(8deg) rotateY(26deg) scale(.94)"></div>
+      <div style="position:absolute;left:215px;top:0;display:flex;gap:16px;align-items:flex-end">
+        <div class="cv" data-c="lover" data-s="165" style="box-shadow:0 12px 26px rgb(0 0 0 / .55)"></div>
+        <div><div class="m" style="font-size:8px;color:var(--acc);letter-spacing:.1em">A2 · SONG</div><div class="ds" style="font-size:20px;line-height:.95">Golden<br>Hour</div><div class="hd" style="font-style:italic;font-size:14px;color:var(--dim)">Sample Artist</div><div class="tabs2" style="margin-top:8px"><span class="pbtn">▸ PLAY</span><span>+ QUEUE</span></div></div>
+      </div>
+    </div>
+  </div>
+  <footer>
+    <div class="vin"><div class="lab cv" data-c="np" data-s="28"></div></div>
+    <div><div class="ds" style="font-size:13px;line-height:1">Night Signals</div><div class="hd" style="font-style:italic;font-size:12px;color:var(--dim)">The Placeholders</div></div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:5px"><div class="tabs2" style="justify-content:center"><span>◂◂</span><span class="pbtn">❚❚ PAUSE</span><span>▸▸</span></div><div class="ctr"><span>01:13</span><div class="track"><b></b></div><span>03:36</span></div></div>
+  </footer>
+</template>
+
+<template id="t-index">
+  <div class="strip"><div class="cv" data-c="np" data-s="26"></div><div><div class="ds" style="font-size:11px;line-height:1">Night Signals</div><div class="hd" style="font-style:italic;font-size:10px">The Placeholders</div></div><div class="ctr" style="flex:1"><span>01:13</span><div class="track"><b></b></div><span>03:36</span></div><div class="m" style="font-size:8px;letter-spacing:.1em;display:flex;gap:10px"><span>◂◂</span><span>❚❚</span><span>▸▸</span><span>LYRICS</span></div></div>
+  <div class="body">
+    <div class="toc">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><div class="hd" style="font-size:44px;line-height:.9">Contents</div><div class="tabs2"><span class="on">HOME</span><span>EXPLORE</span><span>LIBRARY</span></div></div>
+      <div class="entry" style="margin-top:8px"><span class="m" style="font-size:9px;color:var(--acc)">01</span><div><div class="hd" style="font-size:19px;line-height:1">Listen again <i style="color:var(--dim)">— what you keep coming back to</i></div><div style="display:flex;gap:6px;margin-top:6px"><div class="cv" data-c="sun" data-s="48"></div><div class="cv" data-c="lover" data-s="48"></div><div class="cv" data-c="liked" data-s="48"></div></div></div><span class="m" style="font-size:8px;color:var(--faint)">03</span></div>
+      <div class="entry"><span class="m" style="font-size:9px;color:var(--acc)">02</span><div><div class="hd" style="font-size:19px;line-height:1">Mixed for you <i style="color:var(--dim)">— made from your listening</i></div><div style="display:flex;gap:6px;margin-top:6px"><div class="cv" data-c="mix03" data-s="48"></div><div class="cv" data-c="supermix" data-s="48"></div><div class="cv" data-c="mix0x" data-s="48"></div></div></div><span class="m" style="font-size:8px;color:var(--faint)">03</span></div>
+      <div class="entry"><span class="m" style="font-size:9px;color:var(--acc)">03</span><div class="hd" style="font-size:19px;line-height:1">Rewind <i style="color:var(--dim)">— your quarter so far</i></div><span class="m" style="font-size:8px;color:var(--faint)">OPEN ▸</span></div>
+    </div>
+    <div class="apx"><div style="color:var(--faint);letter-spacing:.1em;border:0">APPENDIX · PLAYLISTS</div><div>Liked songs</div><div>Road Trip</div><div>Late Night Drive</div><div>focus.</div><div>New Episodes</div></div>
+  </div>
+</template>
+
+<template id="t-panels">
+  <div class="pn m" style="font-size:9px;color:var(--dim);display:flex;flex-direction:column;gap:5px"><div class="ds" style="font-size:12px;color:var(--fg);margin-bottom:6px">YTubic Plus</div><div style="color:var(--fg)">⌂ Home</div><div>⌕ Search</div><div>◎ Explore</div><div>↺ Rewind</div><div style="margin-top:8px;color:var(--faint)">YOUR LIBRARY</div><div>Liked songs</div><div>Road Trip</div><div>Late Night Drive</div><div>focus.</div></div>
+  <div class="pn" style="background:linear-gradient(color-mix(in srgb, var(--acc) 22%, var(--bg)) 0, var(--bg) 150px)">
+    <div class="hd" style="font-size:24px;line-height:1">Good evening, <i style="color:var(--dim)">Alex.</i></div>
+    <div class="q"><div><span class="cv" data-c="liked" data-s="30"></span>Liked Music</div><div><span class="cv" data-c="supermix" data-s="30"></span>My Supermix</div><div><span class="cv" data-c="lover" data-s="30"></span>Golden Hour</div><div><span class="cv" data-c="mix03" data-s="30"></span>My Mix 03</div></div>
+    <div class="ds" style="font-size:12px">Mixed for you</div>
+    <div style="display:flex;gap:9px;margin-top:6px"><div class="cv" data-c="mix03" data-s="78"></div><div class="cv" data-c="supermix" data-s="78"></div><div class="cv" data-c="mix0x" data-s="78"></div></div>
+  </div>
+  <div class="pn"><div class="cv" data-c="np" data-s="146"></div><div class="ds" style="font-size:13px;margin-top:8px">Night Signals</div><div class="hd" style="font-style:italic;font-size:12px;color:var(--dim)">The Placeholders</div><div class="hd" style="margin-top:10px;font-size:13px;line-height:1.3;color:var(--faint)"><div>Hold on</div><div style="color:var(--fg)">Streetlights hum the second verse</div></div></div>
+  <footer><div class="cv" data-c="np" data-s="34"></div><div style="width:110px"><div class="ds" style="font-size:10px">Night Signals</div><div style="font-size:9px;color:var(--dim)">The Placeholders</div></div><div style="flex:1;display:flex;flex-direction:column;gap:5px"><div class="tabs2" style="justify-content:center"><span>◂◂</span><span class="pbtn">❚❚</span><span>▸▸</span></div><div class="ctr"><span>1:13</span><div class="track"><b></b></div><span>3:36</span></div></div><div style="width:110px"></div></footer>
+</template>
+
+<script>
+  // Presets are just bundles of tokens. Classic is today's YTubic look.
+  const serif = "'Instrument Serif', serif", arch = "Archivo, sans-serif", mono = "'JetBrains Mono', monospace", inter = "Inter, sans-serif";
+  const base = { body: inter, headline: serif, display: arch, meta: mono, hw: 400, tw: 900, case: 'uppercase', marker: '"▸ "', radius: '12px', 'cover-radius': '0px', 'btn-radius': '0px', vinyl: 'block', numbers: 'block', 'cover-shadow': 'none' };
+  const PRESETS = {
+    Sleeve:  { d: 'Dark liner notes (new default)', c: { bg: '#0e0d0c', fg: '#ece6da', dim: '#8a8378', faint: '#5d574e', line: '#2a2622', acc: '#ff3b5c' } },
+    Paper:   { d: 'Light, like a record sleeve', c: { bg: '#efe8da', fg: '#1b1814', dim: '#6b6255', faint: '#a39886', line: '#cfc4b0', acc: '#d61f3c' }, t: { 'cover-shadow': '3px 3px 0 var(--fg)' } },
+    'Ink liner': { d: 'Pure black, art is the colour', c: { bg: '#000000', fg: '#f2f0eb', dim: '#8c8a85', faint: '#4a4946', line: '#1c1c1c', acc: '#f2f0eb' }, t: { vinyl: 'none' } },
+    Ink:     { d: 'Pure black, quiet, lowercase', c: { bg: '#000000', fg: '#f2f0eb', dim: '#8c8a85', faint: '#4a4946', line: '#000000', acc: '#f2f0eb' }, t: { headline: inter, display: inter, meta: inter, hw: 500, tw: 500, case: 'lowercase', marker: '""', vinyl: 'none', numbers: 'none' } },
+    Classic: { d: 'The original YTubic look', c: { bg: '#15131a', fg: '#f4f4f5', dim: '#a1a1aa', faint: '#6b6b74', line: '#26242c', acc: '#ff0033' }, t: { headline: inter, display: inter, meta: inter, hw: 700, tw: 600, case: 'none', marker: '""', 'cover-radius': '6px', 'btn-radius': '99px', radius: '14px', vinyl: 'none', numbers: 'none' } },
+  };
+  const NAMES = { bg: 'Background', fg: 'Text', acc: 'Accent', dim: 'Secondary text', faint: 'Faint text', line: 'Lines' };
+  const app = document.getElementById('app');
+  let current = 'Sleeve', colors = {}, layout = 'sidebar';
+
+  function apply(name) {
+    current = name; const p = PRESETS[name];
+    const tokens = { ...base, ...(p.t || {}) }; colors = { ...p.c };
+    for (const [k, v] of Object.entries(tokens)) app.style.setProperty('--' + k, v);
+    for (const [k, v] of Object.entries(colors)) app.style.setProperty('--' + k, v);
+    document.querySelectorAll('.look').forEach(l => l.classList.toggle('on', l.dataset.n === name));
+    renderColors();
+    render();
+    // Sync advanced controls to the preset.
+    document.querySelectorAll('.adv select').forEach(s => { s.value = tokens[s.dataset.k]; });
+    document.querySelectorAll('.adv input[type=range]').forEach(r => { r.value = parseInt(tokens[r.dataset.k]); });
+    document.querySelectorAll('.tog').forEach(t => t.classList.toggle('on', tokens[t.dataset.k] === t.dataset.on));
+  }
+  function renderColors() {
+    const box = document.getElementById('colors'); box.innerHTML = '';
+    for (const k of ['bg', 'fg', 'acc', 'dim', 'faint', 'line']) {
+      const def = PRESETS[current].c[k];
+      const row = document.createElement('label'); row.className = 'col';
+      row.innerHTML = `<input type="color" value="${colors[k]}"><span>${NAMES[k]}</span><span class="def">default</span>`;
+      const input = row.querySelector('input'), d = row.querySelector('.def');
+      const mark = () => { d.classList.toggle('changed', input.value.toLowerCase() !== def.toLowerCase()); d.textContent = d.classList.contains('changed') ? 'reset' : 'default'; };
+      input.oninput = () => { colors[k] = input.value; app.style.setProperty('--' + k, input.value); mark(); };
+      d.onclick = (e) => { e.preventDefault(); input.value = def; input.oninput(); };
+      mark(); box.appendChild(row);
+    }
+  }
+  const looks = document.getElementById('looks');
+  for (const [n, p] of Object.entries(PRESETS)) {
+    const el = document.createElement('div'); el.className = 'look'; el.dataset.n = n; el.dataset.choice = n;
+    el.innerHTML = `<div class="sw"><i style="background:${p.c.bg}"></i><i style="background:${p.c.fg}"></i><i style="background:${p.c.acc}"></i><i style="background:${p.c.dim}"></i></div><div class="n">${n}</div><div class="d">${p.d}</div>`;
+    el.onclick = () => { apply(n); if (window.toggleSelect) toggleSelect(el); };
+    looks.appendChild(el);
+  }
+  document.getElementById('advToggle').onclick = () => { const a = document.getElementById('adv'); a.classList.toggle('open'); document.getElementById('advArrow').textContent = a.classList.contains('open') ? '▾' : '▸'; };
+  document.querySelectorAll('.adv select').forEach(s => s.onchange = () => app.style.setProperty('--' + s.dataset.k, s.value));
+  document.querySelectorAll('.adv input[type=range]').forEach(r => r.oninput = () => app.style.setProperty('--' + r.dataset.k, r.value + r.dataset.unit));
+  document.querySelectorAll('.tog').forEach(t => t.onclick = () => { t.classList.toggle('on'); app.style.setProperty('--' + t.dataset.k, t.classList.contains('on') ? t.dataset.on : t.dataset.off); });
+
+  // Covers are cut from a placeholder image laid out like the app (1280x800).
+  const C = { sun:[281,172,192], lover:[497,172,192], liked:[713,172,172], mix03:[281,519,192], supermix:[497,519,192], mix0x:[713,519,172], np:[937,53,318] };
+  function covers(root) {
+    root.querySelectorAll('.cv').forEach(el => {
+      const [x, y, s] = C[el.dataset.c]; const size = +el.dataset.s; const k = size / s;
+      Object.assign(el.style, { display: el.tagName === 'SPAN' ? 'inline-block' : '', width: size + 'px', height: size + 'px', backgroundSize: (1280 * k) + 'px ' + (800 * k) + 'px', backgroundPosition: (-x * k) + 'px ' + (-y * k) + 'px' });
+    });
+  }
+  function render() {
+    app.className = 'app L-' + layout;
+    app.innerHTML = '';
+    if (current === 'Classic' && layout === 'sidebar') {
+      // Same 16:10 shape as the screenshot, so the whole app shows uncropped.
+      app.className += ' is-real';
+      app.innerHTML = '<div class="real"></div><div class="soon-pill">THE APP TODAY, UNCHANGED</div>';
+      return;
+    }
+    app.appendChild(document.getElementById('t-' + layout).content.cloneNode(true));
+    covers(app);
+    if (layout !== 'sidebar') app.insertAdjacentHTML('beforeend', '<div class="soon-pill">PREVIEW · COMES IN A LATER UPDATE</div>');
+  }
+  document.querySelectorAll('.lay').forEach(l => l.onclick = () => {
+    layout = l.dataset.layout;
+    document.querySelectorAll('.lay').forEach(x => x.classList.toggle('on', x === l));
+    render();
+  });
+  apply('Sleeve');
+</script>
+</body>
+</html>

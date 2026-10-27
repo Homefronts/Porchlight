@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Liner notes, round two</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Archivo:wght@500;800;900&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #0b0b0c; color: #e9e7e2; font: 15px/1.5 Inter, system-ui, sans-serif; padding: 32px 40px 80px; }
+  h1 { font-weight: 700; font-size: 26px; margin: 0 0 4px; }
+  .sub { color: #9a978f; margin: 0 0 28px; max-width: 800px; }
+  .opt { margin: 0 0 48px; cursor: pointer; }
+  .opt-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 12px; }
+  .opt-head b { font-size: 18px; } .opt-head span { color: #9a978f; }
+  .letter { display: inline-grid; place-items: center; min-width: 34px; height: 28px; border-radius: 99px; background: #26262a; font-weight: 700; font-size: 13px; }
+  .opt.selected .letter { background: #ff3b5c; color: #fff; }
+  .opt.selected .frame { outline: 3px solid #ff3b5c; outline-offset: 6px; }
+
+  /* One layout, themed only through these tokens: the same idea a theme or preset would use. */
+  .frame { width: 1100px; height: 660px; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 60px rgb(0 0 0 / .5);
+    display: grid; grid-template-columns: 210px 1fr 320px; background: var(--bg); color: var(--fg); font-family: Inter, sans-serif; }
+  .sleeve { --bg: #0e0d0c; --fg: #ece6da; --dim: #8a8378; --faint: #5d574e; --line: #2a2622; --acc: #ff3b5c; --tile-shadow: 0 1px 0 #2a2622; }
+  .paper  { --bg: #efe8da; --fg: #1b1814; --dim: #6b6255; --faint: #a39886; --line: #cfc4b0; --acc: #d61f3c; --tile-shadow: 3px 3px 0 #1b1814; }
+  .inkl   { --bg: #000;    --fg: #f2f0eb; --dim: #8c8a85; --faint: #4a4946; --line: #1c1c1c; --acc: #f2f0eb; --tile-shadow: none; }
+
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .serif { font-family: 'Instrument Serif', serif; }
+  .bold { font-family: Archivo, sans-serif; font-weight: 900; text-transform: uppercase; letter-spacing: -.01em; }
+
+  nav { border-right: 1px solid var(--line); padding: 26px 22px; font-size: 12px; color: var(--dim); display: flex; flex-direction: column; gap: 7px; }
+  nav .logo { font-size: 24px; color: var(--fg); line-height: .95; margin-bottom: 22px; }
+  nav .logo i { color: var(--acc); font-style: normal; }
+  nav .on { color: var(--fg); } nav .on::before { content: "▸ "; color: var(--acc); }
+  nav .hd { margin-top: 18px; color: var(--faint); letter-spacing: .1em; }
+  nav .foot { margin-top: auto; color: var(--faint); font-size: 11px; }
+
+  main { padding: 26px 28px; overflow: hidden; }
+  h2 { font-weight: 400; font-size: 56px; line-height: 1; margin: 0; letter-spacing: -.01em; }
+  h2 i { color: var(--dim); }
+  .rule { font-size: 11px; color: var(--faint); border-top: 1px solid var(--line); padding-top: 8px; margin: 18px 0 14px; letter-spacing: .08em; display: flex; justify-content: space-between; }
+  .row { display: flex; gap: 20px; }
+  .tile { width: 142px; position: relative; }
+  .tile .cv { box-shadow: var(--tile-shadow); position: relative; z-index: 1; }
+  .tile .vinyl { position: absolute; top: 6px; left: 30px; width: 130px; height: 130px; border-radius: 50%;
+    background: radial-gradient(circle, var(--acc) 0 13%, #111 14% 16%, #0a0a0a 17% 100%); box-shadow: inset 0 0 0 1px #222; }
+  .tile .n { font-size: 11px; color: var(--faint); margin-top: 9px; }
+  .tile .t { font-size: 13px; line-height: 1.15; }
+  .tile .s { font-size: 12px; color: var(--dim); }
+
+  aside { border-left: 1px solid var(--line); padding: 24px 24px; display: flex; flex-direction: column; }
+  aside .k { font-size: 11px; color: var(--acc); letter-spacing: .1em; display: flex; justify-content: space-between; }
+  aside .k span:last-child { color: var(--faint); }
+  aside .t { font-size: 28px; line-height: 1; margin-top: 14px; }
+  aside .s { font-style: italic; font-size: 20px; color: var(--dim); line-height: 1.1; }
+  .counter { margin-top: 12px; font-size: 11px; color: var(--dim); display: flex; align-items: center; gap: 10px; }
+  .counter .track { flex: 1; height: 2px; background: var(--line); position: relative; }
+  .counter .track b { position: absolute; inset: 0 66% 0 0; background: var(--acc); }
+  .counter .track b::after { content: ""; position: absolute; right: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--acc); }
+  .xport { display: flex; justify-content: space-between; margin-top: 12px; font-size: 11px; letter-spacing: .12em; }
+  .xport span { padding: 5px 0; color: var(--dim); }
+  .xport .play { color: var(--bg); background: var(--fg); padding: 5px 12px; }
+  .tl { margin-top: 18px; font-size: 12px; }
+  .tl .hdr { font-size: 11px; color: var(--faint); letter-spacing: .1em; border-bottom: 1px solid var(--line); padding-bottom: 6px; margin-bottom: 4px; }
+  .tl .li { display: grid; grid-template-columns: 26px 1fr auto; gap: 8px; padding: 3px 0; color: var(--dim); }
+  .tl .li.now { color: var(--fg); } .tl .li.now span:first-child { color: var(--acc); }
+  .tl .li span:last-child { color: var(--faint); }
+
+  /* variant-specific touches */
+  .paper nav .logo, .paper aside .t, .paper .tile .t { color: var(--fg); }
+  .paper .xport .play { color: #efe8da; }
+  .paper .grain { position: absolute; }
+  .inkl .tile .vinyl { display: none; }
+  .inkl .bold { font-weight: 800; }
+</style>
+</head>
+<body>
+<h1>Liner notes, round two</h1>
+<p class="sub">Same layout three ways. Each one only changes a handful of colours and type settings, which is also how presets would work. New: Side B, a vinyl peeking out of the record you last played, a tape-counter progress bar, and Up Next as the tracklist on the back of a sleeve. Click one, then tell me what to push further.</p>
+
+<template id="app">
+  <nav class="mono">
+    <div class="logo bold">YTUBIC<br>PLUS<i>.</i></div>
+    <div class="on">Home</div><div>Explore</div><div>Search</div><div>Library</div><div>Rewind</div>
+    <div class="hd">PLAYLISTS</div>
+    <div>Liked songs</div><div>Road Trip</div><div>Late Night Drive</div><div>focus.</div><div>New Episodes</div><div>Episodes for Later</div>
+    <div class="foot">ALEX · PREMIUM</div>
+  </nav>
+  <main>
+    <h2 class="serif">Good evening, <i>Alex.</i></h2>
+    <div class="rule mono"><span>SIDE A · LISTEN AGAIN</span><span>03 RECORDS</span></div>
+    <div class="row">
+      <div class="tile"><div class="vinyl"></div><div class="cv" data-c="sun" data-s="142"></div><div class="n mono">A1</div><div class="t bold">Sunday Morning Coffee</div><div class="s">Community playlist</div></div>
+      <div class="tile"><div class="cv" data-c="lover" data-s="142"></div><div class="n mono">A2</div><div class="t bold">Golden Hour</div><div class="s">Sample Artist</div></div>
+      <div class="tile"><div class="cv" data-c="liked" data-s="142"></div><div class="n mono">A3</div><div class="t bold">Liked Music</div><div class="s">Auto playlist</div></div>
+    </div>
+    <div class="rule mono"><span>SIDE B · MIXED FOR YOU</span><span>03 RECORDS</span></div>
+    <div class="row">
+      <div class="tile"><div class="cv" data-c="mix03" data-s="142"></div><div class="n mono">B1</div><div class="t bold">My Mix 03</div><div class="s">Slow Guitar Evenings</div></div>
+      <div class="tile"><div class="cv" data-c="supermix" data-s="142"></div><div class="n mono">B2</div><div class="t bold">My Supermix</div><div class="s">Sample Artist, The Placeholders…</div></div>
+      <div class="tile"><div class="cv" data-c="mix0x" data-s="142"></div><div class="n mono">B3</div><div class="t bold">My Mix 04</div><div class="s">Warm Static</div></div>
+    </div>
+  </main>
+  <aside>
+    <div class="k mono"><span>● NOW PLAYING</span><span>FROM LATE NIGHT</span></div>
+    <div class="cv" data-c="np" data-s="270" style="margin-top:12px"></div>
+    <div class="t bold">Night Signals</div>
+    <div class="s serif">The Placeholders</div>
+    <div class="counter mono"><span>01:13</span><div class="track"><b></b></div><span>03:36</span></div>
+    <div class="xport mono"><span>SHUF</span><span>◂◂ PREV</span><span class="play">❚❚ PAUSE</span><span>NEXT ▸▸</span><span>REP</span></div>
+    <div class="tl mono">
+      <div class="hdr">UP NEXT</div>
+      <div class="li now"><span>01</span><span>Night Signals</span><span>3:36</span></div>
+      <div class="li"><span>02</span><span>Paper Lanterns</span><span>3:20</span></div>
+      <div class="li"><span>03</span><span>Golden Hour</span><span>3:52</span></div>
+      <div class="li"><span>04</span><span>Low Tide</span><span>3:38</span></div>
+    </div>
+  </aside>
+</template>
+
+<div class="opt" data-choice="sleeve" onclick="toggleSelect(this)">
+  <div class="opt-head"><span class="letter">C1</span><b>Sleeve</b><span>The dark original, finished: the vinyl, Side B, transport as text buttons, a back-cover tracklist.</span></div>
+  <div class="frame sleeve"></div>
+</div>
+<div class="opt" data-choice="paper" onclick="toggleSelect(this)">
+  <div class="opt-head"><span class="letter">C2</span><b>Paper</b><span>The light version: a cream record sleeve, black ink, hard offset shadows on the covers. Would also be the light-mode preset.</span></div>
+  <div class="frame paper"></div>
+</div>
+<div class="opt" data-choice="ink-liner" onclick="toggleSelect(this)">
+  <div class="opt-head"><span class="letter">C3</span><b>Ink liner</b><span>Liner-notes type on Ink's pure black, with no red at all. The album art is the only colour again.</span></div>
+  <div class="frame inkl"></div>
+</div>
+
+<script>
+  const tpl = document.getElementById('app');
+  document.querySelectorAll('.frame').forEach(f => f.appendChild(tpl.content.cloneNode(true)));
+  // Covers are cut from a placeholder image laid out like the app (1280x800).
+  const C = { sun:[281,172,192], lover:[497,172,192], liked:[713,172,172], mix03:[281,519,192], supermix:[497,519,192], mix0x:[713,519,172], np:[937,53,318] };
+  document.querySelectorAll('.cv').forEach(el => {
+    const [x, y, s] = C[el.dataset.c]; const size = +el.dataset.s; const k = size / s;
+    Object.assign(el.style, { width: size + 'px', height: size + 'px', backgroundImage: 'url(app.svg)', backgroundRepeat: 'no-repeat',
+      backgroundSize: (1280 * k) + 'px ' + (800 * k) + 'px', backgroundPosition: (-x * k) + 'px ' + (-y * k) + 'px' });
+  });
+</script>
+</body>
+</html>

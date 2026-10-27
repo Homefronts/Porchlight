@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Liner notes, bigger moves</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Archivo:wght@500;800;900&family=JetBrains+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #0b0b0c; color: #e9e7e2; font: 15px/1.5 Inter, system-ui, sans-serif; padding: 32px 40px 80px; }
+  h1 { font-weight: 700; font-size: 26px; margin: 0 0 4px; }
+  .sub { color: #9a978f; margin: 0 0 28px; max-width: 820px; }
+  .opt { margin: 0 0 52px; cursor: pointer; }
+  .opt-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 12px; }
+  .opt-head b { font-size: 18px; } .opt-head span { color: #9a978f; max-width: 860px; }
+  .letter { display: inline-grid; place-items: center; min-width: 34px; height: 28px; border-radius: 99px; background: #26262a; font-weight: 700; font-size: 13px; flex: none; }
+  .opt.selected .letter { background: #ff3b5c; color: #fff; }
+  .opt.selected .frame { outline: 3px solid #ff3b5c; outline-offset: 6px; }
+
+  .frame { --bg: #0e0d0c; --fg: #ece6da; --dim: #8a8378; --faint: #5d574e; --line: #2a2622; --acc: #ff3b5c;
+    width: 1100px; height: 660px; border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 20px 60px rgb(0 0 0 / .5);
+    background: var(--bg); color: var(--fg); font-family: Inter, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .serif { font-family: 'Instrument Serif', serif; font-weight: 400; }
+  .bold { font-family: Archivo, sans-serif; font-weight: 900; text-transform: uppercase; letter-spacing: -.01em; }
+  .acc { color: var(--acc); } .dim { color: var(--dim); } .faint { color: var(--faint); }
+  .cv { background-image: url(app.svg); background-repeat: no-repeat; flex: none; }
+  .tabs { display: flex; gap: 22px; font-size: 11px; letter-spacing: .12em; color: var(--dim); }
+  .tabs .on { color: var(--fg); border-bottom: 2px solid var(--acc); padding-bottom: 3px; }
+  .counter { font-size: 11px; color: var(--dim); display: flex; align-items: center; gap: 10px; }
+  .counter .track { flex: 1; height: 2px; background: var(--line); position: relative; }
+  .counter .track b { position: absolute; inset: 0 66% 0 0; background: var(--acc); }
+  .counter .track b::after { content: ""; position: absolute; right: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--acc); }
+  .vinyl { border-radius: 50%; background: repeating-radial-gradient(circle, #0a0a0a 0 2px, #151515 2px 3px); box-shadow: 0 10px 30px rgb(0 0 0 / .6), inset 0 0 0 1px #262626; position: relative; }
+  .vinyl .label { position: absolute; inset: 31%; border-radius: 50%; overflow: hidden; }
+  .vinyl .label::after { content: ""; position: absolute; inset: 44%; border-radius: 50%; background: var(--bg); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { animation: spin 6s linear infinite; }
+
+  /* ---------- D1 Gatefold ---------- */
+  .gate { display: grid; grid-template-columns: 1fr 1fr; }
+  .gate .left { padding: 30px 34px; border-right: 1px solid var(--line); position: relative; display: flex; flex-direction: column; }
+  .gate .left::after { content: ""; position: absolute; top: 0; bottom: 0; right: -1px; width: 40px; background: linear-gradient(90deg, transparent, rgb(0 0 0 / .35)); pointer-events: none; }
+  .gate .np { display: flex; gap: 22px; }
+  .gate .np .t { font-size: 34px; line-height: .95; }
+  .gate .np .s { font-size: 24px; font-style: italic; color: var(--dim); }
+  .gate .credits { font-size: 11px; color: var(--dim); display: grid; grid-template-columns: auto 1fr; gap: 3px 14px; margin-top: 14px; }
+  .gate .lyrics { margin-top: 22px; font-size: 26px; line-height: 1.25; color: var(--faint); }
+  .gate .lyrics .now { color: var(--fg); }
+  .gate .xport { margin-top: auto; }
+  .gate .right { padding: 26px 30px; overflow: hidden; }
+  .gate .right .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
+  .gate h2 { font-size: 46px; line-height: 1; margin: 0 0 14px; }
+  .gate .rule { font-size: 11px; color: var(--faint); border-top: 1px solid var(--line); padding-top: 7px; margin: 14px 0 12px; letter-spacing: .08em; display: flex; justify-content: space-between; }
+  .gate .row { display: flex; gap: 16px; }
+  .gate .tile { width: 112px; } .gate .tile .t { font-size: 11px; line-height: 1.15; margin-top: 7px; }
+  .gate .lists { font-size: 12px; color: var(--dim); columns: 2; margin-top: 4px; }
+  .gate .lists div { padding: 2px 0; } .gate .lists span { color: var(--faint); margin-right: 8px; }
+
+  /* ---------- D2 Crate ---------- */
+  .crate { display: flex; flex-direction: column; }
+  .crate header { display: flex; align-items: center; gap: 34px; padding: 18px 28px; border-bottom: 1px solid var(--line); }
+  .crate header .logo { font-size: 20px; line-height: .9; }
+  .crate header .logo i { color: var(--acc); font-style: normal; }
+  .crate header .search { margin-left: auto; font-size: 11px; color: var(--faint); border: 1px solid var(--line); padding: 6px 12px; width: 220px; }
+  .crate .stage { flex: 1; padding: 20px 28px 0; position: relative; overflow: hidden; }
+  .crate .stage h2 { font-size: 44px; line-height: 1; margin: 0; }
+  .crate .flip { position: relative; height: 290px; margin-top: 16px; perspective: 1400px; }
+  .crate .flip .sl { position: absolute; top: 20px; transform-origin: bottom center; box-shadow: -8px 0 20px rgb(0 0 0 / .55); }
+  .crate .front { position: absolute; left: 330px; top: 0; display: flex; gap: 26px; align-items: flex-end; }
+  .crate .front .info .t { font-size: 30px; line-height: .95; }
+  .crate .front .info .k { font-size: 11px; letter-spacing: .1em; }
+  .crate .front .info .btns { display: flex; gap: 10px; margin-top: 14px; font-size: 11px; letter-spacing: .1em; }
+  .crate .front .info .btns span { border: 1px solid var(--line); padding: 6px 12px; }
+  .crate .front .info .btns .p { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .crate .dividers { display: flex; gap: 8px; margin-top: 14px; font-size: 11px; letter-spacing: .1em; }
+  .crate .dividers span { padding: 6px 12px; border: 1px solid var(--line); color: var(--dim); }
+  .crate .dividers .on { background: var(--acc); border-color: var(--acc); color: #fff; }
+  .crate footer { height: 112px; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 22px; padding: 0 28px; position: relative; overflow: hidden; }
+  .crate footer .deck { width: 150px; height: 112px; position: relative; flex: none; }
+  .crate footer .deck .vinyl { position: absolute; left: 0; top: 10px; width: 150px; height: 150px; }
+  .crate footer .arm { position: absolute; right: -6px; top: 6px; width: 4px; height: 70px; background: #8a8378; transform: rotate(28deg); transform-origin: top; border-radius: 2px; }
+  .crate footer .meta .t { font-size: 22px; line-height: 1; }
+  .crate footer .meta .s { font-size: 18px; font-style: italic; color: var(--dim); }
+  .crate footer .mid { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .crate footer .xp { display: flex; justify-content: center; gap: 24px; font-size: 11px; letter-spacing: .12em; color: var(--dim); }
+  .crate footer .xp .p { color: var(--bg); background: var(--fg); padding: 4px 12px; }
+  .crate footer .next { width: 200px; font-size: 11px; color: var(--dim); }
+  .crate footer .next div { display: flex; justify-content: space-between; padding: 1px 0; }
+
+  /* ---------- D3 Index ---------- */
+  .index { display: flex; flex-direction: column; }
+  .index .strip { display: flex; align-items: center; gap: 18px; padding: 12px 26px; background: var(--fg); color: var(--bg); }
+  .index .strip .cass { width: 56px; height: 36px; border: 2px solid var(--bg); border-radius: 4px; display: flex; justify-content: space-around; align-items: center; flex: none; }
+  .index .strip .cass i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--bg); }
+  .index .strip .t { font-size: 18px; line-height: 1; }
+  .index .strip .s { font-size: 16px; font-style: italic; }
+  .index .strip .counter { flex: 1; color: var(--bg); }
+  .index .strip .counter .track { background: rgb(0 0 0 / .2); }
+  .index .strip .xp { font-size: 11px; letter-spacing: .12em; display: flex; gap: 16px; }
+  .index .body { flex: 1; display: grid; grid-template-columns: 1fr 260px; overflow: hidden; }
+  .index .toc { padding: 24px 34px; overflow: hidden; }
+  .index .toc .top { display: flex; justify-content: space-between; align-items: baseline; }
+  .index .toc h2 { font-size: 76px; line-height: .9; margin: 0; }
+  .index .entry { display: grid; grid-template-columns: 46px 1fr auto; align-items: baseline; gap: 14px; border-top: 1px solid var(--line); padding: 12px 0 14px; }
+  .index .entry .no { font-size: 13px; color: var(--acc); }
+  .index .entry .h { font-size: 30px; line-height: 1; }
+  .index .entry .h i { color: var(--dim); }
+  .index .entry .thumbs { display: flex; gap: 8px; margin-top: 10px; }
+  .index .entry .thumbs .lbl { font-size: 11px; color: var(--dim); max-width: 120px; line-height: 1.25; align-self: flex-end; }
+  .index .entry .pg { font-size: 11px; color: var(--faint); }
+  .index .appendix { border-left: 1px solid var(--line); padding: 24px 22px; font-size: 12px; }
+  .index .appendix .hd { font-size: 11px; color: var(--faint); letter-spacing: .1em; margin-bottom: 8px; }
+  .index .appendix .li { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dotted var(--line); color: var(--dim); }
+  .index .appendix .li span:last-child { color: var(--faint); }
+</style>
+</head>
+<body>
+<h1>Liner notes: bigger moves</h1>
+<p class="sub">Same design language (serif headlines, typewriter details, bold uppercase titles, one red accent), but the layout itself changes. These are the kinds of layouts a full theme could switch between, not just colours. Click one, then tell me what you'd keep.</p>
+
+<!-- D1 -->
+<div class="opt" data-choice="gatefold" onclick="toggleSelect(this)">
+  <div class="opt-head"><span class="letter">D1</span><b>Gatefold</b><span>The app opens like a double LP. The left page is always the record you're playing, with its credits and lyrics printed like a lyric sheet. The right page is everything else. No sidebar: navigation is tabs across the top.</span></div>
+  <div class="frame gate">
+    <div class="left">
+      <div class="mono acc" style="font-size:11px;letter-spacing:.1em">● NOW PLAYING · FROM LATE NIGHT</div>
+      <div class="np" style="margin-top:14px">
+        <div class="cv" data-c="np" data-s="210"></div>
+        <div>
+          <div class="t bold">Night<br>Signals</div>
+          <div class="s serif">The Placeholders</div>
+          <div class="credits mono"><span>TIME</span><span>3:36</span><span>FROM</span><span>Late Night</span><span>LIKED</span><span class="acc">♥ yes</span></div>
+        </div>
+      </div>
+      <div class="lyrics serif"><div>Hold on</div><div class="now">Streetlights hum the second verse</div><div>Every window lit like a radio</div></div>
+      <div class="xport">
+        <div class="counter mono"><span>01:13</span><div class="track"><b></b></div><span>03:36</span></div>
+        <div class="tabs mono" style="justify-content:space-between;margin-top:14px"><span>SHUF</span><span>◂◂ PREV</span><span style="background:var(--fg);color:var(--bg);padding:3px 12px">❚❚ PAUSE</span><span>NEXT ▸▸</span><span>REP</span><span>QUEUE</span></div>
+      </div>
+    </div>
+    <div class="right">
+      <div class="top"><div class="tabs mono"><span class="on">HOME</span><span>EXPLORE</span><span>SEARCH</span><span>LIBRARY</span><span>REWIND</span></div><span class="bold" style="font-size:15px">YTUBIC PLUS<span class="acc">.</span></span></div>
+      <h2 class="serif">Good evening, <i class="dim">Alex.</i></h2>
+      <div class="rule mono"><span>SIDE A · LISTEN AGAIN</span><span>03</span></div>
+      <div class="row">
+        <div class="tile"><div class="cv" data-c="sun" data-s="112"></div><div class="t bold">Sunday Morning Coffee</div></div>
+        <div class="tile"><div class="cv" data-c="lover" data-s="112"></div><div class="t bold">Golden Hour</div></div>
+        <div class="tile"><div class="cv" data-c="liked" data-s="112"></div><div class="t bold">Liked Music</div></div>
+        <div class="tile"><div class="cv" data-c="mix03" data-s="112"></div><div class="t bold">My Mix 03</div></div>
+      </div>
+      <div class="rule mono"><span>YOUR PLAYLISTS</span><span>06</span></div>
+      <div class="lists mono"><div><span>01</span>Liked songs</div><div><span>02</span>Road Trip</div><div><span>03</span>Late Night Drive</div><div><span>04</span>focus.</div><div><span>05</span>New Episodes</div><div><span>06</span>Episodes for Later</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- D2 -->
+<div class="opt" data-choice="crate" onclick="toggleSelect(this)">
+  <div class="opt-head"><span class="letter">D2</span><b>Crate</b><span>Browsing feels like flipping through a record crate: sleeves lean back, the one in front is big with its details, and dividers switch between sections. A turntable along the bottom spins the current record, its label made from the cover.</span></div>
+  <div class="frame crate">
+    <header>
+      <div class="logo bold">YTUBIC<br>PLUS<i>.</i></div>
+      <div class="tabs mono"><span class="on">HOME</span><span>EXPLORE</span><span>LIBRARY</span><span>REWIND</span></div>
+      <div class="search mono">⌕ SEARCH THE CRATE…</div>
+    </header>
+    <div class="stage">
+      <h2 class="serif">Good evening, <i class="dim">Alex.</i></h2>
+      <div class="dividers mono"><span class="on">LISTEN AGAIN</span><span>MIXED FOR YOU</span><span>YOUR PLAYLISTS</span><span>FROM YOUR LIBRARY</span></div>
+      <div class="flip">
+        <div class="sl cv" data-c="mix0x" data-s="200" style="left:0;transform:rotateX(14deg) rotateY(38deg) scale(.82)"></div>
+        <div class="sl cv" data-c="supermix" data-s="200" style="left:70px;transform:rotateX(12deg) rotateY(32deg) scale(.88)"></div>
+        <div class="sl cv" data-c="mix03" data-s="200" style="left:140px;transform:rotateX(9deg) rotateY(26deg) scale(.94)"></div>
+        <div class="front">
+          <div class="cv" data-c="lover" data-s="250" style="box-shadow:0 20px 40px rgb(0 0 0 / .6)"></div>
+          <div class="info">
+            <div class="k mono acc">A2 · SONG</div>
+            <div class="t bold">Golden<br>Hour</div>
+            <div class="serif dim" style="font-size:20px;font-style:italic">Sample Artist</div>
+            <div class="btns mono"><span class="p">▸ PLAY</span><span>+ QUEUE</span><span>♡</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <footer>
+      <div class="deck"><div class="vinyl spin"><div class="label cv" data-c="np" data-s="56" style="width:auto;height:auto;background-size:226px 141px;background-position:-165px -9px"></div></div><div class="arm"></div></div>
+      <div class="meta"><div class="t bold">Night Signals</div><div class="s serif">The Placeholders</div></div>
+      <div class="mid">
+        <div class="xp mono"><span>SHUF</span><span>◂◂</span><span class="p">❚❚ PAUSE</span><span>▸▸</span><span>REP</span></div>
+        <div class="counter mono"><span>01:13</span><div class="track"><b></b></div><span>03:36</span></div>
+      </div>
+      <div class="next mono"><div class="faint"><span>UP NEXT</span><span></span></div><div><span>02 Paper Lanterns</span><span>3:20</span></div><div><span>03 Golden Hour</span><span>3:52</span></div></div>
+    </footer>
+  </div>
+</div>
+
+<!-- D3 -->
+<div class="opt" data-choice="index" onclick="toggleSelect(this)">
+  <div class="opt-head"><span class="letter">D3</span><b>Index</b><span>Home reads like the contents page of a magazine: big numbered entries with a few covers each. The player is a bright cassette-label strip across the top. Playlists move to an appendix on the right. No sidebar.</span></div>
+  <div class="frame index">
+    <div class="strip">
+      <div class="cass"><i></i><i></i></div>
+      <div class="cv" data-c="np" data-s="40"></div>
+      <div><div class="t bold">Night Signals</div><div class="s serif">The Placeholders</div></div>
+      <div class="counter mono"><span>01:13</span><div class="track"><b></b></div><span>03:36</span></div>
+      <div class="xp mono"><span>◂◂</span><span>❚❚</span><span>▸▸</span><span>LYRICS</span><span>QUEUE</span></div>
+    </div>
+    <div class="body">
+      <div class="toc">
+        <div class="top"><h2 class="serif">Contents</h2><div class="tabs mono"><span class="on">HOME</span><span>EXPLORE</span><span>SEARCH</span><span>LIBRARY</span><span>REWIND</span></div></div>
+        <div class="entry" style="margin-top:14px">
+          <span class="no mono">01</span>
+          <div><div class="h serif">Listen again <i>— what you keep coming back to</i></div>
+            <div class="thumbs"><div class="cv" data-c="sun" data-s="74"></div><div class="cv" data-c="lover" data-s="74"></div><div class="cv" data-c="liked" data-s="74"></div><div class="lbl mono">Sunday Morning Coffee, Golden Hour, Liked Music</div></div></div>
+          <span class="pg mono">03 RECORDS</span>
+        </div>
+        <div class="entry">
+          <span class="no mono">02</span>
+          <div><div class="h serif">Mixed for you <i>— made from your listening</i></div>
+            <div class="thumbs"><div class="cv" data-c="mix03" data-s="74"></div><div class="cv" data-c="supermix" data-s="74"></div><div class="cv" data-c="mix0x" data-s="74"></div><div class="lbl mono">My Mix 03, My Supermix, My Mix 04</div></div></div>
+          <span class="pg mono">03 RECORDS</span>
+        </div>
+        <div class="entry"><span class="no mono">03</span><div class="h serif">Rewind <i>— your quarter so far</i></div><span class="pg mono">OPEN ▸</span></div>
+      </div>
+      <div class="appendix">
+        <div class="hd mono">APPENDIX · PLAYLISTS</div>
+        <div class="li mono"><span>Liked songs</span><span>♥</span></div>
+        <div class="li mono"><span>Road Trip</span><span>A</span></div>
+        <div class="li mono"><span>Late Night Drive</span><span>B</span></div>
+        <div class="li mono"><span>focus.</span><span>C</span></div>
+        <div class="li mono"><span>New Episodes</span><span>D</span></div>
+        <div class="li mono"><span>Episodes for Later</span><span>E</span></div>
+        <div class="hd mono" style="margin-top:22px">SIGNED IN</div>
+        <div class="mono dim">ALEX · PREMIUM</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Covers are cut from a placeholder image laid out like the app (1280x800).
+  const C = { sun:[281,172,192], lover:[497,172,192], liked:[713,172,172], mix03:[281,519,192], supermix:[497,519,192], mix0x:[713,519,172], np:[937,53,318] };
+  document.querySelectorAll('.cv').forEach(el => {
+    if (el.closest('.label')) return;
+    const [x, y, s] = C[el.dataset.c]; const size = +el.dataset.s; const k = size / s;
+    if (el.classList.contains('label')) {
+      // Fill the round label by its box, whatever its size.
+      const box = 52, kk = box / s;
+      Object.assign(el.style, { backgroundSize: (1280 * kk) + 'px ' + (800 * kk) + 'px', backgroundPosition: (-x * kk) + 'px ' + (-y * kk) + 'px' });
+      return;
+    }
+    Object.assign(el.style, { width: size + 'px', height: size + 'px', backgroundSize: (1280 * k) + 'px ' + (800 * k) + 'px', backgroundPosition: (-x * k) + 'px ' + (-y * k) + 'px' });
+  });
+</script>
+</body>
+</html>
