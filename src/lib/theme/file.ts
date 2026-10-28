@@ -145,15 +145,17 @@ export function parseThemeFile(text: string): ParseResult {
     else notes.push(`Ignored a bad ${k} switch.`);
   }
 
+  // Release 1 builds Sidebar only; every other known layout falls back to it.
   let layout: LayoutId = "sidebar";
-  if (raw.layout === "crate") {
-    notes.push(
-      "This look was made for the Crate layout, which arrives in a later update.",
-    );
-  } else if (LAYOUTS.includes(raw.layout as LayoutId)) {
-    layout = raw.layout as LayoutId;
-  } else {
-    notes.push("Unknown layout, so the sidebar layout was used.");
+  if (raw.layout !== "sidebar") {
+    if (LAYOUTS.includes(raw.layout as LayoutId)) {
+      const l = raw.layout as string;
+      notes.push(
+        `This look was made for the ${l[0].toUpperCase()}${l.slice(1)} layout, which arrives in a later update.`,
+      );
+    } else {
+      notes.push("Unknown layout, so the sidebar layout was used.");
+    }
   }
 
   const name = cleanText(raw.name) || cleanText(src.name) || `${b.name} copy`;
