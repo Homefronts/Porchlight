@@ -42,6 +42,25 @@ describe("deriveTokens", () => {
   });
 });
 
+describe("typography roles", () => {
+  it("gives each look its own role fonts", () => {
+    expect(deriveTokens(BUILT_IN_LOOKS.sleeve)["--font-headline"]).toContain("Instrument Serif");
+    expect(deriveTokens(BUILT_IN_LOOKS.ink)["--font-headline"]).toContain("Inter");
+  });
+
+  it("registers the role utilities with Classic fallbacks, and ships the faces", () => {
+    const css = readFileSync("src/index.css", "utf8");
+    for (const r of ["headline", "display", "meta"]) {
+      expect(css).toContain(`--font-${r}: var(--font-${r}, var(--app-font));`);
+    }
+    expect(css).toContain('[data-touch-uppercase="on"]');
+    const ts = readFileSync("src/lib/interface-font.ts", "utf8");
+    for (const pkg of ["@fontsource/instrument-serif", "@fontsource-variable/archivo", "@fontsource-variable/jetbrains-mono"]) {
+      expect(ts).toContain(`import "${pkg}"`);
+    }
+  });
+});
+
 describe("contrastRatio", () => {
   it("matches the WCAG extremes", () => {
     expect(contrastRatio("#000000", "#ffffff")).toBeCloseTo(21, 1);

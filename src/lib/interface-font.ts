@@ -2,6 +2,9 @@ import "@fontsource-variable/inter";
 import "@fontsource-variable/roboto";
 import "@fontsource-variable/ibm-plex-sans";
 import "@fontsource-variable/google-sans-flex";
+import "@fontsource/instrument-serif";
+import "@fontsource-variable/archivo";
+import "@fontsource-variable/jetbrains-mono";
 import { useSettingsStore, type InterfaceFont } from "@/lib/store/settings";
 
 /**
