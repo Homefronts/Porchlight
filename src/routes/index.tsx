@@ -21,17 +21,16 @@ import {
   SlidersHorizontalIcon,
 } from "lucide-react";
 import { RewindHomeCard } from "@/components/rewind/open-rewind";
+import { PageTitle, useLookFamily } from "@/components/theme/look-type";
+import { useAccounts } from "@/lib/store/accounts";
+import { firstName, greeting } from "@/lib/greeting";
 
 const HOME_KEY = ["home", "v2"];
 
 /** The pinned title row: 12px above, a 36px button row, 20px below. */
 const HEADER_HEIGHT = 68;
-/**
- * Where the scroller's fade ends. The fade is 32px tall, so it starts
- * 8px under the button row rather than against it, and the content
- * begins right where it ends, so nothing is faded at rest.
- */
-const FADE_EDGE = HEADER_HEIGHT + 20;
+/** Liner's 48px serif greeting outgrows the button row. */
+const LINER_HEADER_HEIGHT = 80;
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -95,6 +94,13 @@ function HomePage() {
   // to the scroller's box, and the header never moves. A painted
   // header background would not do: the ambient backdrop is fixed
   // behind everything, so an opaque band would sit visibly on it.
+  const family = useLookFamily();
+  const headerHeight =
+    family === "liner" ? LINER_HEADER_HEIGHT : HEADER_HEIGHT;
+  // Where the scroller's fade ends. The fade is 32px tall, so it starts
+  // 8px under the button row rather than against it, and the content
+  // begins right where it ends, so nothing is faded at rest.
+  const fadeEdge = headerHeight + 20;
   const pageRef = useRef<HTMLDivElement>(null);
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   // Layout effect: the slot is found before first paint, so the header
@@ -108,19 +114,21 @@ function HomePage() {
       ) ?? null,
     );
     scroller.classList.add("route-header-fade");
-    scroller.style.setProperty("--route-header-fade", `${FADE_EDGE}px`);
+    scroller.style.setProperty("--route-header-fade", `${fadeEdge}px`);
     return () => {
       scroller.classList.remove("route-header-fade");
       scroller.style.removeProperty("--route-header-fade");
     };
-  }, []);
+  }, [fadeEdge]);
 
   const header = (
     <div
       className="flex items-center justify-between gap-4 px-6 pb-5 pt-3"
-      style={{ height: HEADER_HEIGHT }}
+      style={{ height: headerHeight }}
     >
-      <h1 className="text-3xl font-bold tracking-tight">Home</h1>
+      <PageTitle>
+        {family === "classic" ? "Home" : <Greeting />}
+      </PageTitle>
       <div className="flex items-center gap-2">
         {isFetching && !isLoading && !isFetchingNextPage ? (
           <span className="mr-1 text-xs text-muted-foreground">Updating…</span>
@@ -178,7 +186,7 @@ function HomePage() {
     <div
       ref={pageRef}
       className="flex flex-col px-6 pb-6"
-      style={{ paddingTop: FADE_EDGE - 12 }}
+      style={{ paddingTop: fadeEdge - 12 }}
     >
       {slot ? createPortal(header, slot) : null}
       <HomeConfigureDialog
@@ -214,7 +222,7 @@ function HomePage() {
           <ShelfCarousel
             key={shelf.id}
             shelf={shelf}
-            side={i === 0 ? "A" : undefined}
+            index={i}
             vinylOnFirst={i === 0}
           />
         ))}
@@ -231,6 +239,18 @@ function HomePage() {
         ) : null}
       </div>
     </div>
+  );
+}
+
+/** "Good evening, Alex." with the name set off, as on the sleeve. */
+function Greeting() {
+  const name = firstName(useAccounts().data?.find((a) => a.isActive)?.name);
+  const hello = greeting(new Date().getHours());
+  if (!name) return <>{hello}.</>;
+  return (
+    <>
+      {hello}, <i className="text-muted-foreground">{name}.</i>
+    </>
   );
 }
 

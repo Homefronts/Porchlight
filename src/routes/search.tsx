@@ -30,6 +30,12 @@ import { ShelfCard } from "@/components/shared/shelf-card";
 import { TrackList } from "@/components/shared/track-list";
 import { Thumbnail } from "@/components/shared/thumbnail";
 import { TrackContextMenu } from "@/components/shared/track-context-menu";
+import { SectionLabel } from "@/components/theme/section-label";
+import {
+  PageTitle,
+  recordTitleClass,
+  useLookFamily,
+} from "@/components/theme/look-type";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { frostedSurface } from "@/components/ui/frosted";
@@ -119,9 +125,7 @@ function SearchPage() {
   return (
     <div className="flex flex-col gap-6 px-6 pb-6 pt-3">
       <div className="flex items-baseline justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">
-          {query ? `Results for "${query}"` : "Search"}
-        </h1>
+        <PageTitle>{query ? `Results for "${query}"` : "Search"}</PageTitle>
         {scope === "catalog" && isFetching && !isLoading ? (
           <span className="text-xs text-muted-foreground">Searching…</span>
         ) : null}
@@ -349,13 +353,17 @@ function AllResults({ data }: { data: SearchResults }) {
     return <NoResults query={query} />;
   }
 
+  // Side letters run over the sections actually shown, top result first.
+  let next = topResult ? 1 : 0;
+  const sideOf = sections.map((s) => (s.items.length ? next++ : -1));
+
   return (
     <div className="flex flex-col gap-8">
       {topResult ? (
         <TopResultHero item={topResult} action={data.topResultAction} />
       ) : null}
 
-      {sections.map((s) => {
+      {sections.map((s, i) => {
         if (s.items.length === 0) {
           return s.loading ? (
             <ShelfSkeleton key={s.filter} title={s.title} display={s.display} />
@@ -377,12 +385,9 @@ function AllResults({ data }: { data: SearchResults }) {
         if (s.display === "list") {
           return (
             <section key={s.filter} className="flex flex-col gap-3">
-              <div className="flex items-baseline justify-between gap-3 px-1">
-                <h2 className="truncate text-xl font-semibold tracking-tight">
-                  {s.title}
-                </h2>
-                {showAll}
-              </div>
+              <SectionLabel index={sideOf[i]} action={showAll}>
+                {s.title}
+              </SectionLabel>
               <TrackList tracks={s.items} />
             </section>
           );
@@ -393,7 +398,14 @@ function AllResults({ data }: { data: SearchResults }) {
           title: s.title,
           items: s.items,
         };
-        return <ShelfCarousel key={s.filter} shelf={shelf} action={showAll} />;
+        return (
+          <ShelfCarousel
+            key={s.filter}
+            shelf={shelf}
+            action={showAll}
+            index={sideOf[i]}
+          />
+        );
       })}
     </div>
   );
@@ -407,11 +419,12 @@ function TopResultHero({
   action?: TopResultAction;
 }) {
   const [pending, setPending] = useState(false);
+  const family = useLookFamily();
   const radius = item.round
     ? "rounded-full"
     : item.kind === "album" || item.kind === "playlist"
-      ? "rounded-lg"
-      : "rounded-md";
+      ? "rounded-[var(--radius-cover,var(--radius-lg))]"
+      : "rounded-[var(--radius-cover,var(--radius-md))]";
   const isEntity =
     item.kind === "artist" || item.kind === "album" || item.kind === "playlist";
 
@@ -489,13 +502,18 @@ function TopResultHero({
           <div
             aria-hidden="true"
             className={cn(
-              "pointer-events-none absolute inset-0 border border-hairline",
+              "look-cover-shadow pointer-events-none absolute inset-0 border border-hairline",
               radius,
             )}
           />
         </div>
         <div className="flex min-w-0 flex-col gap-1">
-          <span className="truncate text-3xl font-bold tracking-tight">
+          <span
+            className={cn(
+              "truncate text-3xl font-bold tracking-tight",
+              recordTitleClass(family),
+            )}
+          >
             {item.title}
           </span>
           {item.subtitle ? (
@@ -533,7 +551,13 @@ function TopResultHero({
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="px-1 text-xl font-semibold tracking-tight">Top result</h2>
+      {/* Classic keeps its block heading: the label's flex row would
+          shave a subpixel off the last letter. */}
+      {family === "classic" ? (
+        <h2 className="px-1 text-xl font-semibold tracking-tight">Top result</h2>
+      ) : (
+        <SectionLabel index={0}>Top result</SectionLabel>
+      )}
       {item.kind === "song" || item.kind === "video" ? (
         <TrackContextMenu item={item}>{card}</TrackContextMenu>
       ) : (

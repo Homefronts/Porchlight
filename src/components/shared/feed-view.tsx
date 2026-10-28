@@ -5,6 +5,7 @@ import { ShelfCarousel } from "@/components/shared/shelf-carousel";
 import { ShelfGrid } from "@/components/shared/shelf-grid";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Shelf } from "@/lib/innertube/types";
+import { PageTitle } from "@/components/theme/look-type";
 
 export type FeedPage = {
   shelves: Shelf[];
@@ -70,7 +71,7 @@ export function FeedView({
   return (
     <div className="flex flex-col gap-8 px-6 pb-6 pt-3">
       <div className="flex items-baseline justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+        <PageTitle>{title}</PageTitle>
         {isFetching && !isLoading && !isFetchingNextPage ? (
           <span className="text-xs text-muted-foreground">Updating…</span>
         ) : null}
@@ -99,11 +100,11 @@ export function FeedView({
 
       {isLoading ? <FeedSkeleton /> : null}
 
-      {shelves.map((shelf) =>
+      {shelves.map((shelf, i) =>
         shelf.display === "grid" ? (
-          <ShelfGrid key={shelf.id} shelf={shelf} />
+          <ShelfGrid key={shelf.id} shelf={shelf} index={i} />
         ) : (
-          <ShelfCarousel key={shelf.id} shelf={shelf} />
+          <ShelfCarousel key={shelf.id} shelf={shelf} index={i} />
         ),
       )}
 

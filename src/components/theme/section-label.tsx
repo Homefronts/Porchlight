@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useActiveLook } from "@/lib/theme/store";
+import { cn } from "@/lib/utils";
 
 type Props = {
   /** The section title. */
@@ -16,10 +17,20 @@ type Props = {
   subtitle?: ReactNode;
 };
 
+/** Side letter for a section position: 0 is A, 25 is Z, 26 is AA. */
+export function sideLetter(index: number): string {
+  let s = "";
+  for (let n = index + 1; n > 0; n = Math.floor((n - 1) / 26)) {
+    s = String.fromCharCode(65 + ((n - 1) % 26)) + s;
+  }
+  return s;
+}
+
 /**
  * A section heading. With the look's `numbers` touch it is a ruled mono
  * label ("SIDE A · LISTEN AGAIN", count on the right); otherwise the plain
- * shelf heading.
+ * shelf heading. The liner label has no room for `subtitle`: the count
+ * takes the right side, as on the sleeve mockup.
  */
 export function SectionLabel({
   children,
@@ -29,12 +40,18 @@ export function SectionLabel({
   action,
   subtitle,
 }: Props) {
-  const numbers = useActiveLook().touches.numbers;
+  const look = useActiveLook();
+  const numbers = look.touches.numbers;
 
   if (!numbers) {
     return (
       <div className="flex items-baseline justify-between gap-3 px-1">
-        <h2 className="truncate text-xl font-semibold tracking-tight">
+        <h2
+          className={cn(
+            "truncate text-xl font-semibold tracking-tight",
+            look.base === "ink" && "font-medium",
+          )}
+        >
           {children}
         </h2>
         {action ? (
@@ -48,8 +65,7 @@ export function SectionLabel({
     );
   }
 
-  const letter =
-    side ?? (index !== undefined ? String.fromCharCode(65 + index) : null);
+  const letter = side ?? (index !== undefined ? sideLetter(index) : null);
   return (
     <div className="flex items-baseline justify-between gap-3 border-t border-border px-1 pt-2 font-meta text-[11px] uppercase tracking-[0.08em] text-t10">
       <h2 className="truncate">

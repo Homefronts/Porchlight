@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { ShelfCard } from "@/components/shared/shelf-card";
-import { SectionLabel } from "@/components/theme/section-label";
+import { SectionLabel, sideLetter } from "@/components/theme/section-label";
 import { cn } from "@/lib/utils";
 import { useAiFilter } from "@/lib/ai/use-ai";
 import type { Shelf } from "@/lib/innertube/types";
@@ -9,13 +9,13 @@ type Props = {
   shelf: Shelf;
   /** Optional control rendered at the right of the shelf header (e.g. "Show all"). */
   action?: ReactNode;
-  /** Liner side letter for the header ("A"), shown when the look numbers things. */
-  side?: string;
+  /** Shelf position on the page: gives its side letter and card numbers (A1, A2…). */
+  index?: number;
   /** Put the vinyl touch behind the first card's cover. */
   vinylOnFirst?: boolean;
 };
 
-export function ShelfCarousel({ shelf, action, side, vinylOnFirst }: Props) {
+export function ShelfCarousel({ shelf, action, index, vinylOnFirst }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const items = useAiFilter()(shelf.items);
 
@@ -123,6 +123,7 @@ export function ShelfCarousel({ shelf, action, side, vinylOnFirst }: Props) {
 
   // A shelf that was all AI is dropped rather than shown empty.
   if (items.length === 0 && shelf.items.length > 0) return null;
+  const side = index !== undefined ? sideLetter(index) : undefined;
   return (
     <section className="shelf-hover-scrollbar flex flex-col gap-3">
       <SectionLabel
@@ -153,7 +154,11 @@ export function ShelfCarousel({ shelf, action, side, vinylOnFirst }: Props) {
                   : "w-44 md:w-48 lg:w-52",
               )}
             >
-              <ShelfCard item={item} vinyl={vinylOnFirst && i === 0} />
+              <ShelfCard
+                item={item}
+                vinyl={vinylOnFirst && i === 0}
+                number={side ? `${side}${i + 1}` : undefined}
+              />
             </div>
           );
         })}

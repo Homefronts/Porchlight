@@ -7,6 +7,8 @@ import { EntityHeader } from "@/components/shared/entity-header";
 import { ShelfCard } from "@/components/shared/shelf-card";
 import { TrackList } from "@/components/shared/track-list";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PageTitle, useLookFamily } from "@/components/theme/look-type";
+import { SectionLabel } from "@/components/theme/section-label";
 import type { Shelf } from "@/lib/innertube/types";
 
 /**
@@ -84,7 +86,7 @@ function BrowsePageView() {
           keepSubtitleInCompact
         />
       ) : (
-        <h1 className="text-3xl font-bold tracking-tight">{t || "Browse"}</h1>
+        <PageTitle>{t || "Browse"}</PageTitle>
       )}
 
       {error ? (
@@ -108,10 +110,11 @@ function BrowsePageView() {
 
       {isLoading ? <BrowseSkeleton /> : null}
 
-      {shelves.map((shelf) => (
+      {shelves.map((shelf, i) => (
         <BrowseShelf
           key={shelf.id}
           shelf={shelf}
+          index={i}
           showTitle={shelves.length > 1}
           showPlays={isTopSongs}
         />
@@ -133,27 +136,35 @@ function BrowsePageView() {
 
 function BrowseShelf({
   shelf,
+  index,
   showTitle,
   showPlays,
 }: {
   shelf: Shelf;
+  index: number;
   showTitle: boolean;
   showPlays: boolean;
 }) {
+  const family = useLookFamily();
   // Synthetic "Section N" titles carry no information — hide them.
-  const title =
+  const raw =
     showTitle && !/^Section \d+$/.test(shelf.title) ? shelf.title : null;
+  // Classic keeps its block heading: the label's flex row would shave a
+  // subpixel off the last letter.
+  const title = !raw ? null : family === "classic" ? (
+    <h2 className="truncate px-1 text-xl font-semibold tracking-tight">
+      {raw}
+    </h2>
+  ) : (
+    <SectionLabel index={index}>{raw}</SectionLabel>
+  );
 
   if (shelf.display === "list") {
     const tracks = shelf.items.filter((i) => i.kind === "song");
     if (tracks.length === 0) return null;
     return (
       <section className="flex flex-col gap-3">
-        {title ? (
-          <h2 className="truncate px-1 text-xl font-semibold tracking-tight">
-            {title}
-          </h2>
-        ) : null}
+        {title}
         <TrackList tracks={tracks} showPlays={showPlays} />
       </section>
     );
@@ -161,11 +172,7 @@ function BrowseShelf({
 
   return (
     <section className="flex flex-col gap-3">
-      {title ? (
-        <h2 className="truncate px-1 text-xl font-semibold tracking-tight">
-          {title}
-        </h2>
-      ) : null}
+      {title}
       <div className="grid w-full gap-2 grid-cols-[repeat(auto-fill,minmax(min(100%,11rem),1fr))] [&>*]:max-w-[16rem]">
         {shelf.items.map((item) => (
           <ShelfCard key={`${item.kind}:${item.id}`} item={item} />

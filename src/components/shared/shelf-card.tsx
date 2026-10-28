@@ -64,6 +64,8 @@ import { usePlaylistInAppLibrary } from "@/lib/ai/use-in-library";
 import { ExplicitBadge } from "@/components/shared/explicit-badge";
 import { AiTag } from "@/components/shared/ai-badge";
 import { Vinyl } from "@/components/theme/vinyl";
+import { TrackNumber } from "@/components/theme/section-label";
+import { recordTitleClass, useLookFamily } from "@/components/theme/look-type";
 import type { ShelfItem } from "@/lib/innertube/types";
 
 type Props = {
@@ -71,6 +73,8 @@ type Props = {
   className?: string;
   /** Show the vinyl touch behind the cover. */
   vinyl?: boolean;
+  /** Liner track number ("A1"), shown when the look numbers things. */
+  number?: string;
 };
 
 // Per-category icons for Moods & Genres tiles. The InnerTube payload only
@@ -145,7 +149,8 @@ function pickCategoryIcon(title: string): LucideIcon {
 const CARD_CLASS =
   "group flex w-full flex-col gap-2 rounded-lg p-2 text-left transition-colors hover:bg-accent/60 focus-visible:bg-accent focus-visible:outline-none";
 
-export function ShelfCard({ item, className, vinyl }: Props) {
+export function ShelfCard({ item, className, vinyl, number }: Props) {
+  const family = useLookFamily();
   const subtitle =
     item.subtitle ??
     item.artists?.map((a) => a.name).join(", ") ??
@@ -158,11 +163,12 @@ export function ShelfCard({ item, className, vinyl }: Props) {
   // record sleeve" vs the tighter rounding on songs/videos.
   const isAlbumOrPlaylist =
     item.kind === "album" || item.kind === "playlist";
+  // The look's cover radius wins; Classic sets none and keeps these.
   const radiusClass = item.round
     ? "rounded-full"
     : isAlbumOrPlaylist
-      ? "rounded-lg"
-      : "rounded-md";
+      ? "rounded-[var(--radius-cover,var(--radius-lg))]"
+      : "rounded-[var(--radius-cover,var(--radius-md))]";
 
   // Only playlists are hideable, so this is always false for other kinds
   // — the badge below scopes itself to hidden playlists. Reading it here
@@ -209,7 +215,7 @@ export function ShelfCard({ item, className, vinyl }: Props) {
         <div
           aria-hidden="true"
           className={cn(
-            "pointer-events-none absolute inset-0 border border-hairline",
+            "look-cover-shadow pointer-events-none absolute inset-0 border border-hairline",
             radiusClass,
           )}
         />
@@ -240,13 +246,18 @@ export function ShelfCard({ item, className, vinyl }: Props) {
         ) : null}
       </div>
       <div className="flex min-w-0 flex-col gap-0.5">
+        {number ? <TrackNumber value={number} /> : null}
         <div
           className={cn(
             "flex min-w-0 items-center gap-1.5",
             item.round && "justify-center",
           )}
         >
-          <span className="truncate text-sm font-medium">{item.title}</span>
+          <span
+            className={cn("truncate text-sm font-medium", recordTitleClass(family))}
+          >
+            {item.title}
+          </span>
           {item.explicit ? <ExplicitBadge /> : null}
           <AiTag item={item} />
         </div>
@@ -292,7 +303,12 @@ export function ShelfCard({ item, className, vinyl }: Props) {
           className="relative z-10 size-5 shrink-0"
           style={{ color: tint }}
         />
-        <span className="relative z-10 min-w-0 flex-1 truncate text-sm font-medium text-t1">
+        <span
+          className={cn(
+            "relative z-10 min-w-0 flex-1 truncate text-sm font-medium text-t1",
+            recordTitleClass(family),
+          )}
+        >
           {item.title}
         </span>
         <ChevronRightIcon className="relative z-10 size-4 shrink-0 text-t7" />

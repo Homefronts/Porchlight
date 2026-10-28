@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShelfCard } from "@/components/shared/shelf-card";
 import { TrackList } from "@/components/shared/track-list";
+import { PageTitle } from "@/components/theme/look-type";
 import {
   fetchLibraryAlbums,
   fetchLibraryArtists,
@@ -55,7 +56,7 @@ function LibraryPage() {
 
   return (
     <div className="flex flex-col gap-6 px-6 pb-6 pt-3">
-      <h1 className="text-3xl font-bold tracking-tight">Library</h1>
+      <PageTitle>Library</PageTitle>
       <AnimatedTabs
         activeTab={tab}
         onChange={setTab}

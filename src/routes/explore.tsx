@@ -9,6 +9,8 @@ import {
 import { ArtworkOutline } from "@/components/shared/artwork-outline";
 import { FeedView } from "@/components/shared/feed-view";
 import { fetchExploreFeedPage } from "@/lib/innertube/explore";
+import { recordTitleClass, useLookFamily } from "@/components/theme/look-type";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/explore")({
   component: ExplorePage,
@@ -47,6 +49,7 @@ const SUBPAGES: {
 ];
 
 function ExplorePage() {
+  const family = useLookFamily();
   // The Explore feed has a top "grid of nav buttons" shelf that points
   // back at /charts, /new-releases, /moods — exactly what the hero tiles
   // below the title already cover. Strip those grid shelves so we don't
@@ -72,11 +75,16 @@ function ExplorePage() {
             <Link
               key={to}
               to={to}
-              className={`group relative overflow-hidden rounded-xl ${gradient} px-5 py-4 transition-transform hover:scale-[1.01] active:scale-[0.99]`}
+              className={`group relative overflow-hidden rounded-[var(--radius-cover,var(--radius-xl))] ${gradient} px-5 py-4 transition-transform hover:scale-[1.01] active:scale-[0.99]`}
             >
               <div className="flex items-center justify-between gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-xl leading-none font-semibold text-white">
+                  <span
+                    className={cn(
+                      "text-xl leading-none font-semibold text-white",
+                      recordTitleClass(family),
+                    )}
+                  >
                     {label}
                   </span>
                   <span className="text-sm leading-none text-white/70">
@@ -90,7 +98,7 @@ function ExplorePage() {
                   <ArtworkOutline className="rounded-full" />
                 </div>
               </div>
-              <ArtworkOutline className="rounded-xl" />
+              <ArtworkOutline className="rounded-[var(--radius-cover,var(--radius-xl))]" />
             </Link>
           ))}
           </div>
