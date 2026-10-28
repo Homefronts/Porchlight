@@ -220,10 +220,10 @@ function persistedQueueIndex(queue: QueueTrack[], index: number): number {
   return safeIndex - Math.max(0, safeIndex - before);
 }
 
-// Avoid serializing and writing the full queue on every position tick, but
-// keep saving during playback so a restart (an update, a crash) comes back
-// to the song and the moment you were at.
-const playbackStorage = createThrottledStorage(1000, safeLocalStorage);
+// Avoid writing the full queue on every position tick, but keep saving
+// during playback so a crash comes back to the song and within a few
+// seconds of the moment. Updates and Quit flush first, so they lose nothing.
+const playbackStorage = createThrottledStorage(5000, safeLocalStorage);
 
 /** Save the queue and position now, before the app goes away. */
 export function flushPlaybackSave(): void {
