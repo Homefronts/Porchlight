@@ -94,6 +94,8 @@ import {
   type AccountSummary,
 } from "@/lib/store/accounts";
 import { cn } from "@/lib/utils";
+import { useActiveLook } from "@/lib/theme/store";
+import { isLinerLook } from "@/lib/theme/looks";
 
 const NAV_ITEMS = [
   { to: "/", label: "Home", icon: IconHome, iconOn: IconHomeFilled },
@@ -145,6 +147,7 @@ const ART_BTN_CLS = "h-auto py-[7px]";
 
 export function AppSidebar() {
   const { location } = useRouterState();
+  const liner = isLinerLook(useActiveLook());
 
   // The footer's divider only earns its keep when the playlist list is
   // actually scrolling: then rows disappear under the footer and the
@@ -159,11 +162,12 @@ export function AppSidebar() {
     <Sidebar
       variant="floating"
       collapsible="icon"
+      data-liner={liner ? "" : undefined}
       // Panel chrome, per the design system: a 12px glass card with a
       // `--w110` hairline and a shallow, wide-spread shadow. The blur is
       // what makes `--glass1` read as frosted over the album-art wash
       // behind it rather than as flat translucency.
-      className="px-2 pb-2 pt-0 duration-300 ease-out [&>[data-slot=sidebar-inner]]:rounded-[12px] [&>[data-slot=sidebar-inner]]:border [&>[data-slot=sidebar-inner]]:border-w110 [&>[data-slot=sidebar-inner]]:bg-glass1 [&>[data-slot=sidebar-inner]]:shadow-[0_6px_18px_-14px_var(--k550)] [&>[data-slot=sidebar-inner]]:backdrop-blur-[24px]"
+      className="px-2 pb-2 pt-0 duration-300 ease-out [&>[data-slot=sidebar-inner]]:rounded-[var(--radius-window,12px)] [&>[data-slot=sidebar-inner]]:border [&>[data-slot=sidebar-inner]]:border-w110 [&>[data-slot=sidebar-inner]]:bg-glass1 [&>[data-slot=sidebar-inner]]:shadow-[0_6px_18px_-14px_var(--k550)] [&>[data-slot=sidebar-inner]]:backdrop-blur-[24px]"
     >
       <SidebarHeader className="flex-row items-center gap-[9px] overflow-hidden px-4 pt-4 pb-2 group-data-[collapsible=icon]:ps-3.5 group-data-[collapsible=icon]:pe-2">
         {/* Single round logo. Expanded it sits at px-4, in line with the
@@ -175,12 +179,25 @@ export function AppSidebar() {
           alt="YTubic Plus"
           className="size-7 shrink-0 rounded-full"
         />
-        <span
-          data-sidebar-label
-          className="shrink-0 text-[17px] font-semibold leading-none tracking-[-0.015em] text-t1"
-        >
-          YTubic Plus
-        </span>
+        {liner ? (
+          <span
+            data-sidebar-label
+            className="shrink-0 font-display text-[15px] font-black uppercase leading-[0.92] tracking-[-0.01em] text-t1"
+          >
+            <span>
+              YTubic
+              <br />
+              Plus<i className="not-italic text-acc1">.</i>
+            </span>
+          </span>
+        ) : (
+          <span
+            data-sidebar-label
+            className="shrink-0 font-headline text-[17px] font-semibold leading-none tracking-[-0.015em] text-t1"
+          >
+            YTubic Plus
+          </span>
+        )}
         {IS_BETA_PLATFORM && (
           <span
             data-sidebar-label
@@ -429,7 +446,7 @@ function SidebarPlaylists({
           keeping the icons centered when the rail is collapsed. */}
       <SidebarGroupContent
         ref={scrollRef}
-        className="sidebar-list-fade sidebar-list-scroll app-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
+        className="font-meta sidebar-list-fade sidebar-list-scroll app-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
       >
         <SidebarMenu>
           <SidebarMenuItem>

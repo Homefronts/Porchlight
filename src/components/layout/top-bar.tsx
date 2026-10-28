@@ -454,7 +454,7 @@ function ReportIssueDialog({
 
         {/* Right padding clears the close button. */}
         <DialogHeader className="gap-2 pr-[34px]">
-          <DialogTitle className="text-2xl font-bold leading-none tracking-[-0.02em] text-t1">
+          <DialogTitle className="font-headline text-2xl font-bold leading-none tracking-[-0.02em] text-t1">
             Report an issue
           </DialogTitle>
           <DialogDescription className="text-[13.5px] leading-[1.5] text-t4 text-pretty">

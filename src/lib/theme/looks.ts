@@ -160,3 +160,8 @@ export const BUILT_IN_LOOKS: Record<BuiltInId, Look> = {
     },
   },
 };
+
+// Liner looks share the editorial furniture (two-line logo, ▸ marker).
+// Custom looks inherit it through their base.
+export const isLinerLook = (look: Look) =>
+  look.base === "sleeve" || look.base === "paper" || look.base === "ink-liner";

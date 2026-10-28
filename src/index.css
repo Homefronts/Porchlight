@@ -1060,3 +1060,19 @@
   :is([data-transport="play"], [data-transport="pause"]) {
   color: var(--background);
 }
+
+/* Liner looks mark the active sidebar row with an accent ▸ in the icon
+   gutter; aria-current on the link stays the screen-reader signal. */
+[data-liner] [data-sidebar="menu-button"][data-active="true"] {
+  background: transparent;
+}
+[data-liner] [data-sidebar="menu-button"][data-active="true"]::before {
+  content: "▸";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 50%;
+  translate: 0 -50%;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--acc1);
+}

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { BUILT_IN_LOOKS, type BuiltInId } from "./looks";
+import { BUILT_IN_LOOKS, isLinerLook, type BuiltInId } from "./looks";
 import { contrastRatio, deriveTokens } from "./tokens";
 
 const nonClassic = (Object.keys(BUILT_IN_LOOKS) as BuiltInId[]).filter(
@@ -65,5 +65,15 @@ describe("contrastRatio", () => {
   it("matches the WCAG extremes", () => {
     expect(contrastRatio("#000000", "#ffffff")).toBeCloseTo(21, 1);
     expect(contrastRatio("#777777", "#777777")).toBe(1);
+  });
+});
+
+describe("isLinerLook", () => {
+  it("is true for the Liner bases only", () => {
+    expect(nonClassic.filter((id) => isLinerLook(BUILT_IN_LOOKS[id]))).toEqual([
+      "sleeve",
+      "paper",
+      "ink-liner",
+    ]);
   });
 });
