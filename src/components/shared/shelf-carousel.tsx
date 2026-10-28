@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { ShelfCard } from "@/components/shared/shelf-card";
+import { SectionLabel } from "@/components/theme/section-label";
 import { cn } from "@/lib/utils";
 import { useAiFilter } from "@/lib/ai/use-ai";
 import type { Shelf } from "@/lib/innertube/types";
@@ -8,9 +9,13 @@ type Props = {
   shelf: Shelf;
   /** Optional control rendered at the right of the shelf header (e.g. "Show all"). */
   action?: ReactNode;
+  /** Liner side letter for the header ("A"), shown when the look numbers things. */
+  side?: string;
+  /** Put the vinyl touch behind the first card's cover. */
+  vinylOnFirst?: boolean;
 };
 
-export function ShelfCarousel({ shelf, action }: Props) {
+export function ShelfCarousel({ shelf, action, side, vinylOnFirst }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const items = useAiFilter()(shelf.items);
 
@@ -120,24 +125,20 @@ export function ShelfCarousel({ shelf, action }: Props) {
   if (items.length === 0 && shelf.items.length > 0) return null;
   return (
     <section className="shelf-hover-scrollbar flex flex-col gap-3">
-      <div className="flex items-baseline justify-between gap-3 px-1">
-        <h2 className="truncate text-xl font-semibold tracking-tight">
-          {shelf.title}
-        </h2>
-        {action ? (
-          <div className="shrink-0">{action}</div>
-        ) : shelf.subtitle ? (
-          <span className="truncate text-sm text-muted-foreground">
-            {shelf.subtitle}
-          </span>
-        ) : null}
-      </div>
+      <SectionLabel
+        side={side}
+        count={items.length}
+        action={action}
+        subtitle={shelf.subtitle}
+      >
+        {shelf.title}
+      </SectionLabel>
 
       <div
         ref={scrollRef}
         className="shelf-scroll shelf-edge-fade flex min-w-0 gap-2 overflow-x-auto overflow-y-hidden pb-1"
       >
-        {items.map((item) => {
+        {items.map((item, i) => {
           // Video covers keep the cover height equal to a square (album)
           // card by widening the slot to 16/9 — preserves the video
           // aspect without making the row visually uneven.
@@ -152,7 +153,7 @@ export function ShelfCarousel({ shelf, action }: Props) {
                   : "w-44 md:w-48 lg:w-52",
               )}
             >
-              <ShelfCard item={item} />
+              <ShelfCard item={item} vinyl={vinylOnFirst && i === 0} />
             </div>
           );
         })}

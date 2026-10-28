@@ -210,8 +210,13 @@ function HomePage() {
 
         {isLoading ? <HomeSkeleton /> : null}
 
-        {shelves.map((shelf) => (
-          <ShelfCarousel key={shelf.id} shelf={shelf} />
+        {shelves.map((shelf, i) => (
+          <ShelfCarousel
+            key={shelf.id}
+            shelf={shelf}
+            side={i === 0 ? "A" : undefined}
+            vinylOnFirst={i === 0}
+          />
         ))}
 
         {hasNextPage ? (

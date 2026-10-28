@@ -1,16 +1,7 @@
-// Transport glyphs (play / pause / prev / next) stay on Lucide — they
-// read better filled at this size than the Tabler equivalents. The
-// footer row is Tabler, per the design.
-import {
-  PlayIcon,
-  PauseIcon,
-  SkipBackIcon,
-  SkipForwardIcon,
-  ShuffleIcon,
-  RepeatIcon,
-  Repeat1Icon,
-  Loader2Icon,
-} from "lucide-react";
+// Transport glyphs (play / pause / prev / next) stay on Lucide, via
+// TransportLabel — they read better filled at this size than the Tabler
+// equivalents. The footer row is Tabler, per the design.
+import { Loader2Icon } from "lucide-react";
 import {
   IconArrowsMaximize,
   IconLoader2,
@@ -37,6 +28,8 @@ import { AiTag } from "@/components/shared/ai-badge";
 import { AnimatePresence, motion } from "motion/react";
 import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
+import { TapeCounter } from "@/components/theme/tape-counter";
+import { TransportLabel } from "@/components/theme/transport-label";
 import {
   Tooltip,
   TooltipContent,
@@ -658,20 +651,27 @@ export function PlayerBar({
         </div>
 
         {/* Progress */}
-        <div className="mt-2 flex flex-col gap-2.5">
-          <ProgressSlider
-            position={position}
-            duration={duration}
-            scrub={scrub}
-            setScrub={setScrub}
-            seek={seek}
-            disabled={!hasTrack || duration <= 0}
-          />
-          <div className="flex justify-between text-xs tabular-nums text-muted-foreground">
-            <span>{formatTime(scrub ?? position)}</span>
-            <span>{formatTime(duration)}</span>
+        <TapeCounter
+          current={position}
+          total={duration}
+          onSeek={seek}
+          disabled={!hasTrack || duration <= 0}
+        >
+          <div className="mt-2 flex flex-col gap-2.5">
+            <ProgressSlider
+              position={position}
+              duration={duration}
+              scrub={scrub}
+              setScrub={setScrub}
+              seek={seek}
+              disabled={!hasTrack || duration <= 0}
+            />
+            <div className="flex justify-between text-xs tabular-nums text-muted-foreground">
+              <span>{formatTime(scrub ?? position)}</span>
+              <span>{formatTime(duration)}</span>
+            </div>
           </div>
-        </div>
+        </TapeCounter>
 
         {/* Main controls */}
         <div className="-mt-2 flex items-center justify-center gap-1">
@@ -683,7 +683,7 @@ export function PlayerBar({
             onClick={() => setShuffle(!shuffle)}
             className={cn(shuffle && "text-brand")}
           >
-            <ShuffleIcon />
+            <TransportLabel kind="shuffle" />
           </Button>
           <Button
             variant="ghost"
@@ -692,7 +692,7 @@ export function PlayerBar({
             onClick={prev}
             disabled={!hasTrack}
           >
-            <SkipBackIcon className="fill-current" />
+            <TransportLabel kind="prev" />
           </Button>
           <Button
             size="icon"
@@ -703,10 +703,8 @@ export function PlayerBar({
           >
             {loading ? (
               <Loader2Icon className="animate-spin" />
-            ) : playing ? (
-              <PauseIcon className="fill-current" />
             ) : (
-              <PlayIcon className="fill-current" />
+              <TransportLabel kind={playing ? "pause" : "play"} />
             )}
           </Button>
           <Button
@@ -716,7 +714,7 @@ export function PlayerBar({
             onClick={next}
             disabled={!hasTrack}
           >
-            <SkipForwardIcon className="fill-current" />
+            <TransportLabel kind="next" />
           </Button>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -728,7 +726,9 @@ export function PlayerBar({
                 onClick={cycleRepeat}
                 className={cn(repeat !== "off" && "text-brand")}
               >
-                {repeat === "one" ? <Repeat1Icon /> : <RepeatIcon />}
+                <TransportLabel
+                  kind={repeat === "one" ? "repeat-one" : "repeat"}
+                />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{repeatLabel(repeat)}</TooltipContent>

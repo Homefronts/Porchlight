@@ -63,11 +63,14 @@ import {
 import { usePlaylistInAppLibrary } from "@/lib/ai/use-in-library";
 import { ExplicitBadge } from "@/components/shared/explicit-badge";
 import { AiTag } from "@/components/shared/ai-badge";
+import { Vinyl } from "@/components/theme/vinyl";
 import type { ShelfItem } from "@/lib/innertube/types";
 
 type Props = {
   item: ShelfItem;
   className?: string;
+  /** Show the vinyl touch behind the cover. */
+  vinyl?: boolean;
 };
 
 // Per-category icons for Moods & Genres tiles. The InnerTube payload only
@@ -142,7 +145,7 @@ function pickCategoryIcon(title: string): LucideIcon {
 const CARD_CLASS =
   "group flex w-full flex-col gap-2 rounded-lg p-2 text-left transition-colors hover:bg-accent/60 focus-visible:bg-accent focus-visible:outline-none";
 
-export function ShelfCard({ item, className }: Props) {
+export function ShelfCard({ item, className, vinyl }: Props) {
   const subtitle =
     item.subtitle ??
     item.artists?.map((a) => a.name).join(", ") ??
@@ -190,6 +193,7 @@ export function ShelfCard({ item, className }: Props) {
           isVideo ? "aspect-video" : "aspect-square",
         )}
       >
+        {vinyl ? <Vinyl /> : null}
         {isLiked ? (
           <LikedCover className={cn("size-full", radiusClass)} />
         ) : (
