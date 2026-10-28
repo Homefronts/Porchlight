@@ -1,9 +1,5 @@
 import { create, type StateCreator } from "zustand";
-import {
-  createJSONStorage,
-  persist,
-  type StateStorage,
-} from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 import { emit } from "@tauri-apps/api/event";
 import type { ShelfItem, Thumbnail } from "@/lib/innertube/types";
 import type { RadioChip } from "@/lib/innertube/radio";
@@ -11,6 +7,7 @@ import { shelfItemToTrack } from "@/lib/queue-track";
 import { isFloatingPlayerWindow } from "@/lib/floating-player";
 import { usePlaybackSettings } from "./playback-settings";
 import { safeLocalStorage } from "./safe-storage";
+import { createThrottledStorage } from "./throttled-storage";
 import { isAiBlocked } from "@/lib/ai/use-ai";
 
 export type QueueTrack = {
@@ -223,30 +220,19 @@ function persistedQueueIndex(queue: QueueTrack[], index: number): number {
   return safeIndex - Math.max(0, safeIndex - before);
 }
 
-/** Avoid serializing and writing the full queue on every position tick. */
-function createDebouncedStorage(delay = 1000): StateStorage {
-  if (typeof window === "undefined") return safeLocalStorage;
-  const pending = new Map<string, { value: string; timer: number }>();
-  return {
-    getItem: (name) => safeLocalStorage.getItem(name),
-    setItem: (name, value) => {
-      const existing = pending.get(name);
-      if (existing) window.clearTimeout(existing.timer);
-      const timer = window.setTimeout(() => {
-        const item = pending.get(name);
-        if (!item) return;
-        safeLocalStorage.setItem(name, item.value);
-        pending.delete(name);
-      }, delay);
-      pending.set(name, { value, timer });
-    },
-    removeItem: (name) => {
-      const existing = pending.get(name);
-      if (existing) window.clearTimeout(existing.timer);
-      pending.delete(name);
-      safeLocalStorage.removeItem(name);
-    },
-  };
+// Avoid serializing and writing the full queue on every position tick, but
+// keep saving during playback so a restart (an update, a crash) comes back
+// to the song and the moment you were at.
+const playbackStorage = createThrottledStorage(1000, safeLocalStorage);
+
+/** Save the queue and position now, before the app goes away. */
+export function flushPlaybackSave(): void {
+  playbackStorage.flush();
+}
+
+if (typeof window !== "undefined" && !isFloatingPlayerWindow()) {
+  window.addEventListener("pagehide", flushPlaybackSave);
+  window.addEventListener("beforeunload", flushPlaybackSave);
 }
 
 const playbackStateCreator: StateCreator<PlaybackState> = (set, get) => ({
@@ -655,7 +641,7 @@ export const usePlaybackStore = isFloatingPlayerWindow()
         // auto-blasts audio at you. `position` is saved too, and kept on
         // rehydrate only when "Resume where you left off" is on; the audio
         // engine seeks there once the track's metadata has loaded.
-        storage: createJSONStorage(() => createDebouncedStorage()),
+        storage: createJSONStorage(() => playbackStorage),
         partialize: persistedPlayback,
         onRehydrateStorage: () => (state) => {
           if (!state) return;
