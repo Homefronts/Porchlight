@@ -2983,6 +2983,33 @@ async fn save_png(app: tauri::AppHandle, bytes: Vec<u8>, name: String) -> Result
     Ok(true)
 }
 
+/// Saves a text file (theme files) through the native save dialog.
+/// `Ok(false)` when the user cancels.
+#[tauri::command]
+async fn save_text_file(
+    app: tauri::AppHandle,
+    contents: String,
+    name: String,
+    filter_name: String,
+    ext: String,
+) -> Result<bool, String> {
+    use tauri_plugin_dialog::DialogExt;
+    let picked = tauri::async_runtime::spawn_blocking(move || {
+        app.dialog()
+            .file()
+            .add_filter(&filter_name, &[ext.as_str()])
+            .set_file_name(&name)
+            .blocking_save_file()
+    })
+    .await
+    .map_err(|e| e.to_string())?;
+    let Some(path) = picked.and_then(|f| f.into_path().ok()) else {
+        return Ok(false);
+    };
+    std::fs::write(&path, contents).map_err(|e| format!("save file: {e}"))?;
+    Ok(true)
+}
+
 #[derive(serde::Serialize)]
 struct CacheEntry {
     #[serde(rename = "videoId")]
@@ -4394,6 +4421,7 @@ pub fn run() {
         .manage(lastfm::LastfmState::default())
         .invoke_handler(tauri::generate_handler![
             save_png,
+            save_text_file,
             ensure_ytdlp,
             check_ytdlp_update,
             resolve_stream_ytdlp,
