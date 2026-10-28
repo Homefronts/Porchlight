@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { ArtworkOutline } from "@/components/shared/artwork-outline";
 import { Thumbnail } from "@/components/shared/thumbnail";
 import { cn } from "@/lib/utils";
+import { useLookFamily } from "@/components/theme/look-type";
+import { useActiveLook } from "@/lib/theme/store";
 import {
   useEntityHeaderStore,
   type EntityHeaderConfig,
@@ -36,6 +38,8 @@ const COMPACT_ROUND_INFO_LEFT = 86;
  */
 export function EntityPageHeader() {
   const config = useEntityHeaderStore((s) => s.config);
+  const family = useLookFamily();
+  const lookId = useActiveLook().id;
   const hasConfig = config !== null;
   const hasToolbar = config?.toolbar != null;
   const keepSubtitleInCompact = config?.keepSubtitleInCompact === true;
@@ -74,6 +78,14 @@ export function EntityPageHeader() {
     )
       return;
 
+    // Classic leaves --radius-cover unset: today's 12px.
+    const tokenRadius = parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue(
+        "--radius-cover",
+      ),
+    );
+    const coverRadius = Number.isNaN(tokenRadius) ? COVER_RADIUS : tokenRadius;
+    const compactCoverRadius = (coverRadius * COMPACT_COVER_RADIUS) / COVER_RADIUS;
     const toolbarHeight = hasToolbar ? TOOLBAR_HEIGHT : 0;
     const expandedTotalHeight = EXPANDED_HEIGHT + toolbarHeight;
     const compactTotalHeight = COMPACT_HEIGHT + toolbarHeight;
@@ -132,8 +144,7 @@ export function EntityPageHeader() {
       // rather than riding along at a third of its size.
       cover.dataset.compact = progress > 0.2 ? "true" : "false";
       if (!useLargeCompactAvatar) {
-        const radius =
-          COVER_RADIUS + (COMPACT_COVER_RADIUS - COVER_RADIUS) * progress;
+        const radius = coverRadius + (compactCoverRadius - coverRadius) * progress;
         cover.style.borderRadius = `${radius / coverScale}px`;
       }
       // Same compensation for the outline: a plain 1px border would be
@@ -197,6 +208,7 @@ export function EntityPageHeader() {
     keepSubtitleInCompact,
     setHeaderHeight,
     useLargeCompactAvatar,
+    lookId,
   ]);
 
   if (!config) return null;
@@ -237,6 +249,13 @@ export function EntityPageHeader() {
             highRes
           />
         )}
+        {/* Paper's offset shadow; not the outline, whose blend would wash it out. */}
+        {config.round ? null : (
+          <div
+            aria-hidden="true"
+            className="look-cover-shadow pointer-events-none absolute inset-0 rounded-[inherit]"
+          />
+        )}
         <ArtworkOutline
           ref={coverOutlineRef}
           className={config.round ? "rounded-full" : "rounded-[inherit]"}
@@ -245,7 +264,12 @@ export function EntityPageHeader() {
 
       <h1
         ref={titleRef}
-        className="pointer-events-auto absolute right-6 min-w-0 origin-top-left truncate text-[40px] font-bold leading-[1.15] tracking-tight"
+        className={cn(
+          "pointer-events-auto absolute right-6 min-w-0 origin-top-left truncate text-[40px] font-bold leading-[1.15] tracking-tight",
+          family !== "classic" && "font-headline",
+          family === "liner" && "font-normal tracking-[-0.01em]",
+          family === "ink" && "font-medium",
+        )}
         style={{ left: INFO_LEFT, top: titleTop, willChange: "transform" }}
       >
         {config.title}
@@ -266,7 +290,13 @@ export function EntityPageHeader() {
           </p>
         ) : null}
         {config.metadata ? (
-          <p className="mt-1.5 truncate text-xs text-muted-foreground">
+          <p
+            className={cn(
+              "mt-1.5 truncate text-xs text-muted-foreground",
+              family === "liner" && "font-meta uppercase tracking-[0.08em]",
+              family === "ink" && "font-meta",
+            )}
+          >
             {config.metadata}
           </p>
         ) : null}

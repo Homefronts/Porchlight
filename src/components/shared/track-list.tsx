@@ -31,6 +31,8 @@ import { ExplicitBadge } from "@/components/shared/explicit-badge";
 import { AiTag } from "@/components/shared/ai-badge";
 import { useAiBlocked, useAiFilter } from "@/lib/ai/use-ai";
 import { askPlayAnyway } from "@/components/layout/ai-toggle-button";
+import { recordTitleClass, useLookFamily } from "@/components/theme/look-type";
+import { useActiveLook } from "@/lib/theme/store";
 
 type Props = {
   tracks: ShelfItem[];
@@ -465,6 +467,8 @@ const TrackRow = memo(function TrackRow({
   onPlainClick,
 }: RowProps) {
   const held = useAiBlocked(t);
+  const family = useLookFamily();
+  const numbered = useActiveLook().touches.numbers;
   const play = () => {
     const store = usePlaybackStore.getState();
     if (isActive) return store.toggle();
@@ -482,7 +486,7 @@ const TrackRow = memo(function TrackRow({
         // outline-none: a Shift held down counts as keyboard input to
         // the focus-visible heuristic, so a Shift-click would otherwise
         // draw the UA focus ring on the row it pressed.
-        "group grid cursor-pointer items-center gap-3 rounded-lg p-2 outline-none transition-colors",
+        "group grid cursor-pointer items-center gap-3 rounded-[var(--radius-cover,var(--radius-lg))] p-2 outline-none transition-colors",
         // Selected: a neutral wash on the row, and the cover (or the
         // index) carries an accent check, the way photo pickers mark
         // a selection. No accent on the row itself, so the playing
@@ -524,14 +528,14 @@ const TrackRow = memo(function TrackRow({
             <>
               <span
                 className={cn(
-                  "text-xs tabular-nums",
+                  "font-meta text-xs tabular-nums",
                   isActive
                     ? "hidden"
                     : "text-muted-foreground group-hover:hidden",
                   isActive ? "text-brand" : "",
                 )}
               >
-                {idx + 1}
+                {numbered ? `A${idx + 1}` : idx + 1}
               </span>
               {isActive ? (
                 playing ? (
@@ -551,14 +555,14 @@ const TrackRow = memo(function TrackRow({
               <Thumbnail
                 thumbnails={t.thumbnails}
                 alt={t.title}
-                className="size-full rounded-sm"
+                className="size-full rounded-[var(--radius-cover,var(--radius-sm))]"
                 targetSize={80}
               />
-              <ArtworkOutline className="rounded-sm" />
+              <ArtworkOutline className="rounded-[var(--radius-cover,var(--radius-sm))]" />
               {selected ? (
                 <div
                   aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-sm bg-black/55"
+                  className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-[var(--radius-cover,var(--radius-sm))] bg-black/55"
                 >
                   <SelectedCheck />
                 </div>
@@ -566,7 +570,7 @@ const TrackRow = memo(function TrackRow({
               <div
                 aria-hidden="true"
                 className={cn(
-                  "pointer-events-none absolute inset-0 flex items-center justify-center rounded-sm bg-black/55 opacity-0 transition-opacity duration-150",
+                  "pointer-events-none absolute inset-0 flex items-center justify-center rounded-[var(--radius-cover,var(--radius-sm))] bg-black/55 opacity-0 transition-opacity duration-150",
                   !selected && "group-hover:opacity-100",
                 )}
               >
@@ -584,6 +588,7 @@ const TrackRow = memo(function TrackRow({
             className={cn(
               "truncate text-sm font-medium",
               isActive && "text-brand font-bold",
+              recordTitleClass(family),
             )}
           >
             {t.title}
@@ -638,7 +643,7 @@ const TrackRow = memo(function TrackRow({
         </div>
       ) : null}
 
-      <span className="shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+      <span className="shrink-0 text-right font-meta text-xs tabular-nums text-muted-foreground">
         {showPlays ? formatPlays(t.playCount) : formatDuration(t.duration)}
       </span>
 

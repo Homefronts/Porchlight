@@ -18,6 +18,7 @@ import { EntityHeader } from "@/components/shared/entity-header";
 import { ExpandableText } from "@/components/shared/expandable-text";
 import { ShelfCarousel } from "@/components/shared/shelf-carousel";
 import { TrackList } from "@/components/shared/track-list";
+import { SectionLabel } from "@/components/theme/section-label";
 import { pickHighResThumbnail } from "@/components/shared/thumbnail";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -136,7 +137,7 @@ function AboutSection({ artist }: { artist: ArtistPage }) {
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="px-1 text-xl font-semibold tracking-tight">About</h2>
+      <SectionLabel>About</SectionLabel>
       <div className="flex flex-col gap-4 rounded-lg border border-border/60 bg-surface p-4">
         {artist.description ? (
           <ExpandableText
@@ -441,12 +442,7 @@ function ListShelf({
     normalizedTitle === "from your library" ? tracks.slice(0, 5) : tracks;
   return (
     <section className="flex flex-col gap-3">
-      <div className="flex items-baseline justify-between gap-3 px-1">
-        <h2 className="truncate text-xl font-semibold tracking-tight">
-          {shelf.title}
-        </h2>
-        {action ? <div className="shrink-0">{action}</div> : null}
-      </div>
+      <SectionLabel action={action}>{shelf.title}</SectionLabel>
       {/* Top Songs carries play counts instead of duration. Other shelves
           rendered as lists (such as From your library) keep Duration. */}
       <TrackList
