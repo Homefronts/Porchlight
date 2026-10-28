@@ -1054,5 +1054,9 @@
   button:has(> [data-transport="play"], > [data-transport="pause"]) {
   padding: 5px 12px;
   background: var(--foreground);
+}
+/* On the label itself, so the muted button colour above can't win. */
+:root[data-touch-text-transport="on"]
+  :is([data-transport="play"], [data-transport="pause"]) {
   color: var(--background);
 }
