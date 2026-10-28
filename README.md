@@ -57,6 +57,7 @@ Small, quick to build.
 - [ ] **Sleep timer** — stop after X minutes or at the end of the current song.
 - [ ] **Full-screen touches** — double-click the cover to like the song, and keep the computer awake while the full-screen player is open.
 - [ ] **Remove duplicates from a playlist** — one click to drop repeated songs from your own playlists.
+- [ ] **Sort playlists by artist** — group a playlist's songs by artist with one click, alongside the usual order.
 - [ ] **"AI songs hidden" counter** — a small note in search showing how many AI results were filtered, with a way to peek.
 - [ ] **Share your AI marks** — turn your Mark as AI choices into a one-click report to the community list.
 - [ ] **Skip non-music parts of videos** — optional [SponsorBlock](https://sponsor.ajay.app) skipping of intros and skits in music videos (its "Non-Music Section" category), credited per its CC BY-NC-SA licence.
