@@ -49,7 +49,7 @@ const BUTTON =
   "font-semibold transition-colors duration-[140ms] hover:bg-w090";
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme();
+  const { theme = "system", forcedTheme } = useTheme();
   // The stack has to dodge the player: with the bottom bar it would land
   // right on top of it, so it moves to the opposite corner. Side card and
   // floating both leave the bottom of the page free.
@@ -57,7 +57,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme={(forcedTheme ?? theme) as ToasterProps["theme"]}
       position={bottomBar ? "top-right" : "bottom-center"}
       // Top right has to start below the title bar, otherwise the first
       // card sits under the window controls.

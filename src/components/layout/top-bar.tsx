@@ -345,7 +345,9 @@ function LayoutSubMenu() {
 }
 
 function ThemeSubMenu() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, forcedTheme } = useTheme();
+  // A non-Classic look fixes light/dark, so the choice is hidden.
+  if (forcedTheme) return null;
   // `theme` is undefined during the very first client render (next-themes
   // resolves it on mount). Fall back to "system" so the radio group has
   // a valid value and doesn't briefly render with nothing selected.

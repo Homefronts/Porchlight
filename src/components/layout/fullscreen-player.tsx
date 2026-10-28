@@ -107,8 +107,8 @@ function FullscreenView({ track }: { track: QueueTrack }) {
   const setOpen = useFullscreenStore((s) => s.setOpen);
   const layout = useSettingsStore((s) => s.fullscreenLayout);
   const setLayout = useSettingsStore((s) => s.setFullscreenLayout);
-  const { resolvedTheme } = useTheme();
-  const light = resolvedTheme === "light";
+  const { resolvedTheme, forcedTheme } = useTheme();
+  const light = (forcedTheme ?? resolvedTheme) === "light";
 
   const { playing, status, position, duration, shuffle, repeat } =
     usePlaybackStore(

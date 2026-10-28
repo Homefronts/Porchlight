@@ -61,7 +61,7 @@ const RATING_OPTIONS: { value: RatingButtons; label: React.ReactNode }[] = [
 ];
 
 export function AppearanceTab() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, forcedTheme } = useTheme();
   const background = useSettingsStore((s) => s.background);
   const setBackground = useSettingsStore((s) => s.setBackground);
   const rating = useSettingsStore((s) => s.ratingButtons);
@@ -72,6 +72,7 @@ export function AppearanceTab() {
   return (
     <TabPane>
       <Group>
+        {!forcedTheme && (
         <SettingRow
           icon={IconPaletteFilled}
           title="Theme"
@@ -87,6 +88,7 @@ export function AppearanceTab() {
             />
           }
         />
+        )}
         <InterfaceFontRow />
         {/* Two values, so the design gives this one a switch rather
             than a two-up segmented control. */}
