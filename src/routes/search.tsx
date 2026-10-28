@@ -551,13 +551,7 @@ function TopResultHero({
 
   return (
     <section className="flex flex-col gap-3">
-      {/* Classic keeps its block heading: the label's flex row would
-          shave a subpixel off the last letter. */}
-      {family === "classic" ? (
-        <h2 className="px-1 text-xl font-semibold tracking-tight">Top result</h2>
-      ) : (
-        <SectionLabel index={0}>Top result</SectionLabel>
-      )}
+      <SectionLabel index={0}>Top result</SectionLabel>
       {item.kind === "song" || item.kind === "video" ? (
         <TrackContextMenu item={item}>{card}</TrackContextMenu>
       ) : (

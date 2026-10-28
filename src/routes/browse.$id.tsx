@@ -7,7 +7,7 @@ import { EntityHeader } from "@/components/shared/entity-header";
 import { ShelfCard } from "@/components/shared/shelf-card";
 import { TrackList } from "@/components/shared/track-list";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PageTitle, useLookFamily } from "@/components/theme/look-type";
+import { PageTitle } from "@/components/theme/look-type";
 import { SectionLabel } from "@/components/theme/section-label";
 import type { Shelf } from "@/lib/innertube/types";
 
@@ -145,19 +145,10 @@ function BrowseShelf({
   showTitle: boolean;
   showPlays: boolean;
 }) {
-  const family = useLookFamily();
   // Synthetic "Section N" titles carry no information — hide them.
   const raw =
     showTitle && !/^Section \d+$/.test(shelf.title) ? shelf.title : null;
-  // Classic keeps its block heading: the label's flex row would shave a
-  // subpixel off the last letter.
-  const title = !raw ? null : family === "classic" ? (
-    <h2 className="truncate px-1 text-xl font-semibold tracking-tight">
-      {raw}
-    </h2>
-  ) : (
-    <SectionLabel index={index}>{raw}</SectionLabel>
-  );
+  const title = raw ? <SectionLabel index={index}>{raw}</SectionLabel> : null;
 
   if (shelf.display === "list") {
     const tracks = shelf.items.filter((i) => i.kind === "song");

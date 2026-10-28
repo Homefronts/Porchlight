@@ -9,13 +9,13 @@ type Props = {
   shelf: Shelf;
   /** Optional control rendered at the right of the shelf header (e.g. "Show all"). */
   action?: ReactNode;
-  /** Shelf position on the page: gives its side letter and card numbers (A1, A2…). */
+  /** Shelf position on the page: gives its side letter and card numbers (A1, A2 and on). */
   index?: number;
-  /** Put the vinyl touch behind the first card's cover. */
-  vinylOnFirst?: boolean;
+  /** Put the vinyl touch behind the card with this item id. */
+  vinylId?: string;
 };
 
-export function ShelfCarousel({ shelf, action, index, vinylOnFirst }: Props) {
+export function ShelfCarousel({ shelf, action, index, vinylId }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const items = useAiFilter()(shelf.items);
 
@@ -156,7 +156,7 @@ export function ShelfCarousel({ shelf, action, index, vinylOnFirst }: Props) {
             >
               <ShelfCard
                 item={item}
-                vinyl={vinylOnFirst && i === 0}
+                vinyl={item.id === vinylId}
                 number={side ? `${side}${i + 1}` : undefined}
               />
             </div>

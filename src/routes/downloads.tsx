@@ -70,6 +70,8 @@ function DownloadsPage() {
       ) : null}
       {singles.length > 0 ? (
         <section className="flex flex-col gap-2">
+          {/* Classic's heading here is looser than SectionLabel's (no
+              tracking, no inset), so it stays as it was. */}
           {family === "classic" ? (
             <h2 className="text-xl font-semibold">Songs</h2>
           ) : (

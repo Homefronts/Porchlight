@@ -24,6 +24,8 @@ import { RewindHomeCard } from "@/components/rewind/open-rewind";
 import { PageTitle, useLookFamily } from "@/components/theme/look-type";
 import { useAccounts } from "@/lib/store/accounts";
 import { firstName, greeting } from "@/lib/greeting";
+import { usePlaybackStore } from "@/lib/store/playback";
+import { vinylSpot } from "@/lib/vinyl-spot";
 
 const HOME_KEY = ["home", "v2"];
 
@@ -80,6 +82,9 @@ function HomePage() {
         (rank.get(a.s.title) ?? 0) - (rank.get(b.s.title) ?? 0) || a.i - b.i,
     )
     .map(({ s }) => s);
+
+  const playing = usePlaybackStore((s) => s.queue[s.index]);
+  const vinyl = vinylSpot(shelves, [playing?.videoId, playing?.albumId]);
 
   const [configuring, setConfiguring] = useState(false);
   const queryClient = useQueryClient();
@@ -223,7 +228,7 @@ function HomePage() {
             key={shelf.id}
             shelf={shelf}
             index={i}
-            vinylOnFirst={i === 0}
+            vinylId={vinyl?.shelf === i ? vinyl.id : undefined}
           />
         ))}
 

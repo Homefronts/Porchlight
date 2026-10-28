@@ -44,16 +44,18 @@ export function SectionLabel({
   const numbers = look.touches.numbers;
 
   if (!numbers) {
+    const heading = cn(
+      "truncate text-xl font-semibold tracking-tight",
+      look.base === "ink" && "font-medium",
+    );
+    // Alone, a block heading: as a flex item sized to its text, truncate
+    // would shave a subpixel off the last letter.
+    if (!action && !subtitle) {
+      return <h2 className={cn(heading, "px-1")}>{children}</h2>;
+    }
     return (
       <div className="flex items-baseline justify-between gap-3 px-1">
-        <h2
-          className={cn(
-            "truncate text-xl font-semibold tracking-tight",
-            look.base === "ink" && "font-medium",
-          )}
-        >
-          {children}
-        </h2>
+        <h2 className={heading}>{children}</h2>
         {action ? (
           <div className="shrink-0">{action}</div>
         ) : subtitle ? (
