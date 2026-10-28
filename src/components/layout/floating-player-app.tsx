@@ -19,6 +19,8 @@ import {
 import { initFloatingTrackSourceBridge } from "@/lib/store/track-source";
 import { useLayoutStore } from "@/lib/store/layout";
 import { useSettingsStore } from "@/lib/store/settings";
+import { CLASSIC_ID } from "@/lib/theme/looks";
+import { useActiveLook } from "@/lib/theme/store";
 import { cn } from "@/lib/utils";
 import { PERSIST_MAX_AGE, persister, queryClient } from "@/lib/query-client";
 
@@ -42,6 +44,7 @@ export default function FloatingPlayerApp() {
   // cross-window `storage` listener in the settings store keeps it
   // live when toggled over there.
   const background = useSettingsStore((s) => s.background);
+  const look = useActiveLook();
   // Read the main window's persisted query cache once, so the liked
   // list (7+ continuation round-trips when fetched cold) is there
   // before the heart first renders. Restore only: subscribing would
@@ -69,6 +72,7 @@ export default function FloatingPlayerApp() {
       defaultTheme="dark"
       enableSystem
       storageKey="ytm-theme"
+      forcedTheme={look.id === CLASSIC_ID ? undefined : look.mode}
       disableTransitionOnChange
     >
       {/* Plain (non-persisting) provider: the floating window is a separate
@@ -79,7 +83,9 @@ export default function FloatingPlayerApp() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider delayDuration={800} skipDelayDuration={0}>
           <div className="relative flex h-screen w-screen flex-col overflow-hidden bg-background">
-            {background === "ambient" && <FloatingBackgroundCover />}
+            {background === "ambient" && look.id === CLASSIC_ID && (
+              <FloatingBackgroundCover />
+            )}
             <FloatingPlayerSyncReceiver />
             <FloatingTitleBar />
             <main className="relative flex-1">

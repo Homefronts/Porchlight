@@ -54,6 +54,8 @@ import {
   useLoginSuccessListener,
   useSessionRefreshedListener,
 } from "@/lib/store/accounts";
+import { CLASSIC_ID } from "@/lib/theme/looks";
+import { useActiveLook } from "@/lib/theme/store";
 import { useSessionStatusListener } from "@/lib/store/session-status";
 
 function isEditableTarget(el: EventTarget | null): boolean {
@@ -126,6 +128,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const sidebarWidth = useLayoutStore((s) => s.sidebarWidth);
   const playerWidth = useLayoutStore((s) => s.playerWidth);
   const background = useSettingsStore((s) => s.background);
+  const look = useActiveLook();
   // The player UI is hidden whenever there's no active track —
   // covers the "Nothing playing" empty state at first launch and
   // after the queue is cleared. The mode itself stays the same; the
@@ -236,7 +239,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         }
       >
         <div className="relative flex h-screen w-screen flex-col overflow-hidden bg-background">
-          {background === "ambient" && <BackgroundCover />}
+          {background === "ambient" && look.id === CLASSIC_ID && (
+            <BackgroundCover />
+          )}
           {/* Custom title bar spans the full window width so the
               Windows-style min/max/close buttons land in the actual
               top-right corner, not behind the floating player. */}
