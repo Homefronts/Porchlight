@@ -1067,7 +1067,7 @@
   background: transparent;
 }
 [data-liner] [data-sidebar="menu-button"][data-active="true"]::before {
-  content: "▸";
+  content: "▸" / "";
   position: absolute;
   inset-inline-start: 0;
   top: 50%;
@@ -1075,4 +1075,13 @@
   font-size: 12px;
   line-height: 1;
   color: var(--acc1);
+}
+/* The collapsed rail is icon-only and the filled icon already marks the
+   active row, so the marker would only crowd the glyph. */
+[data-collapsible="icon"] [data-liner] [data-sidebar="menu-button"][data-active="true"]::before {
+  display: none;
+}
+/* Ink has no boxes: the active row is told apart by colour and weight. */
+[data-ink] [data-sidebar="menu-button"][data-active="true"] {
+  background: transparent;
 }

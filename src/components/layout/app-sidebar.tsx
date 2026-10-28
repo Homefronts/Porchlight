@@ -147,7 +147,8 @@ const ART_BTN_CLS = "h-auto py-[7px]";
 
 export function AppSidebar() {
   const { location } = useRouterState();
-  const liner = isLinerLook(useActiveLook());
+  const look = useActiveLook();
+  const liner = isLinerLook(look);
 
   // The footer's divider only earns its keep when the playlist list is
   // actually scrolling: then rows disappear under the footer and the
@@ -163,6 +164,7 @@ export function AppSidebar() {
       variant="floating"
       collapsible="icon"
       data-liner={liner ? "" : undefined}
+      data-ink={look.base === "ink" ? "" : undefined}
       // Panel chrome, per the design system: a 12px glass card with a
       // `--w110` hairline and a shallow, wide-spread shadow. The blur is
       // what makes `--glass1` read as frosted over the album-art wash
@@ -184,11 +186,9 @@ export function AppSidebar() {
             data-sidebar-label
             className="shrink-0 font-display text-[15px] font-black uppercase leading-[0.92] tracking-[-0.01em] text-t1"
           >
-            <span>
-              YTubic
-              <br />
-              Plus<i className="not-italic text-acc1">.</i>
-            </span>
+            YTubic
+            <br />
+            Plus<i className="not-italic text-acc1">.</i>
           </span>
         ) : (
           <span
