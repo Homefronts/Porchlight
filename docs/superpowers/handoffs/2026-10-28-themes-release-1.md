@@ -15,18 +15,18 @@ first-launch "Make it yours" picker. Classic must stay the current app, pixel fo
 ## Where things stand
 
 - Branch `themes-release-1`, branched from `main` at `2db5b76`. **Nothing on it is pushed.**
-- **Done and reviewed: Tasks 1-13.**
-- **Task 14 (looks in Settings → Appearance)** is implemented in `c44b598`. Its review asked for two fixes:
-  1. Confirm before activating any look whose text contrast is under 3:1. Otherwise an unreadable look can hide the Settings button.
-  2. Make export filenames Windows-safe: backslash, reserved names like CON, trailing dots.
-
-  A fix round was running when the session ended. Check `git log` for `fix(theme): confirm unreadable looks, Windows-safe export names`:
-  - If it's there, run the scoped re-review on that fix, then mark Task 14 complete in the ledger.
-  - If not, re-send those two fixes from the ledger's Task 14 lines.
-- **Left:**
-  - Task 15, release prep. Do the local work only: What's New, README, version bump, full checks, release commit. **Stop before push, tag or publish.**
-  - Then a final whole-branch review on the most capable model, with one fix wave and a scoped re-review.
-  - Then superpowers:finishing-a-development-branch.
+- **All 15 tasks are done and reviewed.**
+- **The final whole-branch review is done**, and its fix wave (`05705b4`) passed a scoped re-review. It fixed:
+  - 0.8.x users who never changed a setting being treated as new installs
+  - the picker saving a later-update layout
+  - the floating window showing "Nothing playing" for a restored track
+  - four minors
+- **The release commit `release: 0.9.0` (`c7779c6`) exists locally.** Nothing is pushed or tagged.
+- **Left (all the user's call):**
+  - Decide 0.9.0 vs 1.0.
+  - Check a real 0.8.1 profile: it should get the updater Welcome note and stay on Classic.
+  - Merge to main or open a PR, then push main, then tag. Pushing the tag starts the release build.
+  - Reinstall or re-point the URL schemes, and reopen the installed app.
 
 ### What each task built (commits)
 
@@ -45,7 +45,9 @@ first-launch "Make it yours" picker. Classic must stay the current app, pixel fo
 | 11 | Layout preview miniatures (25 look x layout), safe cover URLs, transport glyphs `« > || »` | `94478d4`, `997da7b` |
 | 12 | Look editor (draft only; `commitDraft` saves) | `9f8c0e9`, `dfc58a1` |
 | 13 | Welcome + "Make it yours" first-launch picker | `c49a7fa`, `45772ba` |
-| 14 | Looks in Settings (fix round pending, see above) | `c44b598` |
+| 14 | Looks in Settings; confirm unreadable looks; Windows-safe export names | `c44b598`, `1aec1da` |
+| 15 | Tour fix (Ink full-screen play), 0.9.0 version, What's New, README | `11b493f`, `c7779c6` |
+| Final | Final review fixes (previous-install check, layout clamp, floating sync, minors) | `05705b4` |
 
 Also on the branch: `9010af7`, the first version of this handoff doc.
 
@@ -102,6 +104,10 @@ Helper scripts live in the skill's `scripts/` folder: `task-brief PLAN N` and `r
 15. Picker tests never wipe storage: back up, remove only theme keys, restore and verify.
 16. Preview covers load with no referrer.
 17. Looks under 3:1 contrast need a confirmation before they're applied (Task 14 fix round).
+18. The version is 0.9.0, as the plan says, though the README roadmap said themes come "in 1.0".
+19. The previous-install check counts `ytm-settings`, `ytm-whats-new`, `ytm-playback` or `ytm-layout`.
+20. The picker always saves the Sidebar layout in release 1.
+21. Unsaved drafts are dropped on Escape (a "Not saved yet" hint is shown).
 
 ## Deferred minors for the final review
 
