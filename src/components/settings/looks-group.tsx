@@ -6,10 +6,11 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Group, SettingRow } from "@/components/settings/primitives";
+import { ConfirmUnreadable } from "@/components/theme/confirm-unreadable";
 import { LookEditor, type LookEditorValue } from "@/components/theme/look-editor";
 import { LookPreview } from "@/components/theme/look-preview";
 import { usePreviewSample } from "@/components/theme/make-it-yours";
-import { commitDraft, isBuiltIn, paletteInUse } from "@/lib/theme/edit";
+import { commitDraft, isBuiltIn, isUnreadable, paletteInUse } from "@/lib/theme/edit";
 import { parseThemeFile, toThemeFile } from "@/lib/theme/file";
 import { exportFileName, MAX_NAME, validName } from "@/lib/theme/manage";
 import { activeLook, useThemeStore } from "@/lib/theme/store";
@@ -29,6 +30,8 @@ export function LooksGroup() {
   const [draft, setDraft] = useState<LookEditorValue>(startValue);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  // The activation waiting on the "hard to read" confirmation.
+  const [ask, setAsk] = useState<(() => void) | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   // Radix moves focus into the dialog; the plain autoFocus attribute loses to it.
   const focusOnMount = useCallback((el: HTMLElement | null) => el?.focus(), []);
@@ -45,17 +48,26 @@ export function LooksGroup() {
   const change = (next: LookEditorValue) => {
     setRenaming(null);
     setConfirming(false);
-    setDraft(next);
+    if (!pristine(next.look)) return setDraft(next);
     // An untouched look applies at once; an edited one waits for the button.
-    if (pristine(next.look)) useThemeStore.getState().setActive(next.look.id);
+    const apply = () => {
+      setDraft(next);
+      useThemeStore.getState().setActive(next.look.id);
+    };
+    if (isUnreadable(next.look)) setAsk(() => apply);
+    else apply();
   };
 
   const use = () => {
-    const s = useThemeStore.getState();
-    const id = commitDraft(look, s);
-    s.setActive(id);
-    setDraft(startValue());
-    toast.success(`Now using ${look.name}`);
+    const apply = () => {
+      const s = useThemeStore.getState();
+      const id = commitDraft(look, s);
+      s.setActive(id);
+      setDraft(startValue());
+      toast.success(`Now using ${look.name}`);
+    };
+    if (isUnreadable(look)) setAsk(() => apply);
+    else apply();
   };
 
   const rename = () => {
@@ -104,6 +116,14 @@ export function LooksGroup() {
 
   return (
     <Group>
+      <ConfirmUnreadable
+        open={ask !== null}
+        onCancel={() => setAsk(null)}
+        onConfirm={() => {
+          ask?.();
+          setAsk(null);
+        }}
+      />
       <div className="flex flex-col gap-4 py-4">
         <div className="mx-auto w-full max-w-[460px]">
           <LookPreview look={look} layout={draft.layout} sample={sample} />

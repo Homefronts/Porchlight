@@ -4,6 +4,7 @@ import {
   baseOf,
   commitDraft,
   editLook,
+  isUnreadable,
   lowContrast,
   paletteInUse,
 } from "./edit";
@@ -87,5 +88,17 @@ describe("commitDraft", () => {
     expect(commitDraft({ ...mine }, s)).toBe("custom-9");
     expect(commitDraft(sleeve, s)).toBe("sleeve");
     expect(s.saveCustom).not.toHaveBeenCalled();
+  });
+});
+
+describe("isUnreadable", () => {
+  it("passes every built-in", () => {
+    for (const l of Object.values(BUILT_IN_LOOKS)) expect(isUnreadable(l)).toBe(false);
+  });
+  it("flags text equal to the background and just under 3:1", () => {
+    const l = BUILT_IN_LOOKS.sleeve;
+    expect(isUnreadable({ ...l, seeds: { ...l.seeds, fg: l.seeds.bg } })).toBe(true);
+    expect(isUnreadable({ ...l, seeds: { ...l.seeds, bg: "#ffffff", fg: "#aaaaaa" } })).toBe(true);
+    expect(isUnreadable({ ...l, seeds: { ...l.seeds, bg: "#ffffff", fg: "#555555" } })).toBe(false);
   });
 });

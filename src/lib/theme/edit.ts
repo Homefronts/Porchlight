@@ -41,6 +41,9 @@ export function editLook(look: Look, patch: Partial<Look>): Look {
 /** Under 3:1 the main text is hard to read on the background. */
 export const lowContrast = (s: Seeds) => contrastRatio(s.fg, s.bg) < 3;
 
+/** Such a look asks for confirmation before it becomes the app's look. */
+export const isUnreadable = (look: Look) => lowContrast(look.seeds);
+
 /**
  * Saves the editor's draft and returns the id to make active. A built-in, or
  * a custom look identical to its saved copy, is not written again.

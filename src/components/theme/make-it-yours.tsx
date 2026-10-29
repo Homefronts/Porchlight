@@ -11,10 +11,11 @@ import type { Thumbnail } from "@/lib/innertube/types";
 import { useAccounts } from "@/lib/store/accounts";
 import { authLoggedInQuery } from "@/lib/store/auth-queries";
 import { currentTrack, usePlaybackStore } from "@/lib/store/playback";
-import { paletteInUse } from "@/lib/theme/edit";
+import { isUnreadable, paletteInUse } from "@/lib/theme/edit";
 import { continuePicker, isUpdater, skipPicker, skipsWelcome } from "@/lib/theme/first-launch";
 import { FONT_STACKS, type Look } from "@/lib/theme/looks";
 import { activeLook, useThemeStore } from "@/lib/theme/store";
+import { ConfirmUnreadable } from "./confirm-unreadable";
 import { LookEditor, type LookEditorValue } from "./look-editor";
 import { LookPreview, placeholderSample, type PreviewSample } from "./look-preview";
 import { Welcome } from "./welcome";
@@ -71,6 +72,7 @@ export function MakeItYours() {
     return { look: activeLook(s), layout: s.layout };
   });
   const [value, setValue] = useState(start);
+  const [asking, setAsking] = useState(false);
   const { resolvedTheme, forcedTheme } = useTheme();
   // As the editor shows it: Classic in the light or dark mode in use.
   const look = paletteInUse(value.look, (forcedTheme ?? resolvedTheme) === "light" ? "light" : "dark");
@@ -110,6 +112,7 @@ export function MakeItYours() {
           onInteractOutside={(e) => e.preventDefault()}
           className="fixed inset-0 z-50 bg-background text-foreground outline-none"
         >
+          <ConfirmUnreadable open={asking} onCancel={() => setAsking(false)} onConfirm={() => continuePicker(value)} />
           {stage === "welcome" ? (
             <Welcome updater={updater} onDone={toPicker} />
           ) : (
@@ -130,7 +133,7 @@ export function MakeItYours() {
                 </div>
                 <div className="flex items-center justify-between gap-3 border-t border-border px-7 py-4">
                   <span className="text-xs text-t6">Esc skips and keeps {start.look.name}</span>
-                  <Button className="rounded-full px-5" onClick={() => continuePicker(value)}>
+                  <Button className="rounded-full px-5" onClick={() => (isUnreadable(value.look) ? setAsking(true) : continuePicker(value))}>
                     Continue
                   </Button>
                 </div>
