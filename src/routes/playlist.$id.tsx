@@ -30,6 +30,8 @@ import { TrackList } from "@/components/shared/track-list";
 import { JumpToCurrentButton } from "@/components/shared/jump-to-current-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { useLookFamily } from "@/components/theme/look-type";
+import { SectionLabel } from "@/components/theme/section-label";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -82,6 +84,7 @@ export const Route = createFileRoute("/playlist/$id")({
 type AnyPage = PlaylistFirstPage | PlaylistNextPage;
 
 function PlaylistPageView() {
+  const family = useLookFamily();
   const { id } = Route.useParams();
   const { view, t, a, aid, img, from } = Route.useSearch();
   const inLibrary = useInLibrary("playlist", id);
@@ -224,6 +227,18 @@ function PlaylistPageView() {
     fetchNextPage,
     queryError,
   ]);
+
+  const refreshButton = suggestions?.refreshToken ? (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => void refreshSuggestions()}
+      disabled={suggestionsBusy}
+    >
+      <RefreshCwIcon className={suggestionsBusy ? "animate-spin" : undefined} />
+      Refresh
+    </Button>
+  ) : null;
 
   // Only take over the whole view on error when nothing is loaded yet.
   // A failed *continuation* fetch sets query.error while data still holds
@@ -469,24 +484,17 @@ function PlaylistPageView() {
       suggestions.tracks.length > 0 &&
       !normalizedQuery ? (
         <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold tracking-tight">
-              Suggestions
-            </h2>
-            {suggestions.refreshToken ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => void refreshSuggestions()}
-                disabled={suggestionsBusy}
-              >
-                <RefreshCwIcon
-                  className={suggestionsBusy ? "animate-spin" : undefined}
-                />
-                Refresh
-              </Button>
-            ) : null}
-          </div>
+          {/* Classic keeps its own markup; other looks use the shared label. */}
+          {family === "classic" ? (
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold tracking-tight">
+                Suggestions
+              </h2>
+              {refreshButton}
+            </div>
+          ) : (
+            <SectionLabel action={refreshButton}>Suggestions</SectionLabel>
+          )}
           <TrackList tracks={suggestions.tracks} virtualize={false} />
         </div>
       ) : null}
