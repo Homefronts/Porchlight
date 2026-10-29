@@ -30,6 +30,8 @@ import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import { TapeCounter } from "@/components/theme/tape-counter";
 import { TransportLabel } from "@/components/theme/transport-label";
+import { recordTitleClass, useLookFamily } from "@/components/theme/look-type";
+import { useActiveLook } from "@/lib/theme/store";
 import {
   Tooltip,
   TooltipContent,
@@ -395,6 +397,9 @@ export type PlayerBarVariant = "right" | "floating";
 
 const COMPACT_PLAYER_CONTROLS_WIDTH = 336;
 
+// Classic leaves --radius-cover unset: today's rounded-md.
+const COVER_RADIUS = "rounded-[var(--radius-cover,var(--radius-md))]";
+
 export function PlayerBar({
   variant = "right",
 }: {
@@ -438,6 +443,8 @@ export function PlayerBar({
   const cardLyrics = useSettingsStore((s) => s.cardLyrics);
   // No track while hidden, so nothing is fetched for a pane nobody sees.
   const lyricsState = useLyricsView(cardLyrics ? track : undefined);
+  const look = useActiveLook();
+  const family = useLookFamily();
 
   // At compact widths the horizontal volume popup runs into the
   // Song/Video switch. Shorten it while keeping the same interaction.
@@ -539,6 +546,13 @@ export function PlayerBar({
           </div>
         ) : null}
 
+        {/* The liner card's header, as on the sleeve mockup. */}
+        {look.touches.numbers && track ? (
+          <div className="font-meta text-[11px] tracking-[0.1em] text-acc1">
+            ● NOW PLAYING
+          </div>
+        ) : null}
+
         {/* The right-card cover follows the resizable card width. Only
             the floating variant stays capped at 320px so making that
             window wider cannot push the controls below the viewport. */}
@@ -561,25 +575,29 @@ export function PlayerBar({
               // it that group is the motion.div wrapping cover AND lyrics, so
               // the lyrics' backdrop-blur strip loses the card and the app
               // background from its backdrop and paints as a dark band.
-              <div className="group/cover relative isolate aspect-square w-full rounded-md shadow-[0_1px_14px_rgb(0_0_0/0.12)]">
+              <div className={`group/cover relative isolate aspect-square w-full ${COVER_RADIUS} shadow-[0_1px_14px_rgb(0_0_0/0.12)]`}>
                 <Thumbnail
                   thumbnails={track.thumbnails}
                   alt={track.title}
-                  className="size-full rounded-md pointer-events-none"
+                  className={cn("size-full pointer-events-none", COVER_RADIUS)}
                   targetSize={1024}
                   highRes
                   overrideHighRes={iTunesCover}
                 />
                 {/* Not in the mini-player: the main window already decodes this video. */}
                 {variant !== "floating" ? <MusicVideo track={track} where="card" /> : null}
-                <ArtworkOutline className="rounded-md" />
+                <div
+                  aria-hidden="true"
+                  className={`look-cover-shadow pointer-events-none absolute inset-0 ${COVER_RADIUS}`}
+                />
+                <ArtworkOutline className={COVER_RADIUS} />
                 {/* Hover pad with the Full screen chip, per the design.
                     Only the chip is clickable, and it stops the pointer
                     from reaching the cover's drag handle: the handle
                     captures the pointer, which would swallow the click.
                     The floating window has its own surface for this. */}
                 {variant !== "floating" ? (
-                  <div className="pointer-events-none absolute inset-0 grid place-items-center rounded-md bg-(--g6a) opacity-0 transition-opacity duration-[160ms] group-hover/cover:opacity-100 has-[button:focus-visible]:opacity-100">
+                  <div className={`pointer-events-none absolute inset-0 grid place-items-center ${COVER_RADIUS} bg-(--g6a) opacity-0 transition-opacity duration-[160ms] group-hover/cover:opacity-100 has-[button:focus-visible]:opacity-100`}>
                     <button
                       type="button"
                       onPointerDown={(e) => e.stopPropagation()}
@@ -593,7 +611,7 @@ export function PlayerBar({
                 ) : null}
               </div>
             ) : (
-              <div className="aspect-square w-full rounded-md border border-hairline bg-muted" />
+              <div className={`aspect-square w-full ${COVER_RADIUS} border border-hairline bg-muted`} />
             )}
           </div>
         </PlayerCoverMenu>
@@ -603,13 +621,24 @@ export function PlayerBar({
         <div className="flex items-center gap-2">
           <div className="flex min-w-0 flex-1 flex-col">
             <span className="flex min-w-0 items-center gap-1.5">
-              <span className="truncate text-base font-medium">
+              <span
+                className={cn(
+                  "truncate text-base font-medium",
+                  recordTitleClass(family),
+                  family === "liner" && "text-xl leading-tight",
+                )}
+              >
                 {track?.title ?? "Nothing playing"}
               </span>
               {track ? <AiTag item={track} /> : null}
             </span>
             {track ? (
-              <span className="truncate text-sm text-muted-foreground">
+              <span
+                className={cn(
+                  "truncate text-sm text-muted-foreground",
+                  family === "liner" && "font-headline text-lg italic leading-tight",
+                )}
+              >
                 <ArtistLinks
                   artists={track.artists}
                   fallback={track.subtitle ?? ""}
@@ -674,7 +703,13 @@ export function PlayerBar({
         </TapeCounter>
 
         {/* Main controls */}
-        <div className="-mt-2 flex items-center justify-center gap-1">
+        <div
+          className={cn(
+            "-mt-2 flex items-center justify-center gap-1",
+            // Text buttons run edge to edge, as on the sleeve mockup.
+            look.touches.textTransport && "justify-between",
+          )}
+        >
           <Button
             variant="ghost"
             size="icon"
@@ -701,11 +736,10 @@ export function PlayerBar({
             disabled={!hasTrack}
             className="size-12 rounded-full on-brand bg-brand text-white hover:bg-brand/90"
           >
-            {loading ? (
-              <Loader2Icon className="animate-spin" />
-            ) : (
-              <TransportLabel kind={playing ? "pause" : "play"} />
-            )}
+            <TransportLabel
+              kind={playing ? "pause" : "play"}
+              spinner={loading ? <Loader2Icon className="animate-spin" /> : null}
+            />
           </Button>
           <Button
             variant="ghost"

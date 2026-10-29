@@ -7,7 +7,9 @@ import {
   SkipBackIcon,
   SkipForwardIcon,
 } from "lucide-react";
+import type { ReactNode } from "react";
 import { useActiveLook } from "@/lib/theme/store";
+import { cn } from "@/lib/utils";
 
 type Kind =
   | "prev"
@@ -43,15 +45,32 @@ const ICON = {
  * `textTransport` touch is on, else today's icon. The button keeps its own
  * aria-label either way.
  */
-export function TransportLabel({ kind }: { kind: Kind }) {
+export function TransportLabel({
+  kind,
+  className,
+  spinner,
+}: {
+  kind: Kind;
+  /** Extra classes for the icon (its size); the text face ignores them. */
+  className?: string;
+  /** Set while loading: replaces the icon; the text face pulses instead. */
+  spinner?: ReactNode;
+}) {
   if (!useActiveLook().touches.textTransport) {
+    if (spinner) return spinner;
     const Icon = ICON[kind];
     const filled =
       kind === "prev" || kind === "play" || kind === "pause" || kind === "next";
-    return <Icon className={filled ? "fill-current" : undefined} />;
+    return <Icon className={cn(filled && "fill-current", className)} />;
   }
   return (
-    <span data-transport={kind} className="font-meta text-[11px] tracking-[0.12em]">
+    <span
+      data-transport={kind}
+      className={cn(
+        "font-meta text-[11px] tracking-[0.12em]",
+        spinner ? "animate-pulse" : null,
+      )}
+    >
       {TEXT[kind]}
     </span>
   );

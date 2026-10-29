@@ -7,16 +7,7 @@ import { toggleDisliked, toggleLiked } from "@/lib/like-actions";
 import { useDislikesStore } from "@/lib/store/dislikes";
 import { AnimatePresence, motion, useAnimate, useReducedMotion } from "motion/react";
 import { useTheme } from "next-themes";
-import {
-  PlayIcon,
-  PauseIcon,
-  SkipBackIcon,
-  SkipForwardIcon,
-  ShuffleIcon,
-  RepeatIcon,
-  Repeat1Icon,
-  Loader2Icon,
-} from "lucide-react";
+import { Loader2Icon } from "lucide-react";
 import { IconArrowsMinimize } from "@tabler/icons-react";
 import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
@@ -44,6 +35,10 @@ import { MusicVideo, stageSwitch, useMusicVideoId, vlog } from "@/components/lay
 import { PlayerMoreMenu } from "@/components/layout/player-more-menu";
 import { QueuePopover } from "@/components/layout/queue-panel";
 import { LyricsSourceButton } from "@/components/layout/lyrics-view";
+import { useLookFamily, type LookFamily } from "@/components/theme/look-type";
+import { TapeCounter } from "@/components/theme/tape-counter";
+import { TransportLabel } from "@/components/theme/transport-label";
+import { useActiveLook } from "@/lib/theme/store";
 import { cn } from "@/lib/utils";
 import { useFullscreenStore } from "@/lib/store/fullscreen";
 import { usePlaybackStore, currentTrack } from "@/lib/store/playback";
@@ -109,6 +104,8 @@ function FullscreenView({ track }: { track: QueueTrack }) {
   const setLayout = useSettingsStore((s) => s.setFullscreenLayout);
   const { resolvedTheme, forcedTheme } = useTheme();
   const light = (forcedTheme ?? resolvedTheme) === "light";
+  const family = useLookFamily();
+  const textTransport = useActiveLook().touches.textTransport;
 
   const { playing, status, position, duration, shuffle, repeat } =
     usePlaybackStore(
@@ -276,7 +273,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
               className="flex h-[34px] cursor-pointer items-center gap-2 rounded-[9px] bg-w080 px-[13px] text-(--fs-txt2) transition-colors duration-[140ms] hover:bg-w160 hover:text-(--fs-title)"
             >
               <IconArrowsMinimize className="size-[15px]" stroke={1.9} />
-              <span className="text-[11px] font-semibold uppercase tracking-[0.09em]">
+              <span className="font-meta text-[11px] font-semibold uppercase tracking-[0.09em]">
                 Exit fullscreen
               </span>
             </button>
@@ -296,10 +293,10 @@ function FullscreenView({ track }: { track: QueueTrack }) {
                 onSlot={setSlot}
               />
               <div className="flex flex-col items-center gap-2 text-center">
-                <span className="text-[34px] font-bold leading-tight tracking-[-0.03em] text-(--fs-title)">
+                <span className={cn("text-[34px] font-bold leading-tight tracking-[-0.03em] text-(--fs-title)", titleFace(family))}>
                   {track.title}
                 </span>
-                <Subtitle track={track} className="text-[15px]" />
+                <Subtitle track={track} className={cn("text-[15px]", subtitleFace(family))} />
               </div>
             </motion.div>
           ) : null}
@@ -314,10 +311,10 @@ function FullscreenView({ track }: { track: QueueTrack }) {
                   onSlot={setSlot}
                 />
                 <div className="flex min-w-0 flex-col gap-[7px]">
-                  <span className="truncate text-[27px] font-bold leading-tight tracking-[-0.025em] text-(--fs-title)">
+                  <span className={cn("truncate text-[27px] font-bold leading-tight tracking-[-0.025em] text-(--fs-title)", titleFace(family))}>
                     {track.title}
                   </span>
-                  <Subtitle track={track} className="truncate text-sm" />
+                  <Subtitle track={track} className={cn("truncate text-sm", subtitleFace(family))} />
                 </div>
               </div>
               {/* Shorter than the cover column on purpose: a few lines
@@ -330,15 +327,22 @@ function FullscreenView({ track }: { track: QueueTrack }) {
 
           {immersive ? (
             <motion.div {...fadeIn} className="flex min-h-0 flex-1 flex-col justify-end gap-2.5 pb-5 pt-3.5">
-              <span className="text-[56px] font-bold leading-[1.02] tracking-[-0.035em] text-(--fs-title) [text-wrap:pretty]">
+              <span className={cn("text-[56px] font-bold leading-[1.02] tracking-[-0.035em] text-(--fs-title) [text-wrap:pretty]", titleFace(family))}>
                 {track.title}
               </span>
-              <Subtitle track={track} className="text-[17px]" />
+              <Subtitle track={track} className={cn("text-[17px]", subtitleFace(family))} />
             </motion.div>
           ) : null}
 
           {/* Bottom: progress, then the transport with the side clusters. */}
           <div className="flex shrink-0 flex-col gap-2.5">
+            <TapeCounter
+              current={position}
+              total={duration}
+              onSeek={seek}
+              disabled={duration <= 0}
+              className="mt-0 text-[color:var(--fs-time)]"
+            >
             <div className="flex items-center gap-3">
               <span className="w-[38px] shrink-0 font-mono text-xs text-(--fs-time)">
                 {formatTime(scrub ?? position)}
@@ -357,6 +361,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
                 {formatTime(duration)}
               </span>
             </div>
+            </TapeCounter>
             <div className="relative flex items-center justify-center gap-3">
               <div className="absolute left-0 top-1/2 flex -translate-y-1/2 items-center gap-2">
                 <LikePill track={track} />
@@ -381,7 +386,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
                 onClick={() => setShuffle(!shuffle)}
                 className={sideButton(shuffle)}
               >
-                <ShuffleIcon className="size-[19px]" />
+                <TransportLabel kind="shuffle" className="size-[19px]" />
               </Button>
               <Button
                 variant="ghost"
@@ -390,27 +395,35 @@ function FullscreenView({ track }: { track: QueueTrack }) {
                 onClick={prev}
                 className={ghostButton}
               >
-                <SkipBackIcon className="size-[22px] fill-current" />
+                <TransportLabel kind="prev" className="size-[22px]" />
               </Button>
               <Button
                 size="icon"
                 aria-label={playing ? "Pause" : "Play"}
                 onClick={toggle}
                 className="mx-1.5 size-16 rounded-full text-white shadow-[0_6px_20px_-4px_rgba(var(--acc1rgb),0.28),inset_0_1px_1px_var(--w220)] transition-[filter,box-shadow] duration-[140ms] hover:brightness-[1.16] hover:shadow-[0_10px_28px_-6px_rgba(var(--acc1rgb),0.36),inset_0_1px_1px_var(--w260)]"
-                style={{
-                  background:
-                    "radial-gradient(circle at 50% 30%, var(--acc5), var(--acc1) 58%)",
-                }}
+                // The text face brings its own plain block (index.css); an
+                // inline gradient would beat it.
+                style={
+                  textTransport
+                    ? undefined
+                    : {
+                        background:
+                          "radial-gradient(circle at 50% 30%, var(--acc5), var(--acc1) 58%)",
+                      }
+                }
               >
                 {/* Sized on the glyphs themselves: the button's own
                     `[&_svg]` rule only yields to an explicit size-*. */}
-                {loading ? (
-                  <Loader2Icon className="size-[26px] animate-spin" />
-                ) : playing ? (
-                  <PauseIcon className="size-[26px] fill-current" />
-                ) : (
-                  <PlayIcon className="ml-0.5 size-[26px] fill-current" />
-                )}
+                <TransportLabel
+                  kind={playing ? "pause" : "play"}
+                  className={cn("size-[26px]", !playing && "ml-0.5")}
+                  spinner={
+                    loading ? (
+                      <Loader2Icon className="size-[26px] animate-spin" />
+                    ) : null
+                  }
+                />
               </Button>
               <Button
                 variant="ghost"
@@ -419,7 +432,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
                 onClick={next}
                 className={ghostButton}
               >
-                <SkipForwardIcon className="size-[22px] fill-current" />
+                <TransportLabel kind="next" className="size-[22px]" />
               </Button>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -431,11 +444,10 @@ function FullscreenView({ track }: { track: QueueTrack }) {
                     onClick={cycleRepeat}
                     className={sideButton(repeat !== "off")}
                   >
-                    {repeat === "one" ? (
-                      <Repeat1Icon className="size-[19px]" />
-                    ) : (
-                      <RepeatIcon className="size-[19px]" />
-                    )}
+                    <TransportLabel
+                      kind={repeat === "one" ? "repeat-one" : "repeat"}
+                      className="size-[19px]"
+                    />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>{repeatLabel(repeat)}</TooltipContent>
@@ -447,6 +459,18 @@ function FullscreenView({ track }: { track: QueueTrack }) {
     </TooltipProvider>
   );
 }
+
+/** The big titles: serif under Liner, quiet under Ink, today's bold under Classic. */
+const titleFace = (family: LookFamily) =>
+  cn(
+    family !== "classic" && "font-headline",
+    family === "liner" && "font-normal tracking-[-0.01em]",
+    family === "ink" && "font-medium",
+  );
+
+/** The artist line under the title: the sleeve's italic serif under Liner. */
+const subtitleFace = (family: LookFamily) =>
+  family === "liner" ? "font-headline italic" : "";
 
 /** Prev / next: 44px, bare until hovered. */
 const ghostButton =

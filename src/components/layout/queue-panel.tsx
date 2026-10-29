@@ -36,6 +36,7 @@ import { Thumbnail } from "@/components/shared/thumbnail";
 import { usePlaybackStore, currentTrack } from "@/lib/store/playback";
 import { isFloatingPlayerWindow } from "@/lib/floating-player";
 import { pickRadioChip, toggleRadioMix } from "@/lib/radio-mix";
+import { useActiveLook } from "@/lib/theme/store";
 import { cn } from "@/lib/utils";
 
 function formatDuration(seconds?: number): string {
@@ -255,6 +256,7 @@ function QueueTabBody({
         <QueueSection label="Now playing">
           <QueueRow
             track={active}
+            number={1}
             active
             playing={playing}
             onActivate={onToggle}
@@ -271,6 +273,7 @@ function QueueTabBody({
                 <QueueRow
                   key={`u-${t.videoId}-${i}`}
                   track={t}
+                  number={i + 2}
                   onActivate={() => onGoTo(queueIdx)}
                   onRemove={() => onRemoveAt(queueIdx)}
                   draggable
@@ -330,6 +333,7 @@ function HistoryTabBody({
         <QueueRow
           key={`h-${t.videoId}-${i}`}
           track={t}
+          number={i + 1}
           onActivate={() => onGoTo(i)}
           onRemove={() => onRemoveAt(i)}
         />
@@ -486,12 +490,16 @@ function QueueSection({
   children: React.ReactNode;
   muted?: boolean;
 }) {
+  const tracklist = useActiveLook().touches.numbers;
   return (
     <section className="flex flex-col gap-1">
       <h3
         className={cn(
           "px-2 py-1 text-[10.5px] font-semibold uppercase tracking-[0.09em]",
           muted ? "text-t7" : "text-t5",
+          // The ruled header of a back-cover tracklist.
+          tracklist &&
+            "mx-2 border-b border-border px-0 pb-1.5 font-meta text-[11px] font-normal tracking-[0.1em] text-t10",
         )}
       >
         {label}
@@ -503,6 +511,7 @@ function QueueSection({
 
 function QueueRow({
   track,
+  number,
   active = false,
   playing = false,
   onActivate,
@@ -524,6 +533,8 @@ function QueueRow({
     aiAllowed?: true;
     duration?: number;
   };
+  /** Track number, shown instead of the cover when the look numbers things. */
+  number?: number;
   active?: boolean;
   playing?: boolean;
   onActivate: () => void;
@@ -541,6 +552,8 @@ function QueueRow({
   // Held-back AI (AI music off): greyed, skipped, playable on request.
   const held = useAiBlocked(track) && !track.aiAllowed;
   const activate = held && !active ? () => askPlayAnyway(onActivate) : onActivate;
+  // Back-cover tracklist: "01  Title  3:36" in the meta face, no covers.
+  const tracklist = useActiveLook().touches.numbers && number !== undefined;
 
   // Pick which thumbnail-overlay icon to show. For non-active rows the
   // overlay only appears on hover (Play). For the active row the
@@ -596,6 +609,8 @@ function QueueRow({
         "cursor-pointer select-none transition-colors duration-[140ms]",
         "focus-visible:ring-[3px] focus-visible:ring-[rgba(var(--acc1rgb),0.18)]",
         active ? "bg-w070" : "hover:bg-w050",
+        tracklist && "gap-2 rounded-none py-1 font-meta",
+        tracklist && active && "bg-transparent",
         isDragging && "opacity-40",
         held && !active && !isDragging && "opacity-45",
         isDropTarget &&
@@ -608,6 +623,16 @@ function QueueRow({
           image-drag instead of our row reorder). Disabling pointer
           events on the wrapper makes the thumbnail transparent to
           mouse/drag events, so they bubble straight to the row. */}
+      {tracklist ? (
+        <span
+          className={cn(
+            "w-6 text-[11px] tabular-nums",
+            active ? "text-acc1" : "text-t10",
+          )}
+        >
+          {String(number).padStart(2, "0")}
+        </span>
+      ) : (
       <div className="pointer-events-none relative size-9 shrink-0 overflow-hidden rounded-[7px]">
         <Thumbnail
           thumbnails={track.thumbnails}
@@ -638,6 +663,7 @@ function QueueRow({
             and the bg-black/50 hover wash. */}
         <ArtworkOutline className="rounded-[7px]" />
       </div>
+      )}
 
       <div className="flex min-w-0 flex-col text-left">
         <span className="flex min-w-0 items-center gap-1.5">
@@ -645,15 +671,19 @@ function QueueRow({
             className={cn(
               "truncate text-[13.5px]",
               active ? "font-semibold text-acc1" : "font-medium text-t2",
+              tracklist &&
+                (active ? "text-[12px] text-foreground" : "text-[12px] font-normal text-t5"),
             )}
           >
             {track.title}
           </span>
           <AiTag item={track} />
         </span>
-        <span className="truncate text-[12px] leading-snug text-t6">
-          {subtitle}
-        </span>
+        {tracklist ? null : (
+          <span className="truncate text-[12px] leading-snug text-t6">
+            {subtitle}
+          </span>
+        )}
       </div>
 
       {/* Duration + remove. The remove button has zero width by
@@ -662,7 +692,12 @@ function QueueRow({
           pushing the duration leftwards instead of being permanently
           reserved space that's just invisible. */}
       <div className="flex items-center">
-        <span className="text-[12px] tabular-nums text-t7">
+        <span
+          className={cn(
+            "text-[12px] tabular-nums text-t7",
+            tracklist && "text-[11px] text-t10",
+          )}
+        >
           {formatDuration(track.duration)}
         </span>
         {onRemove && (

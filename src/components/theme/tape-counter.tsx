@@ -2,6 +2,7 @@ import { useState, type ReactNode } from "react";
 import { Slider as SliderPrimitive } from "radix-ui";
 import { useScrubStore } from "@/lib/store/scrub";
 import { useActiveLook } from "@/lib/theme/store";
+import { cn } from "@/lib/utils";
 
 /** Tape-counter time: always two-digit minutes ("01:13"). */
 export function tapeTime(seconds: number): string {
@@ -18,6 +19,8 @@ type Props = {
   total: number;
   onSeek: (seconds: number) => void;
   disabled?: boolean;
+  /** Extra classes for the counter row (spacing, time colour). */
+  className?: string;
   /** Today's progress slider, rendered unchanged when the touch is off. */
   children: ReactNode;
 };
@@ -33,6 +36,7 @@ export function TapeCounter({
   total,
   onSeek,
   disabled,
+  className,
   children,
 }: Props) {
   const on = useActiveLook().touches.tapeCounter;
@@ -46,12 +50,22 @@ export function TapeCounter({
   const shown = scrub ?? current;
   const tip = scrub !== null ? scrub / max : hover;
   return (
-    <div className="mt-3 flex items-center gap-2.5 font-meta text-[11px] tabular-nums text-muted-foreground">
+    <div
+      className={cn(
+        "mt-3 flex items-center gap-2.5 font-meta text-[11px] tabular-nums text-muted-foreground",
+        className,
+      )}
+    >
       <span>{tapeTime(shown)}</span>
       <div
-        className="relative flex-1"
+        // Same 8px grace band above and below the track as ProgressSlider.
+        className={cn(
+          "relative flex-1 before:absolute before:-inset-y-2 before:inset-x-0 before:content-['']",
+          !disabled && "cursor-pointer",
+        )}
         onMouseMove={(e) => {
-          if (disabled) return;
+          // The drag drives the tooltip while scrubbing.
+          if (disabled || scrub !== null) return;
           const rect = e.currentTarget.getBoundingClientRect();
           setHover(
             Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)),

@@ -26,6 +26,7 @@ import {
 import { usePlaybackStore } from "@/lib/store/playback";
 import type { QueueTrack } from "@/lib/store/playback";
 import { useScrubStore } from "@/lib/store/scrub";
+import { useLookFamily } from "@/components/theme/look-type";
 import { cn } from "@/lib/utils";
 
 const PREF_KEY = "ytm:lyrics-source";
@@ -276,6 +277,7 @@ function TimedLyrics({
   // target so the text tracks the thumb the whole way.
   const scrub = useScrubStore((s) => s.scrub);
   const position = scrub ?? playbackPosition;
+  const family = useLookFamily();
 
   const activeIdx = findActiveIdx(lines, position);
   const prevActiveRef = useRef(activeIdx);
@@ -286,6 +288,7 @@ function TimedLyrics({
   // effect below never fires on mount (prevActiveRef starts equal to the
   // initial activeIdx), so opening the panel mid-song — or skipping tracks
   // while it stays mounted — leaves the active line off-screen / stale.
+  // A look change re-snaps too: its face changes every line's height.
   useEffect(() => {
     const container = scrollRef.current;
     if (!container) return;
@@ -312,7 +315,7 @@ function TimedLyrics({
         : container.clientHeight * ACTIVE_LINE_VIEWPORT_RATIO -
           el.clientHeight / 2;
     container.scrollTop = Math.max(0, elTopWithinContent - target);
-  }, [lines]);
+  }, [lines, family]);
 
   // A layout effect, not a passive one: on a seek the container has to be
   // repositioned and the line cross-fade suppressed *before* the browser
@@ -452,11 +455,20 @@ function TimedLyrics({
                 large
                   ? "px-3 py-3.5 text-[31px] font-bold leading-[1.18] tracking-[-0.025em]"
                   : "text-lg",
+                // A lyric sheet: the look's headline face, with Instrument
+                // Serif at its one real weight.
+                "font-headline",
+                family === "liner" && "font-normal tracking-normal",
+                family === "ink" && "font-medium",
                 isActive
                   ? "scale-[1.06] text-foreground"
-                  : isPast
-                    ? "scale-100 text-muted-foreground/40"
-                    : "scale-100 text-muted-foreground/70",
+                  : family === "classic"
+                    ? isPast
+                      ? "scale-100 text-muted-foreground/40"
+                      : "scale-100 text-muted-foreground/70"
+                    : isPast
+                      ? "scale-100 text-t9"
+                      : "scale-100 text-t5",
               )}
             >
               {line.text || "♪"}
@@ -496,11 +508,14 @@ function PlainLyrics({
   text: string;
   large?: boolean;
 }) {
+  const family = useLookFamily();
   return (
     <div
       className={cn(
         "lyrics-mask app-scroll h-full select-text overflow-y-auto whitespace-pre-wrap px-2 pt-0 pb-12 font-medium leading-relaxed text-foreground/90",
         large ? "text-[26px] leading-normal" : "text-lg",
+        "font-headline",
+        family === "liner" && "font-normal",
       )}
     >
       {text}

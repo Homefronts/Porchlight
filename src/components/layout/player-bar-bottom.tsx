@@ -1,15 +1,6 @@
 import { useRef } from "react";
 import { AiTag } from "@/components/shared/ai-badge";
 import {
-  PlayIcon,
-  PauseIcon,
-  SkipBackIcon,
-  SkipForwardIcon,
-  ShuffleIcon,
-  RepeatIcon,
-  Repeat1Icon,
-} from "lucide-react";
-import {
   IconArrowsMaximize,
   IconLoader2,
   IconMicrophoneFilled,
@@ -50,6 +41,9 @@ import {
 } from "@/components/layout/player-bar";
 import { PlayerMoreMenu } from "@/components/layout/player-more-menu";
 import { PlayerCoverMenu } from "@/components/layout/player-cover-menu";
+import { recordTitleClass, useLookFamily } from "@/components/theme/look-type";
+import { TapeCounter } from "@/components/theme/tape-counter";
+import { TransportLabel } from "@/components/theme/transport-label";
 import { cn } from "@/lib/utils";
 import { usePlayerCoverDrag } from "@/lib/player-drag";
 import { usePlaybackStore, currentTrack } from "@/lib/store/playback";
@@ -66,6 +60,9 @@ import { useScrubStore } from "@/lib/store/scrub";
  * cluster sits dead-center because the left and right wing sections
  * both use `flex-1`.
  */
+// Classic leaves --radius-cover unset: today's rounded-md.
+const COVER_RADIUS = "rounded-[var(--radius-cover,var(--radius-md))]";
+
 export function PlayerBarBottom() {
   const { playing, status, error, position, duration, shuffle, repeat } =
     usePlaybackStore(
@@ -94,6 +91,7 @@ export function PlayerBarBottom() {
   const iTunesCover = useITunesCover(track);
   const lyricsState = useLyricsView(track);
   const { onPointerDown: onCoverPointerDown } = usePlayerCoverDrag();
+  const family = useLookFamily();
 
   const hasTrack = !!track;
   const coverDownRef = useRef<{ x: number; y: number } | null>(null);
@@ -161,30 +159,35 @@ export function PlayerBarBottom() {
                   <Thumbnail
                     thumbnails={track.thumbnails}
                     alt={track.title}
-                    className="size-full rounded-md pointer-events-none"
+                    className={cn("size-full pointer-events-none", COVER_RADIUS)}
                     targetSize={256}
                     highRes
                     overrideHighRes={iTunesCover}
                   />
-                  <ArtworkOutline className="rounded-md" />
+                  <ArtworkOutline className={COVER_RADIUS} />
                   {/* Hover hint for the click-to-open above: the same
                       pad as the side card's, at a size where only the
                       glyph fits. */}
                   <div
                     aria-hidden
-                    className="pointer-events-none absolute inset-0 grid place-items-center rounded-md bg-(--g6a) text-white opacity-0 transition-opacity duration-[160ms] group-hover/cover:opacity-100"
+                    className={`pointer-events-none absolute inset-0 grid place-items-center ${COVER_RADIUS} bg-(--g6a) text-white opacity-0 transition-opacity duration-[160ms] group-hover/cover:opacity-100`}
                   >
                     <IconArrowsMaximize className="size-5" stroke={1.9} />
                   </div>
                 </div>
               ) : (
-                <div className="size-14 shrink-0 rounded-md border border-hairline bg-muted" />
+                <div className={`size-14 shrink-0 ${COVER_RADIUS} border border-hairline bg-muted`} />
               )}
             </div>
           </PlayerCoverMenu>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="flex min-w-0 items-center gap-1.5">
-              <span className="truncate text-base font-semibold leading-tight">
+              <span
+                className={cn(
+                  "truncate text-base font-semibold leading-tight",
+                  recordTitleClass(family),
+                )}
+              >
                 {track?.title ?? "Nothing playing"}
               </span>
               {track ? <AiTag item={track} /> : null}
@@ -193,7 +196,10 @@ export function PlayerBarBottom() {
               <ArtistLinks
                 artists={track.artists}
                 fallback={track.subtitle ?? ""}
-                className="truncate text-sm text-muted-foreground leading-tight"
+                className={cn(
+                  "truncate text-sm text-muted-foreground leading-tight",
+                  family === "liner" && "font-headline text-base italic",
+                )}
               />
             ) : (
               <span className="truncate text-sm text-muted-foreground leading-tight">
@@ -214,7 +220,7 @@ export function PlayerBarBottom() {
             onClick={() => setShuffle(!shuffle)}
             className={cn(shuffle && "text-brand")}
           >
-            <ShuffleIcon />
+            <TransportLabel kind="shuffle" />
           </Button>
           <Button
             variant="ghost"
@@ -223,7 +229,7 @@ export function PlayerBarBottom() {
             onClick={prev}
             disabled={!hasTrack}
           >
-            <SkipBackIcon className="fill-current" />
+            <TransportLabel kind="prev" />
           </Button>
           <Button
             size="icon"
@@ -232,13 +238,11 @@ export function PlayerBarBottom() {
             disabled={!hasTrack}
             className="size-12 rounded-full on-brand bg-brand text-white hover:bg-brand/90"
           >
-            {loading ? (
-              <IconLoader2 className="animate-spin" />
-            ) : playing ? (
-              <PauseIcon className="size-5 fill-current" />
-            ) : (
-              <PlayIcon className="size-5 fill-current" />
-            )}
+            <TransportLabel
+              kind={playing ? "pause" : "play"}
+              className="size-5"
+              spinner={loading ? <IconLoader2 className="animate-spin" /> : null}
+            />
           </Button>
           <Button
             variant="ghost"
@@ -247,7 +251,7 @@ export function PlayerBarBottom() {
             onClick={next}
             disabled={!hasTrack}
           >
-            <SkipForwardIcon className="fill-current" />
+            <TransportLabel kind="next" />
           </Button>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -259,7 +263,9 @@ export function PlayerBarBottom() {
                 onClick={cycleRepeat}
                 className={cn(repeat !== "off" && "text-brand")}
               >
-                {repeat === "one" ? <Repeat1Icon /> : <RepeatIcon />}
+                <TransportLabel
+                  kind={repeat === "one" ? "repeat-one" : "repeat"}
+                />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{repeatLabel(repeat)}</TooltipContent>
@@ -282,6 +288,13 @@ export function PlayerBarBottom() {
           starts exactly under cover-left and the RIGHT time ends
           exactly under more-right. The slider fills whatever's left
           between them. */}
+      <TapeCounter
+        current={position}
+        total={duration}
+        onSeek={seek}
+        disabled={!hasTrack || duration <= 0}
+        className="mt-0"
+      >
       <div className="flex items-center gap-2">
         <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
           {formatTime(scrub ?? position)}
@@ -300,6 +313,7 @@ export function PlayerBarBottom() {
           {formatTime(duration)}
         </span>
       </div>
+      </TapeCounter>
     </aside>
     </TooltipProvider>
   );
