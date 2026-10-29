@@ -183,7 +183,7 @@ export function AboutDialog({
                   family === "liner" && "text-[30px]",
                 )}
               >
-                YTubic <span className="text-acc1">Plus</span>
+                Porchlight
               </DialogTitle>
               <div className="flex items-center gap-2">
                 <span className="font-meta text-[13px] text-t5">
@@ -218,7 +218,7 @@ export function AboutDialog({
 
           {/* Fork signature. The original creator's credit stays first-class. */}
           <p className="text-[13.5px] leading-[1.55] text-t4 text-pretty">
-            <span className="font-semibold text-t2">YTubic Plus</span> by{" "}
+            <span className="font-semibold text-t2">Porchlight</span> by{" "}
             <button
               type="button"
               onClick={link(FORK_AUTHOR_URL)}

@@ -229,7 +229,7 @@ export function WhatsNewDialog() {
                 <span className="font-meta text-[13px] text-t6">{entry.date}</span>
               </div>
               <DialogDescription className="sr-only">
-                Release notes for YTubic {entry.version}
+                Release notes for Porchlight {entry.version}
               </DialogDescription>
               <button
                 type="button"

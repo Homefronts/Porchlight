@@ -479,7 +479,7 @@ function OutputDeviceRow() {
     <SettingRow
       icon={IconHeadphonesFilled}
       title="Output Device"
-      description="Where audio is sent when YTubic starts playing."
+      description="Where audio is sent when Porchlight starts playing."
       control={
         <DropdownMenu
           onOpenChange={(open) => {

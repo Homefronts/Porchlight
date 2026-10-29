@@ -90,7 +90,7 @@ export function parseThemeFile(text: string): ParseResult {
     return { ok: false, error: "That file is not valid JSON." };
   }
   if (!isObj(raw) || raw.ytubicPlusTheme === undefined) {
-    return { ok: false, error: "That is not a YTubic Plus theme file." };
+    return { ok: false, error: "That is not a Porchlight theme file." };
   }
   if (raw.ytubicPlusTheme !== THEME_FILE_VERSION) {
     return {

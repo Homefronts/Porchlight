@@ -346,7 +346,7 @@ function Body({ s, r }: { s: SlideSpec; r: Rewind }) {
               </div>
             ) : null}
           </div>
-          <div className="mt-[4cqw] text-[3.4cqw] opacity-50">YTubic Plus</div>
+          <div className="mt-[4cqw] text-[3.4cqw] opacity-50">Porchlight</div>
         </div>
       );
     }

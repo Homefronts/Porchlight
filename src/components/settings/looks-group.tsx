@@ -91,7 +91,7 @@ export function LooksGroup() {
       const done = await invoke<boolean>("save_text_file", {
         contents: toThemeFile(look, draft.layout),
         name: exportFileName(look.name),
-        filterName: "YTubic Plus theme",
+        filterName: "Porchlight theme",
         ext: "json",
       });
       if (done) toast.success(`Exported ${look.name}`);

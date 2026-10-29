@@ -173,7 +173,7 @@ function BehaviorGroup() {
       <SettingRow
         icon={IconBoltFilled}
         title="Launch at Startup"
-        description="Start YTubic automatically when you log in."
+        description="Start Porchlight automatically when you log in."
         control={
           <Switch
             checked={!!autostart.data}
@@ -198,7 +198,7 @@ function BehaviorGroup() {
       <SettingRow
         icon={IconLinkFilled}
         title="Share YouTube Music Links"
-        description="Share copies a music.youtube.com link instead of the YTubic page that opens the app."
+        description="Share copies a music.youtube.com link instead of the Porchlight page that opens the app."
         control={
           <Switch
             checked={shareYtMusicLinks}
@@ -212,8 +212,8 @@ function BehaviorGroup() {
         title={IS_MAC ? "Close to menu bar" : "Close to tray"}
         description={
           IS_MAC
-            ? "Hide YTubic to the menu bar when you close the window instead of quitting."
-            : "Hide YTubic to the tray when you press ✕ instead of quitting."
+            ? "Hide Porchlight to the menu bar when you close the window instead of quitting."
+            : "Hide Porchlight to the tray when you press ✕ instead of quitting."
         }
         control={
           <Switch

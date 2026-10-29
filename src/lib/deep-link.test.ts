@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { parseDeepLink, universalShareUrl } from "@/lib/deep-link";
+import { SHARE_BASE, parseDeepLink, universalShareUrl } from "@/lib/deep-link";
 import { useSettingsStore } from "@/lib/store/settings";
 
 describe("parseDeepLink", () => {
@@ -21,7 +21,8 @@ describe("universalShareUrl", () => {
   afterEach(() => useSettingsStore.setState({ shareYtMusicLinks: false }));
 
   it("points at the share page by default", () => {
-    expect(universalShareUrl("watch", "dQw4w9WgXcQ")).toMatch(/\/s\/\?v=dQw4w9WgXcQ$/);
+    // The share page still lives at SHARE_BASE; Task 6 moves it.
+    expect(universalShareUrl("watch", "dQw4w9WgXcQ")).toBe(`${SHARE_BASE}?v=dQw4w9WgXcQ`);
   });
 
   it("copies plain YouTube Music links when switched on", () => {

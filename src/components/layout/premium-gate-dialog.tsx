@@ -64,7 +64,7 @@ export function PremiumGateDialog() {
           <DialogHeader>
             <DialogTitle>Connect to the internet to keep using downloads</DialogTitle>
             <DialogDescription>
-              YTubic checks your Music Premium subscription at least once
+              Porchlight checks your Music Premium subscription at least once
               every 30 days. Go online for a moment and your downloads will
               play again.
             </DialogDescription>
@@ -87,7 +87,7 @@ export function PremiumGateDialog() {
             {checking
               ? "Checking your YouTube Music subscription…"
               : signedOut
-                ? "YTubic plays music through your YouTube Music account. Sign in with an account that has an active Music Premium subscription."
+                ? "Porchlight plays music through your YouTube Music account. Sign in with an account that has an active Music Premium subscription."
                 : "Your account doesn't have an active Music Premium subscription, which YouTube requires for ad-free playback."}
           </DialogDescription>
         </DialogHeader>
@@ -98,11 +98,11 @@ export function PremiumGateDialog() {
               <InfoIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
               <p className="text-xs leading-relaxed text-muted-foreground">
                 Free YouTube Music is supported by ads. YouTube's Terms of
-                Service require those ads to play, and YTubic has no way to
+                Service require those ads to play, and Porchlight has no way to
                 show them, so YouTube limits ad-free playback to Premium
                 accounts.{" "}
                 <span className="font-medium text-foreground">
-                  YTubic itself stays completely free and open source, and
+                  Porchlight itself stays completely free and open source, and
                   always will be.
                 </span>{" "}
                 You can keep listening for free, with ads, at
