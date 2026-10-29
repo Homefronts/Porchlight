@@ -26,6 +26,8 @@ function Slider({
   value,
   min = 0,
   max = 100,
+  // The thumb is what carries role="slider", so the name goes there.
+  "aria-label": ariaLabel,
   ...props
 }: React.ComponentProps<typeof SliderPrimitive.Root>) {
   const _values = React.useMemo(
@@ -106,6 +108,7 @@ function Slider({
       {Array.from({ length: _values.length }, (_, index) => (
         <SliderPrimitive.Thumb
           data-slot="slider-thumb"
+          aria-label={ariaLabel}
           key={index}
           className="block shrink-0 rounded-full bg-slider-thumb shadow-(--slider-thumb-glow) transition-shadow hover:shadow-(--slider-thumb-glow-strong) focus-visible:shadow-(--slider-thumb-glow-strong) focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50 data-[orientation=horizontal]:h-5 data-[orientation=horizontal]:w-1.5 data-[orientation=vertical]:h-1.5 data-[orientation=vertical]:w-5"
         />
