@@ -26,6 +26,7 @@ import {
   type SettingsTab,
 } from "@/lib/store/settings-dialog";
 import { cn } from "@/lib/utils";
+import { headlineClass, useLookFamily } from "@/components/theme/look-type";
 
 const TABS: {
   id: SettingsTab;
@@ -49,6 +50,7 @@ export function SettingsDialog() {
   const setOpen = useSettingsDialog((s) => s.setOpen);
   const tab = useSettingsDialog((s) => s.tab);
   const setTab = useSettingsDialog((s) => s.setTab);
+  const family = useLookFamily();
 
   // Footer of the tab rail. Cheap enough to read on open and it saves
   // a trip to About just to check what you're running.
@@ -68,7 +70,7 @@ export function SettingsDialog() {
         showCloseButton={false}
         overlayClassName={frostedDialogOverlay}
         className={cn(
-          "flex h-[640px] max-h-[85vh] w-[920px] max-w-[calc(100vw-2rem)] flex-row gap-0 overflow-hidden rounded-[20px] p-0 sm:max-w-[920px]",
+          "flex h-[640px] max-h-[85vh] w-[920px] max-w-[calc(100vw-2rem)] flex-row gap-0 overflow-hidden rounded-[var(--radius-window,20px)] p-0 sm:max-w-[920px]",
           "shadow-[0_30px_70px_-20px_var(--k850)]",
           frostedDialogPanel,
         )}
@@ -85,7 +87,12 @@ export function SettingsDialog() {
               height is set by its close button — so "Settings" and the
               active tab's title land on one baseline without hand-tuned
               offsets. */}
-          <DialogTitle className="flex h-7 items-center px-1.5 text-xl font-semibold leading-none tracking-[-0.015em] text-t1">
+          <DialogTitle
+            className={cn(
+              "flex h-7 items-center px-1.5 text-xl font-semibold leading-none tracking-[-0.015em] text-t1",
+              family === "liner" && "text-2xl",
+            )}
+          >
             Settings
           </DialogTitle>
           <nav className="flex flex-col gap-0.5">
@@ -96,10 +103,13 @@ export function SettingsDialog() {
                 onClick={() => setTab(id)}
                 aria-current={tab === id}
                 className={cn(
-                  "flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-[13.5px] transition-colors duration-[140ms]",
+                  "flex cursor-pointer items-center gap-2.5 rounded-[var(--radius-button,var(--radius-md))] px-2.5 py-2 text-[13.5px] transition-colors duration-[140ms]",
                   tab === id
                     ? "bg-w070 font-semibold text-t1"
                     : "font-medium text-t5 hover:bg-w050 hover:text-t3",
+                  // The rail reads like the sidebar's: mono caps on a liner.
+                  family === "liner" &&
+                    "font-meta text-[12px] font-normal uppercase tracking-[0.08em]",
                 )}
               >
                 <Icon className="size-4 shrink-0" />
@@ -107,7 +117,7 @@ export function SettingsDialog() {
               </button>
             ))}
           </nav>
-          <div className="mt-auto flex flex-col gap-[3px] px-2">
+          <div className="mt-auto flex flex-col gap-[3px] px-2 font-meta">
             <span className="text-[11.5px] text-t9">
               {version ? `YTubic Plus ${version}` : "YTubic Plus"}
             </span>
@@ -129,14 +139,20 @@ export function SettingsDialog() {
           {/* Fixed header: the active tab's title, with the close button
               on the same row. It doesn't scroll away. */}
           <div className="flex items-center gap-4 border-b border-w055 p-5">
-            <h3 className="text-xl font-semibold leading-none tracking-[-0.015em] text-t1">
+            <h3
+              className={cn(
+                "text-xl font-semibold leading-none tracking-[-0.015em] text-t1",
+                headlineClass(family),
+                family === "liner" && "text-2xl",
+              )}
+            >
               {TABS.find((t) => t.id === tab)?.label}
             </h3>
             <button
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close settings"
-              className="ml-auto grid size-7 flex-none cursor-pointer place-items-center rounded-lg border border-w070 bg-w030 text-t6 transition-colors duration-[140ms] hover:bg-w080 hover:text-t2"
+              className="ml-auto grid size-7 flex-none cursor-pointer place-items-center rounded-[var(--radius-button,var(--radius-lg))] border border-w070 bg-w030 text-t6 transition-colors duration-[140ms] hover:bg-w080 hover:text-t2"
             >
               <IconX className="size-3" />
             </button>

@@ -10,6 +10,8 @@ import { playSoundtrack } from "@/lib/rewind/soundtrack";
 import { playbackAllowed } from "@/lib/store/premium";
 import type { Rewind } from "@/lib/rewind/types";
 import { useSettingsStore } from "@/lib/store/settings";
+import { recordTitleClass, useLookFamily } from "@/components/theme/look-type";
+import { cn } from "@/lib/utils";
 
 export const rewindsQuery = {
   queryKey: ["rewinds"],
@@ -55,6 +57,7 @@ export function RewindHomeCard() {
   const rewinds = useQuery(rewindsQuery);
   const seen = useSettingsStore((s) => s.seenRewind);
   const { story, show } = useRewindStory();
+  const family = useLookFamily();
   const r = unseenRewind(rewinds.data ?? [], seen);
   if (!r) return story;
   return (
@@ -62,16 +65,16 @@ export function RewindHomeCard() {
       <button
         type="button"
         onClick={() => show(r)}
-        className="flex items-center justify-between gap-4 rounded-xl px-6 py-5 text-left text-white"
+        className="flex items-center justify-between gap-4 rounded-[var(--radius-cover,var(--radius-xl))] px-6 py-5 text-left text-white"
         style={{ background: REWIND_COVER.bg }}
       >
         <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: REWIND_COVER.hi }}>
+          <div className="font-meta text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: REWIND_COVER.hi }}>
             Your Rewind is ready
           </div>
-          <div className="mt-1 text-2xl font-black">{quarterLabel(r)}</div>
+          <div className={cn("mt-1 text-2xl font-black", recordTitleClass(family))}>{quarterLabel(r)}</div>
         </div>
-        <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-black">Watch</span>
+        <span className="rounded-[var(--radius-button,9999px)] bg-white px-4 py-2 text-sm font-semibold text-black">Watch</span>
       </button>
       {story}
     </>

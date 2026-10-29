@@ -127,7 +127,7 @@ export function RewindStory({
           <button
             type="button"
             aria-label="Save slide as image"
-            className="rounded-full p-2 text-white/80 hover:bg-white/10 hover:text-white"
+            className="rounded-[var(--radius-button,9999px)] p-2 text-white/80 hover:bg-white/10 hover:text-white"
             onClick={() => {
               const node = stage.current?.querySelector<HTMLElement>("[data-slide-current]");
               if (node) onSave(node, `rewind-${rewind.quarter}-${i + 1}.png`);
@@ -139,7 +139,7 @@ export function RewindStory({
         <button
           type="button"
           aria-label="Close Rewind"
-          className="rounded-full p-2 text-white/80 hover:bg-white/10 hover:text-white"
+          className="rounded-[var(--radius-button,9999px)] p-2 text-white/80 hover:bg-white/10 hover:text-white"
           onClick={onClose}
         >
           <IconX className="size-5" />

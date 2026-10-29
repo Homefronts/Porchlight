@@ -149,10 +149,10 @@ function Thumb({ url, className = "size-[12cqw] rounded-[1cqw]" }: { url?: strin
 }
 
 const Kicker = ({ children }: { children: ReactNode }) => (
-  <div className="text-[4.4cqw] font-extrabold uppercase tracking-[0.12em]">{children}</div>
+  <div className="font-meta text-[4.4cqw] font-extrabold uppercase tracking-[0.12em]">{children}</div>
 );
 const Huge = ({ children, className, style }: { children: ReactNode; className?: string; style?: CSSProperties }) => (
-  <div className={cn("mt-[3cqw] font-black leading-[0.85] tracking-[-0.055em]", className)} style={style}>{children}</div>
+  <div className={cn("mt-[3cqw] font-display font-black leading-[0.85] tracking-[-0.055em]", className)} style={style}>{children}</div>
 );
 const Line = ({ children }: { children: ReactNode }) => (
   <div className="mt-[4cqw] text-[6.3cqw] font-bold leading-tight">{children}</div>
@@ -315,7 +315,7 @@ function Body({ s, r }: { s: SlideSpec; r: Rewind }) {
           <div className="mb-[5cqw] flex items-center gap-[4cqw]">
             <Thumb url={cover} className="size-[22cqw] rounded-[2cqw]" />
             <div>
-              <div className="text-[3.6cqw] font-extrabold uppercase tracking-[0.12em] opacity-60">My Rewind</div>
+              <div className="font-meta text-[3.6cqw] font-extrabold uppercase tracking-[0.12em] opacity-60">My Rewind</div>
               <div className="text-[7.5cqw] font-black tracking-[-0.03em]">{quarterLabel(r)}</div>
             </div>
           </div>
@@ -325,7 +325,7 @@ function Body({ s, r }: { s: SlideSpec; r: Rewind }) {
               ["Top songs", r.topSongs],
             ].map(([title, list]) => (
               <div key={title as string} className="min-w-0">
-                <div className="mb-[1.5cqw] text-[3.6cqw] font-extrabold uppercase tracking-[0.12em] opacity-60">{title as string}</div>
+                <div className="mb-[1.5cqw] font-meta text-[3.6cqw] font-extrabold uppercase tracking-[0.12em] opacity-60">{title as string}</div>
                 {(list as Ranked[]).map((it, n) => (
                   <div key={it.key} className="truncate text-[4.8cqw] font-extrabold leading-[1.45]">
                     {n + 1} {it.name}
@@ -336,12 +336,12 @@ function Body({ s, r }: { s: SlideSpec; r: Rewind }) {
           </div>
           <div className="mt-[4cqw] grid grid-cols-2 gap-[4cqw]">
             <div>
-              <div className="text-[3.6cqw] font-extrabold uppercase tracking-[0.12em] opacity-60">Minutes</div>
+              <div className="font-meta text-[3.6cqw] font-extrabold uppercase tracking-[0.12em] opacity-60">Minutes</div>
               <div className="text-[9cqw] font-black">{fmt(r.minutes)}</div>
             </div>
             {r.genres?.[0] ? (
               <div className="min-w-0">
-                <div className="text-[3.6cqw] font-extrabold uppercase tracking-[0.12em] opacity-60">Top genre</div>
+                <div className="font-meta text-[3.6cqw] font-extrabold uppercase tracking-[0.12em] opacity-60">Top genre</div>
                 <div className="truncate text-[6.5cqw] font-black">{cap(r.genres[0])}</div>
               </div>
             ) : null}

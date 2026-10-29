@@ -40,7 +40,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Group, SettingRow, TabPane } from "@/components/settings/primitives";
+import {
+  Group,
+  INK_NO_BOX,
+  SettingRow,
+  TabPane,
+} from "@/components/settings/primitives";
+import { useLookFamily } from "@/components/theme/look-type";
 import { PERIOD_MS as AUTO_CLEAN_PERIOD_MS } from "@/lib/cache-cleanup";
 import { formatBytes, formatDateTime, formatRelative } from "@/lib/format";
 import { fetchLibraryTracks } from "@/lib/innertube/library";
@@ -95,9 +101,15 @@ function StatCard({
   label: string;
   value: string;
 }) {
+  const family = useLookFamily();
   return (
-    <div className="flex flex-col gap-1 rounded-xl border border-w075 bg-w028 p-4">
-      <div className="flex items-center gap-1.5 text-xs text-t6">
+    <div
+      className={cn(
+        "flex flex-col gap-1 rounded-[var(--radius-cover,var(--radius-xl))] border border-w075 bg-w028 p-4",
+        family === "ink" && INK_NO_BOX,
+      )}
+    >
+      <div className="flex items-center gap-1.5 font-meta text-xs text-t6">
         <Icon className="size-3.5 text-t2" />
         {label}
       </div>
@@ -345,6 +357,7 @@ function CacheGroup({ loggedIn }: { loggedIn: boolean }) {
   const [sort, setSort] = useState<SortMode>("newest");
   const [pending, setPending] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+  const family = useLookFamily();
 
   // Same architecture as the playlist page header: while "pinned" the
   // toolbar lives OUTSIDE the scroller (portaled into a slot above
@@ -511,7 +524,12 @@ function CacheGroup({ loggedIn }: { loggedIn: boolean }) {
   const headerToolbar = (
     <div className="flex flex-col gap-4 py-4">
       <div className="flex items-center gap-3">
-        <div className="grid size-8 shrink-0 place-items-center rounded-[9px] border border-w070 bg-w050">
+        <div
+          className={cn(
+            "grid size-8 shrink-0 place-items-center rounded-[var(--radius-button,9px)] border border-w070 bg-w050",
+            family === "ink" && INK_NO_BOX,
+          )}
+        >
           <IconDatabaseFilled className="size-4 text-t5" />
         </div>
         <div className="min-w-0 flex-1">

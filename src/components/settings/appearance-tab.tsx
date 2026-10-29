@@ -637,7 +637,7 @@ function InterfaceFontRow() {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="flex h-8 w-[196px] cursor-pointer items-center gap-2 rounded-[10px] border border-w090 bg-w040 px-3 text-[13px] text-t2 transition-colors duration-[140ms] hover:bg-w070 data-[state=open]:border-w200"
+              className="flex h-8 w-[196px] cursor-pointer items-center gap-2 rounded-[var(--radius-button,10px)] border border-w090 bg-w040 px-3 text-[13px] text-t2 transition-colors duration-[140ms] hover:bg-w070 data-[state=open]:border-w200"
               style={{ fontFamily: interfaceFontStack(font) }}
             >
               <span className="min-w-0 flex-1 truncate text-left">

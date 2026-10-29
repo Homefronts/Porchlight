@@ -18,6 +18,7 @@ import {
   frostedDialogPanel,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { headlineClass, useLookFamily } from "@/components/theme/look-type";
 import { useWhatsNewStore } from "@/lib/store/whats-new";
 import { WHATS_NEW, whatsNewFor, type WhatsNewEntry } from "@/lib/whats-new";
 
@@ -42,6 +43,7 @@ export function WhatsNewDialog() {
   const open = useWhatsNewStore((s) => s.open);
   const setOpen = useWhatsNewStore((s) => s.setOpen);
   const version = useWhatsNewStore((s) => s.version);
+  const family = useLookFamily();
 
   const [sel, setSel] = useState(0);
   const [hov, setHov] = useState(-1);
@@ -164,7 +166,7 @@ export function WhatsNewDialog() {
                     className="relative flex h-3 w-[42px] cursor-pointer items-center justify-end pr-1"
                   >
                     {hovered ? (
-                      <span className="pointer-events-none absolute right-[calc(100%-4px)] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md border border-w100 bg-surf2 px-2 py-1 text-[11.5px] font-semibold text-t1 shadow-[0_4px_12px_var(--k400)]">
+                      <span className="pointer-events-none absolute right-[calc(100%-4px)] top-1/2 -translate-y-1/2 whitespace-nowrap rounded-[var(--radius-button,var(--radius-md))] border border-w100 bg-surf2 px-2 py-1 font-meta text-[11.5px] font-semibold text-t1 shadow-[0_4px_12px_var(--k400)]">
                         {e.version}
                       </span>
                     ) : null}
@@ -208,7 +210,7 @@ export function WhatsNewDialog() {
               // `border` is on this line, not in `frostedDialogPanel`: that
               // constant only carries the colour, and the width normally
               // comes from `DialogContent` — which this card is not.
-              "relative flex h-full w-full flex-col overflow-hidden rounded-[20px] border shadow-[0_30px_70px_-20px_var(--k850)]",
+              "relative flex h-full w-full flex-col overflow-hidden rounded-[var(--radius-window,20px)] border shadow-[0_30px_70px_-20px_var(--k850)]",
               frostedDialogPanel,
             )}
           >
@@ -221,10 +223,10 @@ export function WhatsNewDialog() {
 
             <div className="flex flex-none items-center gap-3 px-5 pt-5">
               <div className="flex w-full items-center gap-2.5">
-                <DialogTitle className="rounded-[7px] border border-[rgba(var(--acc1rgb),0.28)] bg-[rgba(var(--acc1rgb),0.12)] px-2.5 py-1 text-xs font-bold text-acc3">
+                <DialogTitle className="rounded-[var(--radius-button,7px)] border border-[rgba(var(--acc1rgb),0.28)] bg-[rgba(var(--acc1rgb),0.12)] px-2.5 py-1 font-meta text-xs font-bold text-acc3">
                   {entry.version}
                 </DialogTitle>
-                <span className="text-[13px] text-t6">{entry.date}</span>
+                <span className="font-meta text-[13px] text-t6">{entry.date}</span>
               </div>
               <DialogDescription className="sr-only">
                 Release notes for YTubic {entry.version}
@@ -233,7 +235,7 @@ export function WhatsNewDialog() {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Close"
-                className="grid size-7 flex-none cursor-pointer place-items-center rounded-lg border border-w070 bg-w030 text-t6 transition-colors duration-[140ms] hover:bg-w080 hover:text-t2"
+                className="grid size-7 flex-none cursor-pointer place-items-center rounded-[var(--radius-button,var(--radius-lg))] border border-w070 bg-w030 text-t6 transition-colors duration-[140ms] hover:bg-w080 hover:text-t2"
               >
                 <IconX className="size-3" />
               </button>
@@ -253,7 +255,13 @@ export function WhatsNewDialog() {
 
                 {entry.summary ? (
                   <div className="px-1">
-                    <span className="text-[21px] font-bold leading-[1.2] tracking-[-0.02em] text-t1 text-pretty">
+                    <span
+                      className={cn(
+                        "text-[21px] font-bold leading-[1.2] tracking-[-0.02em] text-t1 text-pretty",
+                        headlineClass(family),
+                        family === "liner" && "text-[28px] leading-[1.1]",
+                      )}
+                    >
                       {entry.summary}
                     </span>
                   </div>
@@ -282,10 +290,15 @@ export function WhatsNewDialog() {
                 </div>
 
                 {entry.note ? (
-                  <div className="flex flex-col gap-2 rounded-xl border border-w080 bg-w035 p-4">
+                  <div
+                    className={cn(
+                      "flex flex-col gap-2 rounded-[var(--radius-cover,var(--radius-xl))] border border-w080 bg-w035 p-4",
+                      family === "ink" && "border-transparent bg-transparent px-1",
+                    )}
+                  >
                     <div className="flex items-center gap-2">
                       <IconMessage className="size-3 text-t4" />
-                      <span className="text-[10.5px] font-bold uppercase tracking-[0.09em] text-t4">
+                      <span className="font-meta text-[10.5px] font-bold uppercase tracking-[0.09em] text-t4">
                         Note from the developer
                       </span>
                     </div>
@@ -294,7 +307,7 @@ export function WhatsNewDialog() {
                 ) : null}
 
                 {entry.alert ? (
-                  <div className="flex gap-2.5 rounded-[11px] border border-[rgba(245,196,66,0.25)] bg-[rgba(245,196,66,0.08)] p-4">
+                  <div className="flex gap-2.5 rounded-[var(--radius-cover,11px)] border border-[rgba(245,196,66,0.25)] bg-[rgba(245,196,66,0.08)] p-4">
                     <IconAlertTriangle className="mt-px size-4 flex-none text-[#F5C442]" />
                     <span className="text-[13px] leading-[1.6] text-[#8A6D1F] text-pretty dark:text-[#D9BC72]">
                       {entry.alert}
@@ -345,7 +358,7 @@ function RailStep({
  */
 function ReleaseMedia({ entry }: { entry: WhatsNewEntry }) {
   const box =
-    "relative mb-2 grid w-full place-items-center overflow-hidden rounded-xl border border-w080 bg-w030";
+    "relative mb-2 grid w-full place-items-center overflow-hidden rounded-[var(--radius-cover,var(--radius-xl))] border border-w080 bg-w030";
 
   if (entry.image) {
     return (
@@ -379,7 +392,7 @@ function ReleaseMedia({ entry }: { entry: WhatsNewEntry }) {
       />
       <div
         className={cn(
-          "relative grid size-12 place-items-center rounded-xl border",
+          "relative grid size-12 place-items-center rounded-[var(--radius-button,var(--radius-xl))] border",
           fixesOnly
             ? "border-[rgba(var(--acc1rgb),0.2)] bg-[rgba(var(--acc1rgb),0.07)] text-acc3"
             : "border-w200 bg-w070 text-t1",

@@ -86,8 +86,8 @@ function AccountGroup() {
       {/* Hand-rolled rather than a SettingRow: the avatar replaces the
           icon tile, but the geometry has to match its siblings exactly. */}
       <div className="flex items-center gap-3.5 py-4">
-        <Avatar className="size-8 rounded-[9px] border border-w070 bg-w050">
-          <AvatarFallback className="rounded-[9px] bg-transparent text-t5">
+        <Avatar className="size-8 rounded-[var(--radius-button,9px)] border border-w070 bg-w050">
+          <AvatarFallback className="rounded-[var(--radius-button,9px)] bg-transparent text-t5">
             <IconUserFilled className="size-4" />
           </AvatarFallback>
         </Avatar>

@@ -119,7 +119,7 @@ function Stepper({
     onChange(Math.min(max, Math.max(min, value + delta)));
 
   return (
-    <div className="flex items-center gap-0 rounded-lg border border-w090 bg-w040 py-0.5 pl-2 pr-0.5">
+    <div className="flex items-center gap-0 rounded-[var(--radius-button,var(--radius-lg))] border border-w090 bg-w040 py-0.5 pl-2 pr-0.5">
       <input
         type="number"
         min={min}
@@ -273,7 +273,7 @@ function EqualizerGroup() {
                     type="button"
                     onClick={() => setPreset(value)}
                     className={cn(
-                      "cursor-pointer rounded-lg border px-3 py-1.5 text-[12.5px] transition-colors duration-[140ms]",
+                      "cursor-pointer rounded-[var(--radius-button,var(--radius-lg))] border px-3 py-1.5 text-[12.5px] transition-colors duration-[140ms]",
                       on
                         ? "border-transparent bg-[rgba(var(--acc1rgb),0.2)] font-semibold text-acc4"
                         : "border-w070 bg-w040 font-medium text-t5 hover:bg-w070 hover:text-t3",
@@ -302,8 +302,8 @@ function EqBands() {
   const gains = eqGains({ eqPreset: preset, eqCustomGains: custom });
 
   return (
-    <div className="flex items-end gap-3.5 rounded-[11px] border border-w070 bg-k220 px-5 pb-3.5 pt-4">
-      <div className="mb-[30px] flex h-[74px] flex-col items-end justify-between text-[9.5px] font-medium tracking-[0.02em] text-t7">
+    <div className="flex items-end gap-3.5 rounded-[var(--radius-cover,11px)] border border-w070 bg-k220 px-5 pb-3.5 pt-4">
+      <div className="mb-[30px] flex h-[74px] flex-col items-end justify-between font-meta text-[9.5px] font-medium tracking-[0.02em] text-t7">
         <span>+12 dB</span>
         <span>+6 dB</span>
         <span>0 dB</span>
@@ -489,7 +489,7 @@ function OutputDeviceRow() {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="flex h-8 w-[232px] cursor-pointer items-center gap-2 rounded-[10px] border border-w070 bg-w050 px-2.5 text-[13px] text-t2 transition-colors duration-[140ms] hover:bg-w070"
+              className="flex h-8 w-[232px] cursor-pointer items-center gap-2 rounded-[var(--radius-button,10px)] border border-w070 bg-w050 px-2.5 text-[13px] text-t2 transition-colors duration-[140ms] hover:bg-w070"
             >
               <IconHeadphonesFilled className="size-3.5 shrink-0 text-t5" />
               <span className="min-w-0 flex-1 truncate text-left">{label}</span>
@@ -541,7 +541,7 @@ function VideoQualityRow() {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="flex h-8 w-[120px] cursor-pointer items-center gap-2 rounded-[10px] border border-w070 bg-w050 px-2.5 text-[13px] text-t2 transition-colors duration-[140ms] hover:bg-w070"
+              className="flex h-8 w-[120px] cursor-pointer items-center gap-2 rounded-[var(--radius-button,10px)] border border-w070 bg-w050 px-2.5 text-[13px] text-t2 transition-colors duration-[140ms] hover:bg-w070"
             >
               <span className="min-w-0 flex-1 truncate text-left">{qualityLabel(quality)}</span>
               <IconChevronDown className="size-3 shrink-0 text-t6" />

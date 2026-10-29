@@ -13,7 +13,14 @@ import { IconPlugConnectedXFilled } from "@/components/shared/filled-icons";
 
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Group, SettingRow, TabPane } from "@/components/settings/primitives";
+import {
+  Group,
+  INK_NO_BOX,
+  SettingRow,
+  TabPane,
+} from "@/components/settings/primitives";
+import { useLookFamily } from "@/components/theme/look-type";
+import { cn } from "@/lib/utils";
 import { useSettingsStore } from "@/lib/store/settings";
 import { DiscordIcon, LastfmIcon } from "@/components/shared/brand-icons";
 
@@ -48,6 +55,7 @@ function LastfmSection() {
   const clearSession = useSettingsStore((s) => s.clearLastfmSession);
   const loveSync = useSettingsStore((s) => s.lastfmLoveSync);
   const setLoveSync = useSettingsStore((s) => s.setLastfmLoveSync);
+  const family = useLookFamily();
   const avatar = useSettingsStore((s) => s.lastfmAvatar);
   const setAvatar = useSettingsStore((s) => s.setLastfmAvatar);
   const connected = !!sessionKey;
@@ -213,7 +221,12 @@ function LastfmSection() {
               Disconnect action, matching the surface-panel language. The
               parent's pl-12 lines the whole block up with the row titles
               above (past the icon-chip column). */}
-          <div className="flex items-center gap-3 rounded-xl border border-w075 bg-w028 px-3 py-2.5">
+          <div
+            className={cn(
+              "flex items-center gap-3 rounded-[var(--radius-cover,var(--radius-xl))] border border-w075 bg-w028 px-3 py-2.5",
+              family === "ink" && INK_NO_BOX,
+            )}
+          >
             {avatar ? (
               <img
                 src={avatar}

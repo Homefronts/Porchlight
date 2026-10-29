@@ -1,12 +1,16 @@
 import type { ComponentType, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import { useLookFamily } from "@/components/theme/look-type";
 
 
 /**
  * Shared building blocks for the settings dialog tabs — the same
  * surface-panel + row language the sidebar and player card use.
  */
+
+/** Ink draws no boxes: a tile or card keeps its size, loses its fill and edge. */
+export const INK_NO_BOX = "border-transparent bg-transparent";
 
 /** Cluster of related rows. No card chrome — settings read as one
  *  flat list, rows separated by hairline dividers only. */
@@ -32,11 +36,17 @@ export function SettingRow({
   description?: ReactNode;
   control?: ReactNode;
 }) {
+  const family = useLookFamily();
   return (
     <div className="flex items-center gap-3.5 py-4">
       {/* The icon sits on the same resting fill as the switch and the
           segmented track, so a row reads as one family of surfaces. */}
-      <div className="grid size-8 shrink-0 place-items-center rounded-[9px] border border-w070 bg-w050">
+      <div
+        className={cn(
+          "grid size-8 shrink-0 place-items-center rounded-[var(--radius-button,9px)] border border-w070 bg-w050",
+          family === "ink" && INK_NO_BOX,
+        )}
+      >
         <Icon className={cn("size-4 text-t5", iconClassName)} />
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-[3px]">

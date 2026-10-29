@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { rewindsQuery, useRewindStory } from "@/components/rewind/open-rewind";
 import { REWIND_COVER, quarterLabel } from "@/components/rewind/slides";
 import { Button } from "@/components/ui/button";
+import { PageTitle, recordTitleClass, useLookFamily } from "@/components/theme/look-type";
+import { cn } from "@/lib/utils";
 import { MIN_MINUTES, MIN_SONGS } from "@/lib/rewind/build";
 import { quarterOf } from "@/lib/rewind/quarter";
 import { appSealDeps, previewQuarter } from "@/lib/rewind/seal";
@@ -34,7 +36,7 @@ function RewindPage() {
     <div className="flex flex-col gap-6 px-6 pb-6 pt-3">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Rewind</h1>
+          <PageTitle>Rewind</PageTitle>
           <p className="mt-1 text-sm text-muted-foreground">
             Your listening, told back to you every quarter. Built and kept on this computer only.
           </p>
@@ -58,18 +60,19 @@ function RewindPage() {
 }
 
 function RewindCard({ r, onOpen }: { r: Rewind; onOpen: () => void }) {
+  const family = useLookFamily();
   return (
     <button
       type="button"
       onClick={onOpen}
-      className="flex aspect-[3/4] flex-col justify-end rounded-xl p-4 text-left text-white transition-transform hover:scale-[1.02]"
+      className="flex aspect-[3/4] flex-col justify-end rounded-[var(--radius-cover,var(--radius-xl))] p-4 text-left text-white transition-transform hover:scale-[1.02]"
       style={{ background: REWIND_COVER.bg }}
     >
-      <span className="text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: REWIND_COVER.hi }}>
+      <span className="font-meta text-xs font-semibold uppercase tracking-[0.14em]" style={{ color: REWIND_COVER.hi }}>
         Rewind
       </span>
-      <span className="text-2xl font-black leading-tight">{quarterLabel(r)}</span>
-      <span className="mt-1 text-xs text-white/70">{r.minutes.toLocaleString()} minutes</span>
+      <span className={cn("text-2xl font-black leading-tight", recordTitleClass(family))}>{quarterLabel(r)}</span>
+      <span className="mt-1 font-meta text-xs text-white/70">{r.minutes.toLocaleString()} minutes</span>
     </button>
   );
 }

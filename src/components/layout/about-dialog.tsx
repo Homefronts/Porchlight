@@ -30,6 +30,7 @@ import {
   XIcon,
 } from "@/components/shared/brand-icons";
 import { cn } from "@/lib/utils";
+import { useLookFamily } from "@/components/theme/look-type";
 
 // YTubic Plus lives on the Homefronts fork; the original project and its
 // author keep their credit (and the Support / X / Discord links) below.
@@ -66,7 +67,7 @@ const CREDITS: { name: string; role: string; url: string }[] = [
 
 // Footer icon button — 38px, 10px radius, on the design's `--w060` fill.
 const FOOTER_BTN =
-  "grid size-9 place-items-center rounded-[10px] border border-w120 bg-w060 " +
+  "grid size-9 place-items-center rounded-[var(--radius-button,10px)] border border-w120 bg-w060 " +
   "text-t3 transition-colors duration-[140ms] hover:bg-w120 hover:text-t1 " +
   "cursor-pointer [&_svg]:size-4";
 
@@ -81,6 +82,7 @@ export function AboutDialog({
   const [checking, setChecking] = useState(false);
   const phase = useUpdateStore((s) => s.phase);
   const nextVersion = useUpdateStore((s) => s.version);
+  const family = useLookFamily();
 
   useEffect(() => {
     if (!open) return;
@@ -147,7 +149,7 @@ export function AboutDialog({
       <DialogContent
         showCloseButton={false}
         className={cn(
-          "max-w-[560px] gap-0 overflow-hidden rounded-2xl p-0 shadow-[0_30px_70px_-20px_var(--k850)] sm:max-w-[560px]",
+          "max-w-[560px] gap-0 overflow-hidden rounded-[var(--radius-window,var(--radius-2xl))] p-0 shadow-[0_30px_70px_-20px_var(--k850)] sm:max-w-[560px]",
           frostedDialogPanel,
         )}
         overlayClassName={frostedDialogOverlay}
@@ -158,7 +160,7 @@ export function AboutDialog({
           aria-hidden
           className="pointer-events-none absolute inset-x-px top-0 h-px bg-[linear-gradient(90deg,transparent,var(--w160),transparent)]"
         />
-        <DialogClose className="absolute right-4 top-4 z-[2] grid size-7 cursor-pointer place-items-center rounded-lg border border-w070 bg-w030 text-t6 transition-colors duration-[140ms] hover:bg-w080 hover:text-t2">
+        <DialogClose className="absolute right-4 top-4 z-[2] grid size-7 cursor-pointer place-items-center rounded-[var(--radius-button,var(--radius-lg))] border border-w070 bg-w030 text-t6 transition-colors duration-[140ms] hover:bg-w080 hover:text-t2">
           <IconX className="size-3" />
           <span className="sr-only">Close</span>
         </DialogClose>
@@ -175,11 +177,16 @@ export function AboutDialog({
               className="size-14 shrink-0 rounded-full shadow-[0_6px_18px_-6px_rgba(var(--acc1rgb),0.35)]"
             />
             <div className="flex min-w-0 flex-col gap-[9px]">
-              <DialogTitle className="text-[23px] font-bold leading-none tracking-[-0.02em] text-t1">
+              <DialogTitle
+                className={cn(
+                  "text-[23px] font-bold leading-none tracking-[-0.02em] text-t1",
+                  family === "liner" && "text-[30px]",
+                )}
+              >
                 YTubic <span className="text-acc1">Plus</span>
               </DialogTitle>
               <div className="flex items-center gap-2">
-                <span className="text-[13px] text-t5">
+                <span className="font-meta text-[13px] text-t5">
                   {version ? `Version ${version}` : " "}
                   {version && IS_BETA_PLATFORM
                     ? ` · beta for ${IS_MAC ? "macOS" : "Linux"}`
@@ -253,9 +260,15 @@ export function AboutDialog({
             </p>
           )}
 
-          <div className="mt-1 flex flex-col gap-3 rounded-xl border border-w075 bg-w028 px-5 py-4">
+          <div
+            className={cn(
+              "mt-1 flex flex-col gap-3 rounded-[var(--radius-cover,var(--radius-xl))] border border-w075 bg-w028 px-5 py-4",
+              // Ink draws no box; the list lines up with the text above.
+              family === "ink" && "border-transparent bg-transparent px-0",
+            )}
+          >
             <div className="flex items-baseline justify-between gap-3">
-              <span className="text-[10.5px] font-semibold uppercase tracking-[0.09em] text-t5">
+              <span className="font-meta text-[10.5px] font-semibold uppercase tracking-[0.09em] text-t5">
                 Powered by
               </span>
               <span className="text-xs text-t6">
