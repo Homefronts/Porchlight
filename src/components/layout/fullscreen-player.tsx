@@ -401,7 +401,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
                 size="icon"
                 aria-label={playing ? "Pause" : "Play"}
                 onClick={toggle}
-                className="mx-1.5 size-16 rounded-full text-white shadow-[0_6px_20px_-4px_rgba(var(--acc1rgb),0.28),inset_0_1px_1px_var(--w220)] transition-[filter,box-shadow] duration-[140ms] hover:brightness-[1.16] hover:shadow-[0_10px_28px_-6px_rgba(var(--acc1rgb),0.36),inset_0_1px_1px_var(--w260)]"
+                className="on-brand mx-1.5 size-16 rounded-full text-white shadow-[0_6px_20px_-4px_rgba(var(--acc1rgb),0.28),inset_0_1px_1px_var(--w220)] transition-[filter,box-shadow] duration-[140ms] hover:brightness-[1.16] hover:shadow-[0_10px_28px_-6px_rgba(var(--acc1rgb),0.36),inset_0_1px_1px_var(--w260)]"
                 // The text face brings its own plain block (index.css); an
                 // inline gradient would beat it.
                 style={
