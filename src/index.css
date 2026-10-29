@@ -915,6 +915,48 @@
     }
   }
 
+  /* First-launch Welcome: a record slides out of its sleeve and spins up,
+     then each line rises in. Reduced motion drops the record and only
+     fades the text. */
+  @keyframes welcome-slide {
+    to {
+      translate: 62% 0;
+    }
+  }
+  @keyframes welcome-spin {
+    to {
+      rotate: 360deg;
+    }
+  }
+  @keyframes welcome-rise {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+  @keyframes welcome-fade {
+    from {
+      opacity: 0;
+    }
+  }
+  .welcome-slide {
+    animation: welcome-slide 1.1s cubic-bezier(0.32, 0.72, 0, 1) 0.3s both;
+  }
+  .welcome-spin {
+    animation: welcome-spin 1.8s linear 1.1s infinite;
+  }
+  .welcome-line {
+    animation: welcome-rise 0.7s ease-out both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .welcome-record {
+      display: none;
+    }
+    .welcome-line {
+      animation-name: welcome-fade;
+    }
+  }
+
   /* Top-of-column blur strip. Strongest at the top of the overlay,
      fades to fully transparent at its bottom edge — so the active line
      (positioned at ~36% from the top of the viewport) sits just below

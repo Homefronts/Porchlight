@@ -55,7 +55,8 @@ import {
   useSessionRefreshedListener,
 } from "@/lib/store/accounts";
 import { CLASSIC_ID } from "@/lib/theme/looks";
-import { useActiveLook } from "@/lib/theme/store";
+import { useActiveLook, useThemeStore } from "@/lib/theme/store";
+import { MakeItYours } from "@/components/theme/make-it-yours";
 import { useSessionStatusListener } from "@/lib/store/session-status";
 
 function isEditableTarget(el: EventTarget | null): boolean {
@@ -129,6 +130,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const playerWidth = useLayoutStore((s) => s.playerWidth);
   const background = useSettingsStore((s) => s.background);
   const look = useActiveLook();
+  const pickerSeen = useThemeStore((s) => s.pickerSeen);
   // The player UI is hidden whenever there's no active track —
   // covers the "Nothing playing" empty state at first launch and
   // after the queue is cleared. The mode itself stays the same; the
@@ -301,7 +303,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           <SettingsDialog />
           <PremiumGateDialog />
           <ChannelPickerDialog />
-          <WhatsNewDialog />
+          {/* What's New waits until the first-launch picker is done. */}
+          {pickerSeen ? <WhatsNewDialog /> : <MakeItYours />}
         </div>
       </SidebarProvider>
       <Toaster />

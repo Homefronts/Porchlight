@@ -7,6 +7,9 @@ import {
   type YtNode,
 } from "./shared";
 
+/** The home feed query key; the first-launch preview reads its cache too. */
+export const HOME_KEY = ["home", "v2"];
+
 export type HomeFeedPage = {
   shelves: Shelf[];
   nextCursor?: string;

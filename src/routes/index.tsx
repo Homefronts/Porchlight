@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { fetchHomeFeedPage } from "@/lib/innertube/home";
+import { HOME_KEY, fetchHomeFeedPage } from "@/lib/innertube/home";
 import { ShelfCarousel } from "@/components/shared/shelf-carousel";
 import { HomeConfigureDialog } from "@/components/shared/home-configure-dialog";
 import { Button } from "@/components/ui/button";
@@ -26,8 +26,6 @@ import { useAccounts } from "@/lib/store/accounts";
 import { firstName, greeting } from "@/lib/greeting";
 import { usePlaybackStore } from "@/lib/store/playback";
 import { vinylSpot } from "@/lib/vinyl-spot";
-
-const HOME_KEY = ["home", "v2"];
 
 /** The pinned title row: 12px above, a 36px button row, 20px below. */
 const HEADER_HEIGHT = 68;
