@@ -12,7 +12,7 @@ import { useAccounts } from "@/lib/store/accounts";
 import { authLoggedInQuery } from "@/lib/store/auth-queries";
 import { currentTrack, usePlaybackStore } from "@/lib/store/playback";
 import { paletteInUse } from "@/lib/theme/edit";
-import { continuePicker, isUpdater, skipPicker } from "@/lib/theme/first-launch";
+import { continuePicker, isUpdater, skipPicker, skipsWelcome } from "@/lib/theme/first-launch";
 import { FONT_STACKS, type Look } from "@/lib/theme/looks";
 import { activeLook, useThemeStore } from "@/lib/theme/store";
 import { LookEditor, type LookEditorValue } from "./look-editor";
@@ -89,14 +89,21 @@ export function MakeItYours() {
         <DialogPrimitive.Content
           ref={contentRef}
           aria-describedby={undefined}
+          // Focus the screen, not Skip: focus on Skip pauses the Welcome.
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            contentRef.current?.focus();
+          }}
           onEscapeKeyDown={(e) => {
             e.preventDefault();
             if (stage === "welcome") toPicker();
             else skipPicker();
           }}
           onKeyDown={(e) => {
-            if (stage !== "welcome") return;
-            // Any key skips; handled here so it never reaches the app's shortcuts.
+            if (stage !== "welcome" || !skipsWelcome(e)) return;
+            // Enter / Space on Skip press it the normal way.
+            if (e.target instanceof HTMLButtonElement && (e.key === "Enter" || e.key === " ")) return;
+            // Handled here so the key never reaches the app's shortcuts.
             e.preventDefault();
             toPicker();
           }}

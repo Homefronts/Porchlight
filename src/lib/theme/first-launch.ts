@@ -22,6 +22,18 @@ export function welcomeCopy(updater: boolean) {
   };
 }
 
+// Moving focus, modifiers and screen-reader keys (Insert, CapsLock) never skip.
+const KEEPS_WELCOME = new Set([
+  "Tab", "Shift", "Control", "Alt", "AltGraph", "Meta", "OS", "CapsLock",
+  "Insert", "NumLock", "ScrollLock", "ContextMenu", "Fn",
+]);
+
+/** Whether a keydown on the Welcome skips it ("any key"). */
+export function skipsWelcome(e: { key: string; ctrlKey: boolean; metaKey: boolean; altKey: boolean }) {
+  if (e.ctrlKey || e.metaKey || e.altKey) return false;
+  return !KEEPS_WELCOME.has(e.key) && !/^F\d{1,2}$/.test(e.key);
+}
+
 /** Continue: saves the picked look if it is an edited draft, then uses it. */
 export function continuePicker({ look, layout }: { look: Look; layout: LayoutId }) {
   const s = useThemeStore.getState();

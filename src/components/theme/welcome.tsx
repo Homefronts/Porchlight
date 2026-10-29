@@ -1,4 +1,4 @@
-import { useEffect, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import { Button } from "@/components/ui/button";
 import { welcomeCopy } from "@/lib/theme/first-launch";
@@ -10,17 +10,20 @@ const at = (s: number): CSSProperties => ({ animationDelay: `${s}s` });
 
 /**
  * The once-only Welcome before "Make it yours", in the liner-notes style on
- * whatever look is active. Plays through by itself; the parent also skips it
- * on any key. Lives inside the picker's dialog, so its heading is the title.
+ * whatever look is active. Plays through by itself unless Skip has focus; the
+ * parent also skips it on any key that is not navigation or a modifier. Lives inside the picker's dialog, so its heading is the title.
  */
 export function Welcome({ updater, onDone }: { updater: boolean; onDone: () => void }) {
   const copy = welcomeCopy(updater);
+  // Tabbing to Skip holds the Welcome; leaving it restarts the full wait.
+  const [paused, setPaused] = useState(false);
 
   useEffect(() => {
+    if (paused) return;
     // Longer when there is a note to read.
     const t = setTimeout(onDone, updater ? 6500 : 5000);
     return () => clearTimeout(t);
-  }, [onDone, updater]);
+  }, [onDone, updater, paused]);
 
   return (
     <div className="relative flex h-full flex-col items-center justify-center px-6 text-center">
@@ -59,7 +62,14 @@ export function Welcome({ updater, onDone }: { updater: boolean; onDone: () => v
       >
         {copy.origin}
       </p>
-      <Button variant="ghost" size="sm" onClick={onDone} className="absolute bottom-5 right-5">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onDone}
+        onFocus={() => setPaused(true)}
+        onBlur={() => setPaused(false)}
+        className="absolute bottom-5 right-5"
+      >
         Skip
       </Button>
     </div>

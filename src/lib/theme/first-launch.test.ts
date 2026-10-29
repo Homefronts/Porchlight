@@ -13,7 +13,7 @@ vi.hoisted(() => {
 });
 
 import { editLook } from "./edit";
-import { continuePicker, isUpdater, skipPicker, welcomeCopy } from "./first-launch";
+import { continuePicker, isUpdater, skipPicker, skipsWelcome, welcomeCopy } from "./first-launch";
 import { BUILT_IN_LOOKS } from "./looks";
 import { useThemeStore } from "./store";
 
@@ -39,8 +39,36 @@ describe("welcomeCopy", () => {
   });
 });
 
+describe("skipsWelcome", () => {
+  const key = (k: string, mods: Partial<Record<"ctrlKey" | "metaKey" | "altKey", boolean>> = {}) =>
+    skipsWelcome({ key: k, ctrlKey: false, metaKey: false, altKey: false, ...mods });
+
+  it("skips on ordinary keys", () => {
+    for (const k of ["a", "Enter", " ", "Escape", "ArrowDown"]) expect(key(k)).toBe(true);
+  });
+
+  it("ignores focus, modifier, screen-reader and function keys, and shortcuts", () => {
+    for (const k of ["Tab", "Shift", "Control", "Alt", "Meta", "CapsLock", "Insert", "F1", "F12"]) {
+      expect(key(k)).toBe(false);
+    }
+    expect(key("a", { ctrlKey: true })).toBe(false);
+    expect(key("a", { metaKey: true })).toBe(false);
+    expect(key("Tab", { altKey: true })).toBe(false);
+  });
+});
+
 describe("leaving the picker", () => {
   beforeEach(() => start("classic"));
+
+  it("Continue on the unedited preselected Classic changes nothing but pickerSeen", () => {
+    continuePicker({ look: BUILT_IN_LOOKS.classic, layout: "sidebar" });
+    expect(useThemeStore.getState()).toMatchObject({
+      activeId: "classic",
+      layout: "sidebar",
+      custom: [],
+      pickerSeen: true,
+    });
+  });
 
   it("Esc keeps the preselected look exactly and only marks the picker seen", () => {
     skipPicker();

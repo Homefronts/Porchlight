@@ -61,6 +61,9 @@ export function Cv({
   size: number;
   style?: CSSProperties;
 }) {
+  // Real covers load as <img> so they go without a Referer, as in Thumbnail:
+  // the image CDNs answer some referrers with an error page.
+  const remote = !!src && !src.startsWith("data:");
   return (
     <div
       style={{
@@ -70,12 +73,24 @@ export function Cv({
         borderRadius: "var(--pv-cover-r)",
         boxShadow: "var(--pv-cover-shadow)",
         // "" means no art was given: draw a shape in the look's colours.
-        background: src
-          ? `center / cover no-repeat ${cssUrl(src)}`
-          : "linear-gradient(135deg, var(--pv-acc), var(--pv-dim))",
+        background: remote
+          ? undefined
+          : src
+            ? `center / cover no-repeat ${cssUrl(src)}`
+            : "linear-gradient(135deg, var(--pv-acc), var(--pv-dim))",
         ...style,
       }}
-    />
+    >
+      {remote && (
+        <img
+          src={src}
+          alt=""
+          referrerPolicy="no-referrer"
+          decoding="async"
+          style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", borderRadius: "inherit" }}
+        />
+      )}
+    </div>
   );
 }
 
