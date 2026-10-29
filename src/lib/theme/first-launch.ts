@@ -35,10 +35,11 @@ export function skipsWelcome(e: { key: string; ctrlKey: boolean; metaKey: boolea
 }
 
 /** Continue: saves the picked look if it is an edited draft, then uses it. */
-export function continuePicker({ look, layout }: { look: Look; layout: LayoutId }) {
+export function continuePicker({ look }: { look: Look; layout: LayoutId }) {
   const s = useThemeStore.getState();
   s.setActive(commitDraft(look, s));
-  useThemeStore.setState({ layout });
+  // Release 1 ships Sidebar only; later layouts are not saved yet.
+  useThemeStore.setState({ layout: "sidebar" });
   s.markPickerSeen();
 }
 

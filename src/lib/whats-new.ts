@@ -68,7 +68,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
       {
         type: "new",
         title: "Make it yours",
-        text: "New installs start with a short picker. Everyone else can change looks any time in Settings > Appearance.",
+        text: "A short picker helps you choose a look. You can change it any time in Settings > Appearance.",
       },
       {
         type: "new",

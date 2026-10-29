@@ -66,3 +66,25 @@ it("rehydrates on a ytm-looks storage event", () => {
   window.dispatchEvent(new StorageEvent("storage", { key: "ytm-looks" }));
   return vi.waitFor(() => expect(useThemeStore.getState().activeId).toBe("ink"));
 });
+
+it("gives two saves in the same millisecond different ids", () => {
+  vi.spyOn(Date, "now").mockReturnValue(1_000);
+  const s = useThemeStore.getState();
+  const a = s.saveCustom({ ...BUILT_IN_LOOKS.paper, id: "new", name: "A" });
+  const b = s.saveCustom({ ...BUILT_IN_LOOKS.paper, id: "new", name: "B" });
+  vi.restoreAllMocks();
+  expect(a).not.toBe(b);
+});
+
+it("any long-lived 0.8.x key means a previous install", async () => {
+  const run = async (key?: string) => {
+    localStorage.removeItem("ytm-looks");
+    for (const k of ["ytm-settings", "ytm-whats-new", "ytm-playback", "ytm-layout"]) localStorage.removeItem(k);
+    if (key) localStorage.setItem(key, "{}");
+    vi.resetModules();
+    return (await import("./store")).useThemeStore.getState().activeId;
+  };
+  expect(await run("ytm-whats-new")).toBe("classic");
+  expect(await run("ytm-playback")).toBe("classic");
+  expect(await run()).toBe("sleeve");
+});

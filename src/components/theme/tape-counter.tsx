@@ -98,6 +98,7 @@ export function TapeCounter({
           </SliderPrimitive.Track>
           <SliderPrimitive.Thumb
             aria-label="Seek"
+            aria-valuetext={`${tapeTime(shown)} of ${tapeTime(total)}`}
             className="block size-2 rounded-full bg-acc1 outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
         </SliderPrimitive.Root>

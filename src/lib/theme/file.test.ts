@@ -78,6 +78,12 @@ describe("theme file", () => {
     expect(r.look).not.toHaveProperty("evil");
   });
 
+  it("strips bidi and zero-width characters from names", () => {
+    const r = parseThemeFile(make((f) => { f.name = "a​b‮c⁦d﻿e"; }));
+    if (!r.ok) throw new Error(r.error);
+    expect(r.look.name).toBe("abcde");
+  });
+
   it("falls back for an unknown base and an empty name", () => {
     const r = parseThemeFile(
       make((f) => {

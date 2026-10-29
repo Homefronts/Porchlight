@@ -292,21 +292,15 @@ export function FloatingPlayerSyncReceiver() {
       });
     };
 
-    register(
+    const ps = [
       listen<TransportSnapshot>("playback:transport", (e) => {
         // Merge — preserves the action overrides installed by
         // `playback.ts` for the floating window.
         usePlaybackStore.setState(e.payload);
       }),
-    );
-
-    register(
       listen<QueueSnapshot>("playback:queue", (e) => {
         usePlaybackStore.setState(e.payload);
       }),
-    );
-
-    register(
       listen<{ byVideoId: Record<string, unknown> }>(
         "track-source:state",
         (e) => {
@@ -315,13 +309,17 @@ export function FloatingPlayerSyncReceiver() {
           });
         },
       ),
-    );
+    ];
+    ps.forEach(register);
 
     // Ask the main window for the latest snapshot — covers the case
     // where the floater opened after the relevant state already
     // happened in the main window (e.g. user already had a track
     // playing when they switched to floating mode).
-    void emit("playback:request-snapshot", {});
+    // Only after every listener is registered, or the reply can be lost.
+    void Promise.all(ps).then(() => {
+      if (!cancelled) void emit("playback:request-snapshot", {});
+    });
 
     return () => {
       cancelled = true;

@@ -35,7 +35,10 @@ export function activeLook(s: Pick<ThemeState, "activeId" | "custom">): Look {
 
 const hadPreviousInstall = (): boolean => {
   try {
-    return localStorage.getItem("ytm-settings") !== null;
+    // zustand only writes a key after a change, so any one of these proves 0.8.x ran here.
+    return ["ytm-settings", "ytm-whats-new", "ytm-playback", "ytm-layout"].some(
+      (k) => localStorage.getItem(k) !== null,
+    );
   } catch {
     return true;
   }
@@ -52,7 +55,7 @@ export const useThemeStore = create<ThemeState>()(
       saveCustom: (look) => {
         const id = look.id.startsWith("custom-")
           ? look.id
-          : `custom-${Date.now().toString(36)}`;
+          : `custom-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
         set((s) => ({
           custom: s.custom.some((l) => l.id === id)
             ? s.custom.map((l) => (l.id === id ? { ...look, id } : l))

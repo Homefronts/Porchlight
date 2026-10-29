@@ -81,7 +81,7 @@ describe("leaving the picker", () => {
     expect(useThemeStore.getState()).toMatchObject({ activeId: "paper", custom: [], pickerSeen: true });
   });
 
-  it("Continue on an edited draft saves it, uses it and keeps the layout", () => {
+  it("Continue on an edited draft saves it, uses it and saves the Sidebar layout", () => {
     const draft = editLook(BUILT_IN_LOOKS.sleeve, {
       seeds: { ...BUILT_IN_LOOKS.sleeve.seeds, acc: "#00ff00" },
     });
@@ -90,6 +90,6 @@ describe("leaving the picker", () => {
     expect(s.custom).toHaveLength(1);
     expect(s.activeId).toBe(s.custom[0].id);
     expect(s.custom[0].seeds.acc).toBe("#00ff00");
-    expect(s).toMatchObject({ layout: "gatefold", pickerSeen: true });
+    expect(s).toMatchObject({ layout: "sidebar", pickerSeen: true });
   });
 });
