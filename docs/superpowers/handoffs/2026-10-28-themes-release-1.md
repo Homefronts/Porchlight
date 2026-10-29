@@ -1,6 +1,6 @@
-# Handoff: Themes release 1 (2026-10-28)
+# Handoff: Themes release 1 (updated 2026-10-29)
 
-For the next agent picking up this work. Read this file first, then the ledger.
+For whoever picks this up next, human or AI. Read this file first, then the ledger.
 
 ## What this is
 
@@ -14,73 +14,125 @@ first-launch "Make it yours" picker. Classic must stay the current app, pixel fo
 
 ## Where things stand
 
-- Branch: `themes-release-1`, branched from `main` at `2db5b76`. Nothing on it is pushed.
-- Done and reviewed: Tasks 1-9 (commits `93894ed`..`60b22b0`).
-- Task 10 (shared UI primitives, Settings, Rewind chrome, About and What's New dialogs) is implemented in `1216d81` and `85f9bc9`, and its review was dispatched. Check the ledger for a `Task 10: complete` line; if there isn't one, run its review (`review-package PLAN 60b22b0 85f9bc9`).
-- Left: Task 10 review, 11 (layout preview miniatures), 12 (look editor), 13 (welcome + first-launch picker), 14 (looks in Settings → Appearance, export/import UI), 15 (release prep), then a final whole-branch review.
+- Branch `themes-release-1`, branched from `main` at `2db5b76`. **Nothing on it is pushed.**
+- **Done and reviewed: Tasks 1-13.**
+- **Task 14 (looks in Settings → Appearance)** is implemented in `c44b598`. Its review asked for two fixes:
+  1. Confirm before activating any look whose text contrast is under 3:1. Otherwise an unreadable look can hide the Settings button.
+  2. Make export filenames Windows-safe: backslash, reserved names like CON, trailing dots.
+
+  A fix round was running when the session ended. Check `git log` for `fix(theme): confirm unreadable looks, Windows-safe export names`:
+  - If it's there, run the scoped re-review on that fix, then mark Task 14 complete in the ledger.
+  - If not, re-send those two fixes from the ledger's Task 14 lines.
+- **Left:**
+  - Task 15, release prep. Do the local work only: What's New, README, version bump, full checks, release commit. **Stop before push, tag or publish.**
+  - Then a final whole-branch review on the most capable model, with one fix wave and a scoped re-review.
+  - Then superpowers:finishing-a-development-branch.
+
+### What each task built (commits)
+
+| Task | What | Commits |
+|---|---|---|
+| 1 | Look model, token derivation, `FONT_STACKS` | `93894ed` |
+| 2 | Look store (`ytm-looks`), applier, updater path, forced light/dark consumers | `c17b8a8`, `3d07086` |
+| 3 | Bundled fonts, `font-headline/display/meta`, `.look-case` | `da0b49d` |
+| 4 | Theme file export/import (hostile-input safe), Rust `save_text_file` | `e32b248`, `6372b09` |
+| 5 | Touch components: SectionLabel, TrackNumber, Vinyl, TapeCounter, TransportLabel | `687ee06`, `e29462f` |
+| 6 | Shell: two-line logo, ▸ marker, Ink boxless active item | `7657c9b`, `a282144` |
+| 7 | Home and browsing: Side A/B, A1 numbers, vinyl on the playing record, greeting | `80bb33d`, `d86510d` |
+| 8 | Entity pages; `on-brand` readable brand buttons; Suggestions label | `afbc758`, `208dd9c`, `6055e04` |
+| 9 | Players and lyrics; floating window restyles live | `60b22b0` |
+| 10 | Shared UI primitives, Settings, Rewind chrome, About, What's New | `1216d81`, `85f9bc9`, `d6b482e` |
+| 11 | Layout preview miniatures (25 look x layout), safe cover URLs, transport glyphs `« > || »` | `94478d4`, `997da7b` |
+| 12 | Look editor (draft only; `commitDraft` saves) | `9f8c0e9`, `dfc58a1` |
+| 13 | Welcome + "Make it yours" first-launch picker | `c49a7fa`, `45772ba` |
+| 14 | Looks in Settings (fix round pending, see above) | `c44b598` |
+
+Also on the branch: `9010af7`, the first version of this handoff doc.
 
 ## The ledger (source of truth for progress)
 
-`.superpowers/sdd/2026-10-27-themes-release-1/progress.md` (git-ignored, local only). It holds the
-pre-flight scan, every ruling, every task's completion line, and all deferred minor findings. Task
-briefs, implementer reports, review diffs and screenshots sit in the same folder
-(`task-N-brief.md`, `task-N-report.md`, `review-*.diff`, `shots/task-N/`). Trust the ledger and
-`git log` over memory. A task with a `Task N: complete` line is done; don't redo it.
+`.superpowers/sdd/2026-10-27-themes-release-1/progress.md` is git-ignored and local only. It holds:
+- the pre-flight scan
+- every ruling
+- every task's completion line
+- all deferred minor findings
+
+Task briefs, implementer reports, review diffs and screenshots sit in the same folder:
+`task-N-brief.md`, `task-N-report.md`, `review-*.diff`, `shots/task-N/`.
+
+Trust the ledger and `git log` over memory. A task with a `Task N: complete` line is done.
 
 ## Process being used
 
-superpowers:subagent-driven-development. Per task: one implementer subagent (brief file + report
-file), then a reviewer subagent (spec + quality) on a diff package, then fix rounds (resume the
-same implementer, then a scoped re-review) until clean. Helper scripts live in the skill's
-`scripts/` folder: `task-brief PLAN N`, `review-package PLAN BASE HEAD`. Tasks 6-10 share one plan
-section, so `task-brief` can't extract them; their briefs were written by hand (copy the pattern
-in `task-9-brief.md`). Opus for design-heavy UI tasks, Sonnet for the rest and for reviews.
+The process is superpowers:subagent-driven-development. For each task:
+1. One implementer subagent works from a brief file and writes a report file.
+2. A reviewer subagent checks spec and quality against a diff package.
+3. Fix rounds follow: resume the same implementer, then run a scoped re-review, until clean.
 
-## Things built so far (reuse them)
+Helper scripts live in the skill's `scripts/` folder: `task-brief PLAN N` and `review-package PLAN BASE HEAD`. Model choice: Opus for design-heavy UI tasks, Sonnet for the rest and for reviews.
 
-- `src/lib/theme/looks.ts`: `Look`, `BUILT_IN_LOOKS`, `FONT_STACKS`, `isLinerLook(look)` (base is sleeve, paper or ink-liner).
-- `src/lib/theme/tokens.ts`: `deriveTokens(look)` (returns `{}` for Classic), `contrastRatio`.
-- `src/lib/theme/store.ts`: zustand persist `ytm-looks`; `useActiveLook()`, `initialLookFor()` (updaters get Classic, new installs get Sleeve), `saveCustom` (assigns `custom-…` ids).
-- `src/lib/theme/apply.ts`: writes tokens + `data-look` + `data-touch-<kebab>="on|off"` on `<html>`; Classic removes only what it set.
-- `src/lib/theme/file.ts`: `toThemeFile`, `parseThemeFile` (hostile-input safe, expands `#rgb`, unbuilt layouts fall back to Sidebar with a note). Rust `save_text_file` in `src-tauri/src/lib.rs`.
-- `src/components/theme/`: `SectionLabel`, `TrackNumber`, `Vinyl`, `TapeCounter`, `TransportLabel`, `look-type.tsx` (`useLookFamily`, `recordTitleClass`, `PageTitle`).
-- Tailwind roles: `font-headline`, `font-display`, `font-meta`, `.look-case`. They fall back to today's font under Classic.
-- Classic-safe gating: `:root[data-look] …` CSS, component attributes like `data-liner` / `data-ink`, or a `useLookFamily() === "classic"` fork. Radius tokens are unset under Classic, so always write `var(--radius-x, <today's value>)`.
-- Brand fills: add `on-brand` next to `text-white` so text is readable on every look's accent; Classic keeps pure white.
+## Things built (reuse them)
 
-## Rulings already made (don't relitigate; the user can override)
+- `src/lib/theme/looks.ts`: `Look`, `BUILT_IN_LOOKS`, `FONT_STACKS`, `isLinerLook`.
+- `src/lib/theme/tokens.ts`: `deriveTokens` (returns `{}` for Classic), `contrastRatio`.
+- `src/lib/theme/store.ts`: `useThemeStore`, `useActiveLook`, `initialLookFor` (updaters get Classic, new installs get Sleeve), `saveCustom`, `renameCustom`, `deleteCustom`, `pickerSeen`.
+- `src/lib/theme/apply.ts`: writes `data-look` and `data-touch-*` on `<html>`. Classic removes only what it set.
+- `src/lib/theme/file.ts`: theme files. `src/lib/theme/edit.ts`: `editLook`, `commitDraft`. `src/lib/theme/first-launch.ts`: `continuePicker`, `skipPicker`, `skipsWelcome`. `src/lib/theme/transport-glyphs.ts`.
+- `src/components/theme/`: touch components, `look-type.tsx`, `look-preview.tsx` + `miniatures/`, `look-editor.tsx`, `make-it-yours.tsx`, `welcome.tsx`.
+- `src/components/settings/looks-group.tsx`: Task 14.
+- `src/lib/app-name.ts`: `APP_NAME`.
+- Classic-safe gating: `:root[data-look] …` CSS, component attributes (`data-liner`, `data-ink`), or `useLookFamily() === "classic"`. Radius tokens are unset under Classic, so always write `var(--radius-x, <today's value>)` with a fallback that exists.
 
-1. `FONT_STACKS` lives in `looks.ts` (Task 1 created it).
+## Rulings made on the user's behalf (they can override any)
+
+1. `FONT_STACKS` lives in `looks.ts`.
 2. Touch attributes are `data-touch-<kebab>`; Classic has none.
-3. Editing Classic (Task 12) starts the draft from the palette in use (light or dark).
-4. `APP_NAME = "YTubic Plus"`. The Welcome omits "FORMERLY…" until a rename is chosen, but keeps "BUILT ON YTUBIC BY NUBER".
-5. Task 15 does the local release work only and **stops before push, tag or publish**.
+3. Editing Classic starts from the palette in use (light or dark).
+4. `APP_NAME = "YTubic Plus"`. The Welcome omits "FORMERLY…" until a rename, and keeps "BUILT ON YTUBIC BY NUBER".
+5. Task 15 does local release work only and stops before push, tag or publish.
 6. Task order was 1, 2, 4, then 3 onward.
-7. A theme file's `author` is written on export and dropped on import (no field for it yet).
-8. "Liner looks" = base sleeve, paper or ink-liner (`isLinerLook`).
+7. A theme file's `author` is exported but dropped on import.
+8. "Liner looks" means base sleeve, paper or ink-liner.
 9. The Home greeting follows time of day.
-10. The vinyl sits on the shelf card matching the playing track, falling back to the first Listen again card.
-11. Brand buttons use `on-brand`, scoped to looks.
-12. Ink gets a quiet, boxless active sidebar item (the spec says "no boxes").
+10. The vinyl sits on the card for the playing track, falling back to the first Listen again card.
+11. Brand buttons use `on-brand`, scoped to looks, so Classic keeps pure white.
+12. Ink gets a quiet, boxless active sidebar item.
+13. Transport glyphs are `« > || »`, because the bundled mono font lacks ◂◂ ▸▸ ❚❚.
+14. The look editor keeps a draft; parents save via `commitDraft` (picker Continue, Settings "Use this look").
+15. Picker tests never wipe storage: back up, remove only theme keys, restore and verify.
+16. Preview covers load with no referrer.
+17. Looks under 3:1 contrast need a confirmation before they're applied (Task 14 fix round).
 
 ## Deferred minors for the final review
 
-The ledger lists every `minor (deferred)` line. Notable ones: a11y nits in the queue (artist text
-dropped under numbering, track number and "●" not `aria-hidden`); theme names keep bidi or
-zero-width characters (display spoofing only); no test wires `hadPreviousInstall` to the real
-`ytm-settings` key; Paper's `--destructive` is about 2.4:1; prettier warnings in
-`appearance-tab.tsx` and `index.css`.
+The ledger lists every `minor (deferred)` line. Notable ones:
+- **Accessibility nits in the queue:** artist text is dropped under numbering, and the "●" isn't `aria-hidden`.
+- **Theme names** keep bidi and zero-width characters.
+- **No test wires `hadPreviousInstall`** to the real `ytm-settings` key.
+- **Paper's `--destructive`** is about 2.4:1.
+- **The sidebar ▸ and "●"** may also fall out of the mono font subset.
+- **A saved Rewind slide under Sleeve is untested.** The profile has no finished Rewind.
+- **An unsaved draft is dropped** silently on Escape.
+- **Prettier warnings** in a few files.
 
 ## Machine and environment gotchas
 
-- **Visual checks** use the project skill `.claude/skills/run-app/` (WebView2 over CDP). Never take a full-desktop screenshot; the user's other apps are private. Use CDP screenshots of the app only.
-- **Switching looks in dev**: a DevTools import of the store gets a separate module instance, so write localStorage `ytm-looks` (persisted shape in `store.ts`) and reload. The floating window picks it up live via the `storage` event.
-- **The installed YTubic Plus is closed** for testing (the user approved this). Don't relaunch it mid-task. Remind the user to reopen it when done.
-- **Dev runs claim the `ytubic-plus://` and `ytubic://` links** in HKCU for the debug build. Release builds never take them back, so after testing tell the user to run the 0.8.1 installer again (or re-point `HKCU\Software\Classes\<scheme>\shell\open\command` to the installed exe).
-- **Held for the next patch**: `96bc42b` and `5c84bb4` (player remembers song and position) are on `main` and pushed, but not released. No tag is pushed until the user says so. Pushing a version tag starts the release build.
-- Shell: Windows. Bash is Git Bash, so use `MSYS_NO_PATHCONV=1` with `reg` and single-quote registry paths.
+- **Visual checks** use the project skill `.claude/skills/run-app/` (WebView2 over CDP). Never take full-desktop screenshots; the user's other apps are private.
+- **Test surfaces** go in a portal on `document.body` at the top z-index. The app's side card otherwise draws over them (the user caught this).
+- **Switching looks in dev:** write localStorage `ytm-looks` and reload. A DevTools import of the store is a separate module instance.
+- **Storage:** dev may share WebView2 storage with the installed app. Always back up and restore localStorage around tests.
+- **The installed YTubic Plus is closed for testing** (the user approved this). Remind the user to reopen it.
+- **Dev runs claim the `ytubic-plus://` and `ytubic://` links** for the debug build. After testing, the user should run the 0.8.1 installer again, or re-point `HKCU\Software\Classes\<scheme>\shell\open\command` to `C:\Users\sdand\Desktop\YTubic\ytubic.exe`. Shell is Git Bash, so use `MSYS_NO_PATHCONV=1` with `reg` and single-quote the paths.
+- **Held for the next patch:** `96bc42b` and `5c84bb4` (the player remembers song and position) are pushed on `main` but not released. Never push a version tag without the user's say-so; a tag push starts the release build.
+
+## Earlier this session (already done)
+
+- Roadmap idea "Sort playlists by artist" was added to the README (`2db5b76`) and pushed with the player commits.
+- Installed 0.8.1 checks passed:
+  - `ytubic-plus://` and `ytubic://` artist links open in the installed app.
+  - `background=1` plays without un-minimizing the window; a normal link restores it.
+- Still to check on the installed build: disliked songs being skipped in radio. That needs the user.
 
 ## About the user
 
-They want casual, friendly replies with plain language, no corporate speak. They want to see an
-HTML mockup with real data before any UI rebuild. They make the release calls themselves.
+They want casual, friendly replies with plain language, no corporate speak. They want an HTML mockup with real data before any UI rebuild. They make the release calls themselves.
