@@ -149,7 +149,7 @@ export function AboutDialog({
       <DialogContent
         showCloseButton={false}
         className={cn(
-          "max-w-[560px] gap-0 overflow-hidden rounded-[var(--radius-window,var(--radius-2xl))] p-0 shadow-[0_30px_70px_-20px_var(--k850)] sm:max-w-[560px]",
+          "max-w-[560px] gap-0 overflow-hidden rounded-[var(--radius-window,1rem)] p-0 shadow-[0_30px_70px_-20px_var(--k850)] sm:max-w-[560px]",
           frostedDialogPanel,
         )}
         overlayClassName={frostedDialogOverlay}
