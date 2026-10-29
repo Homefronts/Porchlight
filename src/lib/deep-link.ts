@@ -2,16 +2,15 @@ import { getCurrent, onOpenUrl } from "@tauri-apps/plugin-deep-link";
 import { useSettingsStore } from "@/lib/store/settings";
 
 /**
- * `ytubic-plus://` links. The scheme is registered by the installer (and at
+ * `porchlight://` links. The scheme is registered by the installer (and at
  * runtime in dev / on Linux), so opening one launches or focuses the app:
  *
- *   ytubic-plus://watch?v=<videoId>
- *   ytubic-plus://artist/<channelId>
- *   ytubic-plus://album/<browseId>
- *   ytubic-plus://playlist/<playlistId>
+ *   porchlight://watch?v=<videoId>
+ *   porchlight://artist/<channelId>
+ *   porchlight://album/<browseId>
+ *   porchlight://playlist/<playlistId>
  *
- * Plain `ytubic://` still works, for older links, but with the original
- * YTubic installed too either app may get it.
+ * `ytubic-plus://` still works, for links made before the rename.
  */
 export type DeepLinkTarget =
   | { kind: "watch"; id: string }
@@ -21,7 +20,7 @@ const ID_RE = /^[A-Za-z0-9_-]{6,}$/;
 
 /**
  * Universal share link: a GitHub Pages landing page (docs/s/) that offers
- * "Open in YTubic Plus" (the ytubic-plus:// link above) and falls back to YouTube
+ * "Open in YTubic Plus" (the porchlight:// link above) and falls back to YouTube
  * Music, so the link works for people without the app too. Songs get
  * their metadata from YouTube's oEmbed; other entities carry a title.
  */
@@ -64,7 +63,7 @@ export function parseDeepLink(raw: string): DeepLinkTarget | null {
   } catch {
     return null;
   }
-  if (url.protocol !== "ytubic-plus:" && url.protocol !== "ytubic:") return null;
+  if (url.protocol !== "porchlight:" && url.protocol !== "ytubic-plus:") return null;
   const host = url.hostname.toLowerCase();
   if (host === "watch") {
     const v = url.searchParams.get("v") ?? "";

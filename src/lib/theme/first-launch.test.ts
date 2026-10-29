@@ -30,11 +30,11 @@ describe("welcomeCopy", () => {
     expect(welcomeCopy(false).note).toBeNull();
   });
 
-  it("keeps the origin line and drops FORMERLY while the name is unchanged", () => {
+  it("names the old app in the origin line now that the name has changed", () => {
     const c = welcomeCopy(true);
-    expect(c.title).toBe("Welcome to YTubic Plus.");
+    expect(c.title).toBe("Welcome to Porchlight.");
     expect(c.tagline).toBe("YouTube Music, made yours.");
-    expect(c.origin).toBe("BUILT ON YTUBIC BY NUBER");
+    expect(c.origin).toBe("FORMERLY YTUBIC PLUS · BUILT ON YTUBIC BY NUBER");
     expect(Object.values(c).join(" ")).not.toMatch(/[–—]/);
   });
 });

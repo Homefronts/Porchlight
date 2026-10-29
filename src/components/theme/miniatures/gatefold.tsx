@@ -80,7 +80,7 @@ export function GatefoldMini({ sample }: MiniProps) {
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <Tabs items={["HOME", "EXPLORE", "SEARCH", "LIBRARY"]} />
           <span style={ds(10)}>
-            YTUBIC PLUS<span style={acc}>.</span>
+            PORCHLIGHT<span style={acc}>.</span>
           </span>
         </div>
         <div style={hd(28, { marginTop: u(12) })}>

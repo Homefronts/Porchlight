@@ -44,7 +44,7 @@ describe("What's New", () => {
     const lock = readFileSync(join(root, "src-tauri/Cargo.lock"), "utf8");
     expect(
       // \r?: Windows checkouts get CRLF line endings.
-      lock.match(/name = "ytubic"\r?\nversion = "(.+?)"/)?.[1],
+      lock.match(/name = "porchlight"\r?\nversion = "(.+?)"/)?.[1],
       "src-tauri/Cargo.lock, which needs `cargo update -w` after a bump",
     ).toBe(version);
   });

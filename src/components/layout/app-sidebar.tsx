@@ -178,7 +178,7 @@ export function AppSidebar() {
          *  hopping to a centered row. */}
         <img
           src="/ytubic-icon.svg"
-          alt="YTubic Plus"
+          alt="Porchlight"
           className="size-7 shrink-0 rounded-full"
         />
         {liner ? (
@@ -186,16 +186,16 @@ export function AppSidebar() {
             data-sidebar-label
             className="shrink-0 font-display text-[15px] font-black uppercase leading-[0.92] tracking-[-0.01em] text-t1"
           >
-            YTubic
+            Porch
             <br />
-            Plus<i className="not-italic text-acc1">.</i>
+            Light<i className="not-italic text-acc1">.</i>
           </span>
         ) : (
           <span
             data-sidebar-label
             className="shrink-0 font-headline text-[17px] font-semibold leading-none tracking-[-0.015em] text-t1"
           >
-            YTubic Plus
+            Porchlight
           </span>
         )}
         {IS_BETA_PLATFORM && (

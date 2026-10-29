@@ -121,14 +121,14 @@ fn push(client: &mut DiscordIpcClient, p: &Presence) -> Result<(), Box<dyn std::
         assets = assets
             .large_image(&p.image_url)
             .small_image(LOGO_URL)
-            .small_text("YTubic");
+            .small_text("Porchlight");
         if !p.album.is_empty() {
             assets = assets.large_text(&p.album);
         }
     } else {
         // No cover art for this track — show the logo as the big image instead
         // so the presence never renders empty.
-        assets = assets.large_image(LOGO_URL).large_text("YTubic");
+        assets = assets.large_image(LOGO_URL).large_text("Porchlight");
     }
 
     let mut activity = Activity::new()

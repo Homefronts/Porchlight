@@ -3,12 +3,16 @@ import { parseDeepLink, universalShareUrl } from "@/lib/deep-link";
 import { useSettingsStore } from "@/lib/store/settings";
 
 describe("parseDeepLink", () => {
-  it("reads Plus's own scheme and the original one", () => {
+  it("reads Porchlight's scheme and the old Plus one, not the original's", () => {
+    expect(parseDeepLink("porchlight://watch?v=dQw4w9WgXcQ")).toEqual({
+      kind: "watch",
+      id: "dQw4w9WgXcQ",
+    });
     expect(parseDeepLink("ytubic-plus://watch?v=dQw4w9WgXcQ&background=1")).toEqual({
       kind: "watch",
       id: "dQw4w9WgXcQ",
     });
-    expect(parseDeepLink("ytubic://album/MPREb_abc123")).toEqual({ kind: "album", id: "MPREb_abc123" });
+    expect(parseDeepLink("ytubic://watch?v=dQw4w9WgXcQ")).toBeNull();
     expect(parseDeepLink("https://music.youtube.com/watch?v=dQw4w9WgXcQ")).toBeNull();
   });
 });

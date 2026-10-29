@@ -219,13 +219,13 @@ export const Logo = ({ liner, px }: { liner: boolean; px: number }) => (
   <div style={ds(px, { lineHeight: 0.95 })}>
     {liner ? (
       <>
-        YTUBIC
+        PORCH
         <br />
-        PLUS
+        LIGHT
         <span style={acc}>.</span>
       </>
     ) : (
-      "YTubic Plus"
+      "Porchlight"
     )}
   </div>
 );

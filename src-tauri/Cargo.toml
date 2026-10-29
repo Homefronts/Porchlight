@@ -1,8 +1,8 @@
 [package]
-name = "ytubic"
+name = "porchlight"
 version = "0.9.1"
-description = "YTubic — fast, responsive YouTube Music desktop client"
-authors = ["George Shyshov", "Homefronts (YTubic Plus)"]
+description = "Porchlight — fast, responsive YouTube Music desktop client"
+authors = ["George Shyshov", "Homefronts (Porchlight)"]
 license = "GPL-3.0-only"
 edition = "2021"
 
@@ -12,7 +12,7 @@ edition = "2021"
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
-name = "ytubic_lib"
+name = "porchlight_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

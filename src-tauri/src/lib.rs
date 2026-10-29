@@ -164,7 +164,7 @@ mod secure_store {
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     const KEYRING_KEY_LEN: usize = 32;
     #[cfg(any(target_os = "linux", target_os = "macos"))]
-    const KEYRING_SERVICE: &str = "com.github.ivasy.ytubic";
+    const KEYRING_SERVICE: &str = "io.github.homefronts.porchlight";
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     const KEYRING_USER: &str = "cookie-encryption-key-v1";
 
@@ -179,7 +179,7 @@ mod secure_store {
         match entry.get_secret() {
             Ok(secret) => secret.try_into().map_err(|secret: Vec<u8>| {
                 format!(
-                    "system credential store returned an invalid YTubic key ({} bytes)",
+                    "system credential store returned an invalid Porchlight key ({} bytes)",
                     secret.len()
                 )
             }),
@@ -1382,7 +1382,7 @@ async fn ensure_session_keeper(
     // webview still loads and keeps the session alive regardless of
     // visibility or position.
     let win = WebviewWindowBuilder::new(app, &label, WebviewUrl::External(url))
-        .title("YTubic session keeper")
+        .title("Porchlight session keeper")
         .visible(false)
         .decorations(false)
         .focused(false)
@@ -2336,7 +2336,7 @@ async fn open_player_window(
         "player",
         WebviewUrl::App("index.html?floating-player=1".into()),
     )
-    .title("YTubic Plus · Player")
+    .title("Porchlight · Player")
     .decorations(false)
     .inner_size(360.0, 720.0)
     .min_inner_size(320.0, 560.0)
@@ -2952,7 +2952,7 @@ async fn set_cache_dir(app: tauri::AppHandle, path: Option<String>) -> Result<()
             tokio::fs::create_dir_all(&dir)
                 .await
                 .map_err(|e| format!("Can't create the folder: {e}"))?;
-            let probe = dir.join(".ytubic-write-test");
+            let probe = dir.join(".porchlight-write-test");
             tokio::fs::write(&probe, b"ok")
                 .await
                 .map_err(|e| format!("Folder isn't writable: {e}"))?;
@@ -4280,12 +4280,12 @@ async fn start_stream_server(
     }
 }
 
-/// A `ytubic-plus://` (or `ytubic://`) link with `background=1` (e.g. from a remote-control app)
+/// A `porchlight://` (or old `ytubic-plus://`) link with `background=1` (e.g. from a remote-control app)
 /// still plays, but leaves the window where it is. Windows and Linux only:
 /// macOS hands links to the running app without a second instance.
 fn is_background_link(arg: &str) -> bool {
     let arg = arg.to_ascii_lowercase();
-    (arg.starts_with("ytubic-plus:") || arg.starts_with("ytubic:"))
+    (arg.starts_with("porchlight:") || arg.starts_with("ytubic-plus:"))
         && arg
             .split_once('?')
             .is_some_and(|(_, query)| query.split('&').any(|p| p == "background=1"))
@@ -4319,7 +4319,7 @@ fn runtime_icon(app: &tauri::AppHandle) -> tauri::image::Image<'static> {
 }
 
 fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
-    let show_item = MenuItem::with_id(app, "show", "Show YTubic", true, None::<&str>)?;
+    let show_item = MenuItem::with_id(app, "show", "Show Porchlight", true, None::<&str>)?;
     let play_item = MenuItem::with_id(app, "play_pause", "Play / Pause", true, Some("Space"))?;
     let prev_item = MenuItem::with_id(app, "prev", "Previous", true, None::<&str>)?;
     let next_item = MenuItem::with_id(app, "next", "Next", true, None::<&str>)?;
@@ -4336,9 +4336,9 @@ fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
     let _tray = TrayIconBuilder::with_id("main-tray")
         .icon(runtime_icon(app))
         .tooltip(if cfg!(debug_assertions) {
-            "YTubic (dev)"
+            "Porchlight (dev)"
         } else {
-            "YTubic"
+            "Porchlight"
         })
         .menu(&menu)
         // macOS menu-bar extras conventionally open on left-click. Windows
@@ -4381,7 +4381,7 @@ fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Register + pin the app's Windows identity (AppUserModelID) so the SMTC
-    // media tile (and notifications, taskbar) resolve to "YTubic" + icon rather
+    // media tile (and notifications, taskbar) resolve to "Porchlight" + icon rather
     // than "Unknown app". Must run before any window is created. No-op off
     // Windows.
     appid::init();
@@ -4392,7 +4392,7 @@ pub fn run() {
 
     tauri::Builder::default()
         // The `deep-link` feature forwards the second instance's argv
-        // (a `ytubic://` URL) to the deep-link plugin, so the running app
+        // (a `porchlight://` URL) to the deep-link plugin, so the running app
         // receives it as a `deep-link://new-url` event.
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             if !argv.iter().any(|a| is_background_link(a)) {
@@ -4539,11 +4539,11 @@ pub fn run() {
                 eprintln!("[bridge] stamp failed: {e}");
             }
             eprintln!(
-                "[boot] YTubic {} starting (debug={})",
+                "[boot] Porchlight {} starting (debug={})",
                 app.package_info().version,
                 cfg!(debug_assertions)
             );
-            // The NSIS installer registers `ytubic://` for release builds;
+            // The NSIS installer registers `porchlight://` for release builds;
             // dev runs and Linux need the runtime registration.
             #[cfg(any(target_os = "linux", all(debug_assertions, windows)))]
             {
@@ -4692,11 +4692,12 @@ mod tests {
 
     #[test]
     fn background_links_are_matched_on_the_exact_param() {
-        assert!(is_background_link("ytubic://watch?v=abcdefg&background=1"));
-        assert!(is_background_link("YTUBIC://watch?background=1&v=abcdefg"));
+        assert!(is_background_link("porchlight://watch?v=abcdefg&background=1"));
+        assert!(is_background_link("PORCHLIGHT://watch?background=1&v=abcdefg"));
         assert!(is_background_link("ytubic-plus://watch?v=abcdefg&background=1"));
-        assert!(!is_background_link("ytubic://watch?v=abcdefg&background=10"));
-        assert!(!is_background_link("ytubic://watch?v=abcdefg"));
+        assert!(!is_background_link("ytubic://watch?v=abcdefg&background=1"));
+        assert!(!is_background_link("porchlight://watch?v=abcdefg&background=10"));
+        assert!(!is_background_link("porchlight://watch?v=abcdefg"));
         assert!(!is_background_link("--background=1"));
     }
 
@@ -4765,7 +4766,7 @@ mod tests {
         use std::sync::Arc;
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
-            let root = std::env::temp_dir().join(format!("ytubic-stream-{}", std::process::id()));
+            let root = std::env::temp_dir().join(format!("porchlight-stream-{}", std::process::id()));
             let dl = root.join("downloads");
             std::fs::create_dir_all(dl.join("tracks")).unwrap();
             let mut bytes = vec![0x1A, 0x45, 0xDF, 0xA3];
@@ -4800,7 +4801,7 @@ mod tests {
         use std::sync::Arc;
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
-            let root = std::env::temp_dir().join(format!("ytubic-prefetch-{}", std::process::id()));
+            let root = std::env::temp_dir().join(format!("porchlight-prefetch-{}", std::process::id()));
             let dl = root.join("downloads");
             std::fs::create_dir_all(dl.join("tracks")).unwrap();
             std::fs::write(dl.join("tracks").join("abc123").with_extension("webm"), vec![0u8; 40 * 1024]).unwrap();

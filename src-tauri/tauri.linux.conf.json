@@ -5,6 +5,8 @@
     "category": "Music",
     "linux": {
       "deb": {
+        "replaces": ["ytubic"],
+        "conflicts": ["ytubic"],
         "depends": [
           "libwebkit2gtk-4.1-0",
           "libgtk-3-0",
@@ -14,6 +16,8 @@
         ]
       },
       "rpm": {
+        "obsoletes": ["ytubic"],
+        "conflicts": ["ytubic"],
         "depends": [
           "webkit2gtk4.1",
           "gtk3",

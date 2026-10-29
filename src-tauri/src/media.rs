@@ -76,8 +76,8 @@ pub fn init(app: &AppHandle) {
         let hwnd: Option<*mut std::ffi::c_void> = None;
 
         let config = PlatformConfig {
-            dbus_name: "ytubic",
-            display_name: "YTubic",
+            dbus_name: "porchlight",
+            display_name: "Porchlight",
             hwnd,
         };
 
@@ -176,9 +176,9 @@ fn apply(app: &AppHandle, now: NowPlaying) {
                 set_window_title(
                     app,
                     &if artist.is_empty() {
-                        format!("{title} · YTubic Plus")
+                        format!("{title} · Porchlight")
                     } else {
-                        format!("{title} - {artist} · YTubic Plus")
+                        format!("{title} - {artist} · Porchlight")
                     },
                 );
                 let _ = controls.set_metadata(MediaMetadata {
@@ -216,7 +216,7 @@ fn apply(app: &AppHandle, now: NowPlaying) {
 
 fn clear(app: &AppHandle) {
     LAST_META.with(|m| *m.borrow_mut() = None);
-    set_window_title(app, "YTubic Plus");
+    set_window_title(app, "Porchlight");
     #[cfg(windows)]
     crate::thumbbar::set_state(false, false, crate::thumbbar::Repeat::Off, false);
     CONTROLS.with(|cell| {

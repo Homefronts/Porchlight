@@ -68,7 +68,7 @@ export function PanelsMini({ sample }: MiniProps) {
         }}
       >
         <div style={ds(12, { color: "var(--pv-fg)", marginBottom: u(6) })}>
-          YTubic Plus
+          Porchlight
         </div>
         <div style={{ color: "var(--pv-fg)" }}>⌂ Home</div>
         <div>⌕ Search</div>

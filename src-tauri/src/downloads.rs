@@ -761,7 +761,7 @@ mod tests {
 
     #[test]
     fn save_then_load_roundtrip() {
-        let dir = std::env::temp_dir().join(format!("ytubic-dl-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("porchlight-dl-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("index.json");
         let mut idx = Index::default();
@@ -775,7 +775,7 @@ mod tests {
 
     #[test]
     fn stale_part_files_are_not_done() {
-        let dir = std::env::temp_dir().join(format!("ytubic-dl-rec-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("porchlight-dl-rec-{}", std::process::id()));
         std::fs::create_dir_all(tracks_dir(&dir)).unwrap();
         std::fs::write(temp_track_file(&dir, "a"), b"half").unwrap();
         // Debris from the old `.part` naming, which yt-dlp silently stripped.
@@ -838,7 +838,7 @@ mod tests {
 
     #[test]
     fn recover_sweeps_unlisted_files() {
-        let dir = std::env::temp_dir().join(format!("ytubic-dl-sweep-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("porchlight-dl-sweep-{}", std::process::id()));
         std::fs::create_dir_all(tracks_dir(&dir)).unwrap();
         std::fs::write(track_file(&dir, "kept"), b"x").unwrap();
         std::fs::write(track_file(&dir, "orphan"), b"x").unwrap();
@@ -888,7 +888,7 @@ mod tests {
 
     #[test]
     fn corrupt_index_loads_default() {
-        let dir = std::env::temp_dir().join(format!("ytubic-dl-bad-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("porchlight-dl-bad-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("index.json");
         std::fs::write(&path, b"{not json").unwrap();
