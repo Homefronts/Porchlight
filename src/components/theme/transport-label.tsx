@@ -10,6 +10,7 @@ import {
 import type { ReactNode } from "react";
 import { useActiveLook } from "@/lib/theme/store";
 import { cn } from "@/lib/utils";
+import { GLYPH } from "@/lib/theme/transport-glyphs";
 
 type Kind =
   | "prev"
@@ -21,10 +22,10 @@ type Kind =
   | "repeat-one";
 
 const TEXT: Record<Kind, string> = {
-  prev: "◂◂ PREV",
-  play: "▸ PLAY",
-  pause: "❚❚ PAUSE",
-  next: "NEXT ▸▸",
+  prev: `${GLYPH.prev} PREV`,
+  play: `${GLYPH.play} PLAY`,
+  pause: `${GLYPH.pause} PAUSE`,
+  next: `NEXT ${GLYPH.next}`,
   shuffle: "SHUF",
   repeat: "REP",
   "repeat-one": "REP 1",
@@ -41,7 +42,7 @@ const ICON = {
 };
 
 /**
- * A transport button's face: text ("◂◂ PREV") when the look's
+ * A transport button's face: text (`${GLYPH.prev} PREV`) when the look's
  * `textTransport` touch is on, else today's icon. The button keeps its own
  * aria-label either way.
  */

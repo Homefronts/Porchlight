@@ -1,3 +1,4 @@
+import { GLYPH } from "@/lib/theme/transport-glyphs";
 import {
   Counter,
   Cv,
@@ -84,9 +85,9 @@ export function IndexMini({ sample }: MiniProps) {
           trackBg="rgb(128 128 128 / .3)"
         />
         <div style={{ ...m(8), letterSpacing: ".1em", display: "flex", gap: u(10) }}>
-          <span>◂◂</span>
-          <span>❚❚</span>
-          <span>▸▸</span>
+          <span>{GLYPH.prev}</span>
+          <span>{GLYPH.pause}</span>
+          <span>{GLYPH.next}</span>
           <span>LYRICS</span>
         </div>
       </div>
@@ -111,7 +112,7 @@ export function IndexMini({ sample }: MiniProps) {
           </div>
           <Entry first n="01" title="Listen again" note=": what you keep coming back to" covers={[0, 1, 2]} tail="03" sample={sample} />
           <Entry n="02" title="Mixed for you" note=": made from your listening" covers={[3, 4, 5]} tail="03" sample={sample} />
-          <Entry n="03" title="Rewind" note=": your quarter so far" tail="OPEN ▸" sample={sample} />
+          <Entry n="03" title="Rewind" note=": your quarter so far" tail={`OPEN ${GLYPH.next}`} sample={sample} />
         </div>
         <div
           style={{

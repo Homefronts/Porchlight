@@ -1,3 +1,4 @@
+import { GLYPH } from "@/lib/theme/transport-glyphs";
 import type { CSSProperties, ReactNode } from "react";
 import {
   Counter,
@@ -155,9 +156,9 @@ export function PanelsMini({ sample }: MiniProps) {
         </div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: u(5) }}>
           <div style={{ ...m(8), display: "flex", justifyContent: "center", gap: u(12), color: "var(--pv-dim)" }}>
-            <span>◂◂</span>
-            <PlayBtn>❚❚</PlayBtn>
-            <span>▸▸</span>
+            <span>{GLYPH.prev}</span>
+            <PlayBtn>{GLYPH.pause}</PlayBtn>
+            <span>{GLYPH.next}</span>
           </div>
           <Counter />
         </div>

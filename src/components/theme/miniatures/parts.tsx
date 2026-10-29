@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { PreviewSample } from "../placeholder-sample";
+import { cssUrl } from "./css-url";
 
 export type MiniProps = { sample: PreviewSample; liner: boolean };
 
@@ -70,7 +71,7 @@ export function Cv({
         boxShadow: "var(--pv-cover-shadow)",
         // "" means no art was given: draw a shape in the look's colours.
         background: src
-          ? `center / cover no-repeat url("${src}")`
+          ? `center / cover no-repeat ${cssUrl(src)}`
           : "linear-gradient(135deg, var(--pv-acc), var(--pv-dim))",
         ...style,
       }}

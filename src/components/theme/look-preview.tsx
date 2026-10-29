@@ -99,7 +99,7 @@ export function LookPreview({
   return (
     <div
       role="img"
-      aria-label={`${look.name} look, ${LAYOUT_NAMES[layout]} layout preview`}
+      aria-label={`${look.name} look, ${LAYOUT_NAMES[layout]} layout preview${layout === "sidebar" ? "" : ", comes in a later update"}`}
       style={style}
     >
       <div aria-hidden="true" style={{ position: "absolute", inset: 0 }}>

@@ -1,3 +1,4 @@
+import { GLYPH } from "@/lib/theme/transport-glyphs";
 import {
   Counter,
   Cv,
@@ -137,9 +138,9 @@ export function SidebarMini({ sample, liner }: MiniProps) {
             color: "var(--pv-dim)",
           }}
         >
-          <span>◂◂</span>
-          <PlayBtn pad={7}>❚❚ PAUSE</PlayBtn>
-          <span>▸▸</span>
+          <span>{GLYPH.prev}</span>
+          <PlayBtn pad={7}>{GLYPH.pause} PAUSE</PlayBtn>
+          <span>{GLYPH.next}</span>
         </div>
         <div
           style={hd(15, {

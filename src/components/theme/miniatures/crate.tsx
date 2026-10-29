@@ -1,3 +1,4 @@
+import { GLYPH } from "@/lib/theme/transport-glyphs";
 import {
   Counter,
   Cv,
@@ -107,7 +108,7 @@ export function CrateMini({ sample, liner }: MiniProps) {
               </div>
               <div style={subtitle(14)}>Sample Artist</div>
               <div style={{ display: "flex", gap: u(12), ...m(8), marginTop: u(8), color: "var(--pv-dim)" }}>
-                <PlayBtn>▸ PLAY</PlayBtn>
+                <PlayBtn>{GLYPH.play} PLAY</PlayBtn>
                 <span>+ QUEUE</span>
               </div>
             </div>
@@ -149,9 +150,9 @@ export function CrateMini({ sample, liner }: MiniProps) {
         </div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: u(5) }}>
           <div style={{ ...m(8), display: "flex", justifyContent: "center", gap: u(12), color: "var(--pv-dim)" }}>
-            <span>◂◂</span>
-            <PlayBtn>❚❚ PAUSE</PlayBtn>
-            <span>▸▸</span>
+            <span>{GLYPH.prev}</span>
+            <PlayBtn>{GLYPH.pause} PAUSE</PlayBtn>
+            <span>{GLYPH.next}</span>
           </div>
           <Counter />
         </div>

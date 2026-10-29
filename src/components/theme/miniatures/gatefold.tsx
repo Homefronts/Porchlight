@@ -1,3 +1,4 @@
+import { GLYPH } from "@/lib/theme/transport-glyphs";
 import {
   Counter,
   Cv,
@@ -68,9 +69,9 @@ export function GatefoldMini({ sample }: MiniProps) {
               color: "var(--pv-dim)",
             }}
           >
-            <span>◂◂ PREV</span>
-            <PlayBtn>❚❚ PAUSE</PlayBtn>
-            <span>NEXT ▸▸</span>
+            <span>{GLYPH.prev} PREV</span>
+            <PlayBtn>{GLYPH.pause} PAUSE</PlayBtn>
+            <span>NEXT {GLYPH.next}</span>
             <span>QUEUE</span>
           </div>
         </div>
