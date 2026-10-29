@@ -101,6 +101,11 @@ windows = { version = "0.61", features = [
     "Win32_UI_WindowsAndMessaging",
     "Win32_UI_HiDpi",
     "Win32_Graphics_Gdi",
+    # Porchlight.lnk with its AppUserModelID after the old uninstall. See src/migrate.rs.
+    "Win32_UI_Shell_PropertiesSystem",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_System_Variant",
+    "Win32_Storage_EnhancedStorage",
 ] }
 # The toolbar takes HICONs, so its glyphs are rasterized at runtime from the
 # same lucide paths the player bar renders — that way the taskbar row looks

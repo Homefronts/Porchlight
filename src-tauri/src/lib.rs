@@ -30,6 +30,7 @@ mod downloads;
 mod discord;
 mod lastfm;
 mod media;
+mod migrate;
 mod power;
 // Taskbar thumbnail toolbar (prev / play-pause / next under the taskbar
 // preview). Windows-only shell surface; see src/thumbbar.rs.
@@ -289,6 +290,26 @@ mod secure_store {
     #[cfg(not(any(target_os = "linux", target_os = "macos")))]
     pub fn cookie_key_base64() -> Option<String> {
         None
+    }
+
+    /// Saves the key carried over in the Porchlight handoff under our own service.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    pub fn store_cookie_key_base64(encoded: &str) -> Result<(), String> {
+        use base64::Engine;
+        let key = base64::engine::general_purpose::STANDARD
+            .decode(encoded)
+            .map_err(|e| format!("handoff cookie key: {e}"))?;
+        if key.len() != KEYRING_KEY_LEN {
+            return Err(format!("handoff cookie key is {} bytes", key.len()));
+        }
+        keyring::Entry::new(KEYRING_SERVICE, KEYRING_USER)
+            .and_then(|entry| entry.set_secret(&key))
+            .map_err(|e| format!("failed to save key in system credential store: {e}"))
+    }
+
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    pub fn store_cookie_key_base64(_encoded: &str) -> Result<(), String> {
+        Ok(())
     }
 
     #[cfg(all(test, any(target_os = "linux", target_os = "macos")))]
@@ -4439,6 +4460,9 @@ pub fn run() {
         .manage(lastfm::LastfmState::default())
         .invoke_handler(tauri::generate_handler![
             bridge::write_handoff,
+            migrate::take_handoff_frontend,
+            migrate::move_status,
+            migrate::retry_move,
             save_png,
             save_text_file,
             ensure_ytdlp,
@@ -4535,6 +4559,8 @@ pub fn run() {
             }
         })
         .setup(move |app| {
+            // First: everything below reads the data folder this fills.
+            migrate::start(app.handle());
             if let Err(e) = bridge::stamp(app.handle()) {
                 eprintln!("[bridge] stamp failed: {e}");
             }
