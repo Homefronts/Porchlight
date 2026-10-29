@@ -166,6 +166,7 @@
   - **verify:** every copied file exists with the same size, and the handoff parsed (or was absent)
   - **on success:** write `done`; if `old_install_stamp` exists, call `uninstall(old_install_dir)`; delete the handoff; `notice = Moved`
   - **on any error:** `attempts += 1`, state stays `pending`, no uninstall; `notice = Failed` once `attempts >= 3`
+  - **macOS only, after `done`:** if the running bundle's folder isn't named `Porchlight.app` and its parent is writable without a password prompt, rename it to `Porchlight.app` and relaunch from there; otherwise leave it, with no prompt. Test `mac_rename_skipped_when_parent_not_writable`, written against a plain helper that takes the bundle path and a writable flag.
 
 - [ ] **Step 1: Failing tests** (tempdir trees):
   - `not_plus_without_marker`: no files created anywhere
