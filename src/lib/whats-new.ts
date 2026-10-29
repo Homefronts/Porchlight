@@ -56,6 +56,18 @@ export type WhatsNewEntry = {
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.9.1",
+    date: "October 29, 2026",
+    summary: "Getting ready for Porchlight",
+    changes: [
+      {
+        type: "improved",
+        title: "Getting ready for Porchlight",
+        text: "YTubic Plus is becoming Porchlight. This update saves a copy of your settings and library so the new app can pick them up when you install it.",
+      },
+    ],
+  },
+  {
     version: "0.9.0",
     date: "October 29, 2026",
     summary: "Looks",

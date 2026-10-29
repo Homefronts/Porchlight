@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { flushPlaybackSave } from "@/lib/store/playback";
+import { writeHandoffBounded } from "@/lib/bridge/handoff";
 import { toast } from "sonner";
 import { useSettingsStore } from "@/lib/store/settings";
 import { useUpdateStore } from "@/lib/store/update";
@@ -142,6 +143,7 @@ export async function restartToUpdate(): Promise<void> {
   // The Windows installer ends the process itself; save the song and
   // position first so the updated app comes back to them.
   flushPlaybackSave();
+  await writeHandoffBounded();
   try {
     await handle.install();
     await relaunch();

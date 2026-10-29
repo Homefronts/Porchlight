@@ -25,6 +25,7 @@ use tower_http::cors::CorsLayer;
 use tower_http::services::ServeFile;
 
 mod appid;
+mod bridge;
 mod downloads;
 mod discord;
 mod lastfm;
@@ -271,6 +272,23 @@ mod secure_store {
     #[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
     pub fn decrypt(encrypted: &[u8]) -> Result<Vec<u8>, String> {
         Ok(encrypted.to_vec())
+    }
+
+    /// The existing cookie key for the Porchlight handoff, base64. Never creates
+    /// one; null on Windows, where DPAPI ties the jar to the user instead.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    pub fn cookie_key_base64() -> Option<String> {
+        use base64::Engine;
+        let secret = keyring::Entry::new(KEYRING_SERVICE, KEYRING_USER)
+            .ok()?
+            .get_secret()
+            .ok()?;
+        Some(base64::engine::general_purpose::STANDARD.encode(secret))
+    }
+
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    pub fn cookie_key_base64() -> Option<String> {
+        None
     }
 
     #[cfg(all(test, any(target_os = "linux", target_os = "macos")))]
@@ -4420,6 +4438,7 @@ pub fn run() {
         .manage(discord::spawn())
         .manage(lastfm::LastfmState::default())
         .invoke_handler(tauri::generate_handler![
+            bridge::write_handoff,
             save_png,
             save_text_file,
             ensure_ytdlp,
@@ -4514,6 +4533,9 @@ pub fn run() {
             }
         })
         .setup(move |app| {
+            if let Err(e) = bridge::stamp(app.handle()) {
+                eprintln!("[bridge] stamp failed: {e}");
+            }
             eprintln!(
                 "[boot] YTubic {} starting (debug={})",
                 app.package_info().version,

@@ -60,6 +60,7 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { useLayoutStore, type LayoutMode } from "@/lib/store/layout";
 import { flushPlaybackSave } from "@/lib/store/playback";
+import { writeHandoffBounded } from "@/lib/bridge/handoff";
 import { IS_MAC } from "@/lib/platform";
 import { openSettings } from "@/lib/store/settings-dialog";
 import { AboutDialog } from "@/components/layout/about-dialog";
@@ -179,7 +180,7 @@ export function TopBar() {
                 variant="destructive"
                 onSelect={() => {
                   flushPlaybackSave();
-                  void invoke("quit_app");
+                  void writeHandoffBounded().then(() => invoke("quit_app"));
                 }}
               >
                 <IconPowerFilled />
