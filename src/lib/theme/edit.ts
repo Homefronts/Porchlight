@@ -40,3 +40,17 @@ export function editLook(look: Look, patch: Partial<Look>): Look {
 
 /** Under 3:1 the main text is hard to read on the background. */
 export const lowContrast = (s: Seeds) => contrastRatio(s.fg, s.bg) < 3;
+
+/**
+ * Saves the editor's draft and returns the id to make active. A built-in, or
+ * a custom look identical to its saved copy, is not written again.
+ */
+export function commitDraft(
+  look: Look,
+  store: { custom: Look[]; saveCustom(look: Look): string },
+): string {
+  if (isBuiltIn(look)) return look.id;
+  const saved = store.custom.find((l) => l.id === look.id);
+  if (saved && JSON.stringify(saved) === JSON.stringify(look)) return look.id;
+  return store.saveCustom(look);
+}

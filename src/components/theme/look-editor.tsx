@@ -138,9 +138,9 @@ function Row({ label, children }: { label: ReactNode; children: ReactNode }) {
 
 /**
  * Pick a look and a layout, change its colours, and open Advanced for fonts,
- * shapes and touches. Controlled: the app is not restyled from here. Editing
- * a built-in saves a new custom look ("Sleeve, edited") and selects it; the
- * built-in never changes.
+ * shapes and touches. Controlled, and nothing is saved from here: editing a
+ * built-in gives a draft ("Sleeve, edited", no id) in `value`, which the
+ * parent saves with `commitDraft`. The built-in never changes.
  */
 export function LookEditor({
   value,
@@ -152,7 +152,6 @@ export function LookEditor({
   compact?: boolean;
 }) {
   const custom = useThemeStore((s) => s.custom);
-  const saveCustom = useThemeStore((s) => s.saveCustom);
   const { resolvedTheme, forcedTheme } = useTheme();
   const mode = (forcedTheme ?? resolvedTheme) === "light" ? "light" : "dark";
   const [open, setOpen] = useState(false);
@@ -160,11 +159,13 @@ export function LookEditor({
 
   const look = paletteInUse(value.look, mode);
   const base = baseOf(look);
+  // The draft shows in Yours: in place of its saved copy, or after them if new.
+  const yours = custom.map((l) => (l.id === look.id ? look : l));
+  if (look.id === "") yours.push(look);
 
-  const edit = (patch: Partial<Look>) => {
-    const next = editLook(look, patch);
-    onChange({ ...value, look: { ...next, id: saveCustom(next) } });
-  };
+  // Edits stay in the value; the parent saves with commitDraft.
+  const edit = (patch: Partial<Look>) =>
+    onChange({ ...value, look: editLook(look, patch) });
   const pick = (l: Look) => onChange({ ...value, look: paletteInUse(l, mode) });
 
   return (
@@ -175,12 +176,12 @@ export function LookEditor({
           <LookCard key={l.id} look={paletteInUse(l, mode)} on={l.id === look.id} compact={compact} onPick={() => pick(l)} />
         ))}
       </div>
-      {custom.length > 0 && (
+      {yours.length > 0 && (
         <>
-          <Label note={String(custom.length).padStart(2, "0")}>Yours</Label>
+          <Label note={String(yours.length).padStart(2, "0")}>Yours</Label>
           <div className={cn("grid gap-2.5", compact ? "grid-cols-3" : "grid-cols-2")}>
-            {custom.map((l) => (
-              <LookCard key={l.id} look={l} on={l.id === look.id} compact={compact} onPick={() => pick(l)} />
+            {yours.map((l) => (
+              <LookCard key={l.id || "draft"} look={l} on={l.id === look.id} compact={compact} onPick={() => pick(l)} />
             ))}
           </div>
         </>
@@ -221,11 +222,10 @@ export function LookEditor({
           />
         ))}
       </div>
-      {lowContrast(look.seeds) && (
-        <p role="status" className="mt-2 text-xs text-acc1">
-          Text may be hard to read
-        </p>
-      )}
+      {/* Always mounted so screen readers announce the text when it appears. */}
+      <p role="status" className="mt-2 text-xs font-medium text-t2">
+        {lowContrast(look.seeds) ? "Text may be hard to read" : ""}
+      </p>
 
       <button
         type="button"
