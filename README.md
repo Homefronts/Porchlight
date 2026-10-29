@@ -48,7 +48,7 @@ Ideas for future Plus releases. Not promises.
 
 ### Coming in 1.0 (maybe sooner)
 
-- [ ] **Themes and customization** — a look of our own, "Liner notes": record-sleeve typography, serif headlines and one red accent, across every screen. Pick from ready-made looks (Sleeve, Paper, Ink and more) on first launch, change any colour, font or detail, and export your look as a file to share. The original look stays available as Classic. New layouts (Gatefold, Index, Crate, Panels) follow in later updates.
+- [ ] **More layouts**: new layouts (Gatefold, Index, Crate, Panels) follow in later updates, on top of the looks that shipped.
 
 ### Next up
 
@@ -104,6 +104,7 @@ Complicated changes, some needing new servers or apps.
 - **Hi-res cover art** — upgrades album covers to high-resolution studio art when available
 - **Full library support** — your playlists, likes, albums and artists; search with filters; radio/autoplay queues
 - **Desktop integration** — media keys and system media controls, tray/menu-bar icon, single instance
+- **Themes and looks**: five ready-made looks: Sleeve (record-sleeve type, serif headlines, one red accent), Paper, Ink liner, Ink, and Classic, the original look. Pick one on first launch or in Settings > Appearance, edit any colour or font into a custom look, and export it as a file to share. The app remembers your song, queue and position across restarts.
 - **Auto-updates** — the app updates itself from GitHub Releases, and keeps its yt-dlp copy fresh automatically
 
 > **Disclaimer:** YTubic is an unofficial client. It is not affiliated with,

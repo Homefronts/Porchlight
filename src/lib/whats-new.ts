@@ -56,6 +56,43 @@ export type WhatsNewEntry = {
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "0.9.0",
+    date: "October 29, 2026",
+    summary: "Looks",
+    changes: [
+      {
+        type: "new",
+        title: "Five looks",
+        text: "YTubic Plus has a look of its own now: Sleeve, with record-sleeve type, serif headlines and one red accent. Paper, Ink liner and Ink are close cousins. Classic is the app as you know it.",
+      },
+      {
+        type: "new",
+        title: "Make it yours",
+        text: "New installs start with a short picker. Everyone else can change looks any time in Settings > Appearance.",
+      },
+      {
+        type: "new",
+        title: "Custom looks",
+        text: "Copy any look and change its colours, fonts and details, with a live preview before you save it.",
+      },
+      {
+        type: "new",
+        title: "Share a look",
+        text: "Export a look as a file and send it to a friend. Import theirs from the same place in Settings > Appearance.",
+      },
+      {
+        type: "improved",
+        title: "Back to Classic",
+        text: "Classic is unchanged. To go back, pick it in Settings > Appearance.",
+      },
+      {
+        type: "improved",
+        title: "Remembers where you were",
+        text: "The app keeps your song, queue and position across restarts and updates, so you can pick up where you left off.",
+      },
+    ],
+  },
+  {
     version: "0.8.1",
     date: "October 27, 2026",
     summary: "Your requests",
