@@ -699,7 +699,7 @@ export function PlayerBar({
             aria-label={playing ? "Pause" : "Play"}
             onClick={toggle}
             disabled={!hasTrack}
-            className="size-12 rounded-full bg-brand text-white hover:bg-brand/90"
+            className="size-12 rounded-full on-brand bg-brand text-white hover:bg-brand/90"
           >
             {loading ? (
               <Loader2Icon className="animate-spin" />

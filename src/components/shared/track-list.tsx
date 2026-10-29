@@ -71,6 +71,9 @@ type Props = {
 // settle.
 const ROW_SIZE = 58;
 
+// Classic keeps its radius when the look sets no cover radius.
+const THUMB_RADIUS = "rounded-[var(--radius-cover,var(--radius-sm))]";
+
 function formatDuration(seconds?: number): string {
   if (!seconds || Number.isNaN(seconds)) return "—";
   const m = Math.floor(seconds / 60);
@@ -555,14 +558,17 @@ const TrackRow = memo(function TrackRow({
               <Thumbnail
                 thumbnails={t.thumbnails}
                 alt={t.title}
-                className="size-full rounded-[var(--radius-cover,var(--radius-sm))]"
+                className={cn("size-full", THUMB_RADIUS)}
                 targetSize={80}
               />
-              <ArtworkOutline className="rounded-[var(--radius-cover,var(--radius-sm))]" />
+              <ArtworkOutline className={THUMB_RADIUS} />
               {selected ? (
                 <div
                   aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-[var(--radius-cover,var(--radius-sm))] bg-black/55"
+                  className={cn(
+                    "pointer-events-none absolute inset-0 flex items-center justify-center bg-black/55",
+                    THUMB_RADIUS,
+                  )}
                 >
                   <SelectedCheck />
                 </div>
@@ -570,7 +576,8 @@ const TrackRow = memo(function TrackRow({
               <div
                 aria-hidden="true"
                 className={cn(
-                  "pointer-events-none absolute inset-0 flex items-center justify-center rounded-[var(--radius-cover,var(--radius-sm))] bg-black/55 opacity-0 transition-opacity duration-150",
+                  "pointer-events-none absolute inset-0 flex items-center justify-center bg-black/55 opacity-0 transition-opacity duration-150",
+                  THUMB_RADIUS,
                   !selected && "group-hover:opacity-100",
                 )}
               >

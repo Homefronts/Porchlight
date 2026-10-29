@@ -201,7 +201,7 @@ function ArtistActions({ artist }: { artist: ArtistPage }) {
         <Button
           onClick={() => play("shuffle", artist.shuffle)}
           disabled={pending !== null}
-          className="bg-brand text-white hover:bg-brand/90"
+          className="on-brand bg-brand text-white hover:bg-brand/90"
         >
           {pending === "shuffle" ? (
             <Loader2Icon className="animate-spin" />

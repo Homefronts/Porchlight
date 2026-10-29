@@ -1055,6 +1055,12 @@
   }
 }
 
+/* Text on the accent: white stays on Classic; looks use their derived
+   foreground (Ink's accent is cream). Unlayered so it beats text-white. */
+:root[data-look] .on-brand {
+  color: var(--brand-foreground);
+}
+
 /* Text transport touch: TransportLabel swaps icons for words, so the
    icon-sized buttons around them grow to fit. Unlayered so it beats the
    buttons' size and colour utilities. */
