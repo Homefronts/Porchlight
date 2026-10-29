@@ -4356,7 +4356,7 @@ fn build_tray(app: &tauri::AppHandle) -> tauri::Result<()> {
                 let _ = app.emit("tray-action", "next");
             }
             "quit" => {
-                app.exit(0);
+                bridge::request_quit(app);
             }
             _ => {}
         })
@@ -4516,7 +4516,9 @@ pub fn run() {
                             .quit_on_close
                             .load(Ordering::Relaxed);
                         if quit {
-                            window.app_handle().exit(0);
+                            // Hold the close: the frontend saves, then calls quit_app.
+                            api.prevent_close();
+                            bridge::request_quit(window.app_handle());
                         } else {
                             let _ = window.hide();
                             api.prevent_close();

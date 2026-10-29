@@ -56,6 +56,8 @@ fn write_handoff_into(
     fs::create_dir_all(dir).map_err(|e| e.to_string())?;
     // Write beside then rename, so quitting mid-write never leaves half a handoff.
     let tmp = dir.join(format!("{HANDOFF}.tmp"));
+    // A leftover file could keep looser permissions; the mode only applies on create.
+    let _ = fs::remove_file(&tmp);
     let mut opts = fs::OpenOptions::new();
     opts.write(true).create(true).truncate(true);
     // Owner-only on unix. On Windows the per-user AppData ACL already restricts it.
@@ -65,6 +67,18 @@ fn write_handoff_into(
     file.write_all(body.as_bytes()).map_err(|e| e.to_string())?;
     drop(file);
     fs::rename(&tmp, dir.join(HANDOFF)).map_err(|e| e.to_string())
+}
+
+/// Quit that gives the frontend a moment to save the handoff first. The
+/// timer is the backstop so a dead or slow webview can never stall quitting.
+pub fn request_quit(app: &AppHandle) {
+    use tauri::Emitter;
+    let _ = app.emit("quit-requested", ());
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(2500)).await;
+        app.exit(0);
+    });
 }
 
 #[tauri::command]

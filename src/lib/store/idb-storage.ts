@@ -1,7 +1,7 @@
 import { createStore, del, get, set } from "idb-keyval";
 import type { StateStorage } from "zustand/middleware";
 
-export const idbStore =
+const idbStore =
   typeof window !== "undefined"
     ? createStore("ytubic-stores", "kv")
     : undefined;

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { expect, it, vi } from "vitest";
 vi.hoisted(() => {
+  (globalThis as { indexedDB?: unknown }).indexedDB = {};
   const m = new Map<string, string>([
     ["ytm-settings", '{"a":1}'],
     ["ytm-looks", '{"b":2}'],
@@ -21,12 +22,18 @@ vi.hoisted(() => {
   });
 });
 vi.mock("idb-keyval", () => ({
-  createStore: vi.fn(() => "store"),
-  entries: vi.fn(async () => [
-    ["ytm-playback", "queue"],
-    ["ytm-library", { x: 1 }],
-  ]),
+  createStore: vi.fn((db: string) => db),
+  entries: vi.fn(async (db: string) =>
+    db === "ytubic-rewind"
+      ? [["ytm-rewind-log", [1, 2]]]
+      : [
+          ["ytm-playback", "queue"],
+          ["ytm-library", { x: 1 }],
+        ],
+  ),
 }));
+vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
+vi.mock("@tauri-apps/api/event", () => ({ listen: vi.fn() }));
 
 import { collectHandoff } from "./handoff";
 
@@ -36,5 +43,8 @@ it("collects settings and stores, leaving the caches out", async () => {
   expect(h.localStorage["ytm-looks"]).toBe('{"b":2}');
   expect(h.localStorage).not.toHaveProperty("ytubic-query-cache");
   expect(h.localStorage).not.toHaveProperty("ytubic-cover-cache");
-  expect(h.idb).toEqual({ "ytm-playback": "queue", "ytm-library": { x: 1 } });
+  expect(h.idb).toEqual({
+    "ytubic-stores": { "ytm-playback": "queue", "ytm-library": { x: 1 } },
+    "ytubic-rewind": { "ytm-rewind-log": [1, 2] },
+  });
 });
