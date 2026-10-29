@@ -148,30 +148,16 @@ fn install_dir_from(location: Option<String>, uninstall_string: Option<String>) 
     })
 }
 
-// The app calls move_data, which also hands back the frontend data.
-#[cfg_attr(not(test), allow(dead_code))]
 pub fn run(paths: &MovePaths, uninstall: &dyn Fn(&Path) -> Result<(), String>) -> MoveOutcome {
-    move_data(paths, uninstall).0
-}
-
-fn outcome(state: MoveState, attempts: u32, notice: Option<Notice>) -> MoveOutcome {
-    MoveOutcome { state, attempts, notice }
-}
-
-/// `run`, plus the handoff's `frontend` object when this call completed the move.
-fn move_data(
-    paths: &MovePaths,
-    uninstall: &dyn Fn(&Path) -> Result<(), String>,
-) -> (MoveOutcome, Option<Value>) {
     if !is_plus_stamp(&paths.old_roaming.join(MARKER)) {
-        return (outcome(MoveState::NotPlus, 0, None), None);
+        return outcome(MoveState::NotPlus, 0, None);
     }
     let (done, attempts) = read_state(&paths.new_roaming);
     if done {
-        return (outcome(MoveState::Done, attempts, None), None);
+        return outcome(MoveState::Done, attempts, None);
     }
     match attempt(paths, uninstall, attempts) {
-        Ok(frontend) => (outcome(MoveState::Done, attempts, Some(Notice::Moved)), frontend),
+        Ok(()) => outcome(MoveState::Done, attempts, Some(Notice::Moved)),
         Err(e) => {
             eprintln!("[migrate] move from YTubic Plus failed: {e}");
             let attempts = attempts + 1;
@@ -179,16 +165,20 @@ fn move_data(
                 eprintln!("[migrate] state not saved: {e}");
             }
             let notice = (attempts >= FAILED_AFTER).then_some(Notice::Failed);
-            (outcome(MoveState::Pending, attempts, notice), None)
+            outcome(MoveState::Pending, attempts, notice)
         }
     }
+}
+
+fn outcome(state: MoveState, attempts: u32, notice: Option<Notice>) -> MoveOutcome {
+    MoveOutcome { state, attempts, notice }
 }
 
 fn attempt(
     paths: &MovePaths,
     uninstall: &dyn Fn(&Path) -> Result<(), String>,
     attempts: u32,
-) -> Result<Option<Value>, String> {
+) -> Result<(), String> {
     write_state(&paths.new_roaming, false, attempts)?;
     let mut copied = Vec::new();
     copy_tree(&paths.old_roaming, &paths.new_roaming, true, &mut copied)?;
@@ -209,7 +199,7 @@ fn attempt(
             return Err(format!("{} did not copy intact", path.display()));
         }
     }
-    let mut handoff = read_handoff(&paths.old_roaming)?;
+    let handoff = read_handoff(&paths.old_roaming)?;
     if let Some(key) = handoff.as_ref().and_then(|h| h["cookieKey"].as_str()) {
         crate::secure_store::store_cookie_key_base64(key)?;
     }
@@ -218,14 +208,30 @@ fn attempt(
             uninstall(dir)?;
         }
     }
-    write_state(&paths.new_roaming, true, attempts)?;
-    // The handoff may carry the login key; it must not outlive the move.
-    if let Err(e) = fs::remove_file(paths.old_roaming.join(HANDOFF)) {
-        if e.kind() != std::io::ErrorKind::NotFound {
-            eprintln!("[migrate] handoff not deleted: {e}");
-        }
+    // The handoff stays until the frontend confirms its import (ack_import),
+    // so a crash in between never loses that state.
+    write_state(&paths.new_roaming, true, attempts)
+}
+
+/// The handoff's frontend data, served until the import is acknowledged, and
+/// only once the files are moved.
+fn handoff_frontend(paths: &MovePaths) -> Option<Value> {
+    let state = state_json(&paths.new_roaming);
+    if state["state"] != "done" || state["frontendImported"] == true {
+        return None;
     }
-    Ok(handoff.as_mut().and_then(|h| h.get_mut("frontend")).map(Value::take))
+    read_handoff(&paths.old_roaming).ok()??.get_mut("frontend").map(Value::take)
+}
+
+/// Deletes the handoff (it may carry the login key) and records the import.
+fn ack_import(paths: &MovePaths) -> Result<(), String> {
+    match fs::remove_file(paths.old_roaming.join(HANDOFF)) {
+        Err(e) if e.kind() != std::io::ErrorKind::NotFound => return Err(format!("handoff: {e}")),
+        _ => {}
+    }
+    let mut state = state_json(&paths.new_roaming);
+    state["frontendImported"] = Value::Bool(true);
+    fs::write(paths.new_roaming.join(STATE), state.to_string()).map_err(|e| e.to_string())
 }
 
 fn is_plus_stamp(path: &Path) -> bool {
@@ -237,11 +243,16 @@ fn is_plus_stamp(path: &Path) -> bool {
 
 /// (done, attempts). A missing or unreadable state is a first attempt.
 fn read_state(dir: &Path) -> (bool, u32) {
-    let v: Value = fs::read(dir.join(STATE))
-        .ok()
-        .and_then(|b| serde_json::from_slice(&b).ok())
-        .unwrap_or_default();
+    let v = state_json(dir);
     (v["state"] == "done", v["attempts"].as_u64().unwrap_or(0) as u32)
+}
+
+fn state_json(dir: &Path) -> Value {
+    fs::read(dir.join(STATE))
+        .ok()
+        .and_then(|b| serde_json::from_slice::<Value>(&b).ok())
+        .filter(Value::is_object)
+        .unwrap_or_else(|| serde_json::json!({}))
 }
 
 fn write_state(dir: &Path, done: bool, attempts: u32) -> Result<(), String> {
@@ -543,23 +554,19 @@ mod win {
     }
 }
 
-/// Shared with the commands: what this launch's move did, and the handoff's
-/// frontend data for the import, handed out once.
-pub struct MoveCell {
-    outcome: Mutex<MoveOutcome>,
-    frontend: Mutex<Option<Value>>,
-}
+/// What this launch's move did, for the frontend notice.
+pub struct MoveCell(Mutex<MoveOutcome>);
 
 static MOVING: Mutex<()> = Mutex::new(());
 
-fn move_now(app: &AppHandle) -> (MoveOutcome, Option<Value>) {
+fn move_now(app: &AppHandle) -> MoveOutcome {
     let _one_at_a_time = MOVING.lock().unwrap_or_else(|e| e.into_inner());
     let identifier = app.config().identifier.clone();
     match MovePaths::detect(app) {
-        Ok(paths) => move_data(&paths, &|dir| uninstall_old(dir, &identifier)),
+        Ok(paths) => run(&paths, &|dir| uninstall_old(dir, &identifier)),
         Err(e) => {
             eprintln!("[migrate] paths unavailable: {e}");
-            (outcome(MoveState::NotPlus, 0, None), None)
+            outcome(MoveState::NotPlus, 0, None)
         }
     }
 }
@@ -567,38 +574,41 @@ fn move_now(app: &AppHandle) -> (MoveOutcome, Option<Value>) {
 /// Runs in setup, before anything reads the data folder; the frontend's calls
 /// queue behind setup, so the result is ready when it asks.
 pub fn start(app: &AppHandle) {
-    let (outcome, frontend) = move_now(app);
+    let outcome = move_now(app);
     eprintln!("[migrate] {outcome:?}");
-    // Not on the launch that moved: relaunching then would drop the
-    // in-memory handoff before the frontend imports it.
+    // Not on the launch that moved, so the first run isn't interrupted.
     #[cfg(target_os = "macos")]
     if outcome.state == MoveState::Done && outcome.notice.is_none() {
         mac::rename_and_relaunch();
     }
-    app.manage(MoveCell { outcome: Mutex::new(outcome), frontend: Mutex::new(frontend) });
+    app.manage(MoveCell(Mutex::new(outcome)));
 }
 
+/// The Plus handoff's `frontend` object to import, or null. Returns the same
+/// data on every call until `ack_handoff_imported`.
 #[tauri::command]
-pub fn take_handoff_frontend(cell: State<'_, MoveCell>) -> Option<Value> {
-    cell.frontend.lock().unwrap_or_else(|e| e.into_inner()).take()
+pub fn take_handoff_frontend(app: AppHandle) -> Option<Value> {
+    handoff_frontend(&MovePaths::detect(&app).ok()?)
+}
+
+/// Call after a successful import: deletes the handoff and records the import.
+#[tauri::command]
+pub fn ack_handoff_imported(app: AppHandle) -> Result<(), String> {
+    ack_import(&MovePaths::detect(&app)?)
 }
 
 #[tauri::command]
 pub fn move_status(cell: State<'_, MoveCell>) -> MoveOutcome {
-    cell.outcome.lock().unwrap_or_else(|e| e.into_inner()).clone()
+    cell.0.lock().unwrap_or_else(|e| e.into_inner()).clone()
 }
 
 #[tauri::command]
 pub async fn retry_move(app: AppHandle) -> Result<MoveOutcome, String> {
     let handle = app.clone();
-    let (outcome, frontend) = tauri::async_runtime::spawn_blocking(move || move_now(&handle))
+    let outcome = tauri::async_runtime::spawn_blocking(move || move_now(&handle))
         .await
         .map_err(|e| e.to_string())?;
-    let cell = app.state::<MoveCell>();
-    *cell.outcome.lock().unwrap_or_else(|e| e.into_inner()) = outcome.clone();
-    if frontend.is_some() {
-        *cell.frontend.lock().unwrap_or_else(|e| e.into_inner()) = frontend;
-    }
+    *app.state::<MoveCell>().0.lock().unwrap_or_else(|e| e.into_inner()) = outcome.clone();
     Ok(outcome)
 }
 
@@ -678,7 +688,7 @@ mod tests {
             calls.borrow_mut().push(dir.to_path_buf());
             Ok(())
         };
-        let (out, frontend) = move_data(&paths, &uninstall);
+        let out = run(&paths, &uninstall);
         assert_eq!(out.state, MoveState::Done);
         assert_eq!(out.notice, Some(Notice::Moved));
         assert_eq!(*calls.borrow(), vec![paths.old_install_dir.clone().unwrap()]);
@@ -691,9 +701,8 @@ mod tests {
         assert_eq!(fs::read_to_string(new.join("downloads/tracks/a.m4a")).unwrap(), "audio");
         assert!(!old.join("downloads").exists());
         assert!(!new.join(MARKER).exists() && !new.join(HANDOFF).exists());
-        assert!(!old.join(HANDOFF).exists(), "handoff is deleted after a verified move");
         assert!(old.join(MARKER).exists(), "the old folder is otherwise left alone");
-        assert_eq!(frontend.unwrap()["localStorage"]["k"], "v");
+        assert_eq!(handoff_frontend(&paths).unwrap()["localStorage"]["k"], "v");
 
         let again = run(&paths, &uninstall);
         assert_eq!(again.state, MoveState::Done);
@@ -789,18 +798,18 @@ mod tests {
             *calls.borrow_mut() += 1;
             Ok(())
         };
-        let (out, frontend) = move_data(&paths, &uninstall);
+        let out = run(&paths, &uninstall);
         assert_eq!(out.state, MoveState::Pending);
         assert_eq!(out.attempts, 1);
-        assert!(frontend.is_none());
+        assert!(handoff_frontend(&paths).is_none());
         assert!(paths.new_roaming.join("accounts/acct-1/cookies.enc").exists());
         assert_eq!(*calls.borrow(), 0);
 
         fs::remove_file(paths.old_roaming.join(HANDOFF)).unwrap();
-        let (out, frontend) = move_data(&paths, &uninstall);
+        let out = run(&paths, &uninstall);
         assert_eq!(out.state, MoveState::Done);
         assert_eq!(out.notice, Some(Notice::Moved));
-        assert!(frontend.is_none());
+        assert!(handoff_frontend(&paths).is_none());
         assert_eq!(*calls.borrow(), 1);
     }
 
@@ -820,6 +829,31 @@ mod tests {
         assert_eq!(out.state, MoveState::Pending);
         assert!(paths.old_roaming.join(HANDOFF).exists());
         assert_eq!(run(&paths, &|_| Ok(())).state, MoveState::Done);
+    }
+
+    #[test]
+    fn handoff_survives_until_acknowledged() {
+        let paths = plus_tree("survives");
+        assert_eq!(run(&paths, &|_| Ok(())).state, MoveState::Done);
+        assert_eq!(handoff_frontend(&paths).unwrap()["localStorage"]["k"], "v");
+        // A crash before the import: the next launch serves the same data.
+        assert_eq!(run(&paths, &|_| Ok(())).state, MoveState::Done);
+        assert!(paths.old_roaming.join(HANDOFF).exists());
+        assert_eq!(handoff_frontend(&paths).unwrap()["localStorage"]["k"], "v");
+    }
+
+    #[test]
+    fn ack_deletes_handoff_and_records_import() {
+        let paths = plus_tree("ack");
+        run(&paths, &|_| Ok(()));
+        ack_import(&paths).unwrap();
+        assert!(!paths.old_roaming.join(HANDOFF).exists());
+        let st = state(&paths);
+        assert_eq!(st["state"], "done");
+        assert_eq!(st["frontendImported"], true);
+        assert!(handoff_frontend(&paths).is_none());
+        let again = run(&paths, &|_| Ok(()));
+        assert_eq!((again.state, again.notice), (MoveState::Done, None));
     }
 
     #[test]

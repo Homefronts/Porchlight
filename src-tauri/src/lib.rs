@@ -275,23 +275,6 @@ mod secure_store {
         Ok(encrypted.to_vec())
     }
 
-    /// The existing cookie key for the Porchlight handoff, base64. Never creates
-    /// one; null on Windows, where DPAPI ties the jar to the user instead.
-    #[cfg(any(target_os = "linux", target_os = "macos"))]
-    pub fn cookie_key_base64() -> Option<String> {
-        use base64::Engine;
-        let secret = keyring::Entry::new(KEYRING_SERVICE, KEYRING_USER)
-            .ok()?
-            .get_secret()
-            .ok()?;
-        Some(base64::engine::general_purpose::STANDARD.encode(secret))
-    }
-
-    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
-    pub fn cookie_key_base64() -> Option<String> {
-        None
-    }
-
     /// Saves the key carried over in the Porchlight handoff under our own service.
     #[cfg(any(target_os = "linux", target_os = "macos"))]
     pub fn store_cookie_key_base64(encoded: &str) -> Result<(), String> {
@@ -4459,8 +4442,8 @@ pub fn run() {
         .manage(discord::spawn())
         .manage(lastfm::LastfmState::default())
         .invoke_handler(tauri::generate_handler![
-            bridge::write_handoff,
             migrate::take_handoff_frontend,
+            migrate::ack_handoff_imported,
             migrate::move_status,
             migrate::retry_move,
             save_png,
@@ -4561,9 +4544,6 @@ pub fn run() {
         .setup(move |app| {
             // First: everything below reads the data folder this fills.
             migrate::start(app.handle());
-            if let Err(e) = bridge::stamp(app.handle()) {
-                eprintln!("[bridge] stamp failed: {e}");
-            }
             eprintln!(
                 "[boot] Porchlight {} starting (debug={})",
                 app.package_info().version,

@@ -37,7 +37,7 @@ import { useDownloadsBridge } from "@/lib/downloads";
 import { useDownloadsSync } from "@/lib/downloads-sync";
 import { useAiDataSync } from "@/lib/ai/data";
 import { useUpdateStartupCheck } from "@/lib/updater";
-import { useHandoffSchedule } from "@/lib/bridge/handoff";
+import { useQuitRequested } from "@/lib/use-quit-requested";
 import { useDeepLinks } from "@/lib/use-deep-links";
 import { useWhatsNewOnUpdate } from "@/lib/store/whats-new";
 import { pickHighResThumbnail } from "@/components/shared/thumbnail";
@@ -108,7 +108,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   useDownloadsSync();
   useAiDataSync();
   useUpdateStartupCheck();
-  useHandoffSchedule();
+  useQuitRequested();
   useWhatsNewOnUpdate();
   useDeepLinks();
   usePremiumStatusSync();
