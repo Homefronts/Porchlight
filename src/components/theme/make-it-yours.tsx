@@ -26,7 +26,7 @@ const art = (t: Thumbnail[]) => pickThumbnail(t, 256) ?? "";
  * fills (home feed, sidebar playlists, the queue), else placeholders. Gaps
  * are filled from the placeholders too.
  */
-function usePreviewSample(look: Look): PreviewSample {
+export function usePreviewSample(look: Look): PreviewSample {
   const qc = useQueryClient();
   const loggedIn = useQuery(authLoggedInQuery).data === true;
   const library = useQuery(libraryPlaylistsQuery(loggedIn)).data;

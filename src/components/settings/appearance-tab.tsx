@@ -22,6 +22,9 @@ import {
 import { SegmentedControl } from "@/components/ui/segmented";
 import { Switch } from "@/components/ui/switch";
 import { Group, SettingRow, TabPane } from "@/components/settings/primitives";
+import { LooksGroup } from "@/components/settings/looks-group";
+import { CLASSIC_ID } from "@/lib/theme/looks";
+import { useThemeStore } from "@/lib/theme/store";
 import { INTERFACE_FONTS, interfaceFontStack } from "@/lib/interface-font";
 import { cn } from "@/lib/utils";
 import { useLayoutStore, type LayoutMode } from "@/lib/store/layout";
@@ -66,13 +69,15 @@ export function AppearanceTab() {
   const setBackground = useSettingsStore((s) => s.setBackground);
   const rating = useSettingsStore((s) => s.ratingButtons);
   const setRating = useSettingsStore((s) => s.setRatingButtons);
+  const classic = useThemeStore((s) => s.activeId === CLASSIC_ID);
   const cardLyrics = useSettingsStore((s) => s.cardLyrics);
   const setCardLyrics = useSettingsStore((s) => s.setCardLyrics);
 
   return (
     <TabPane>
+      <LooksGroup />
       <Group>
-        {!forcedTheme && (
+        {classic && !forcedTheme && (
         <SettingRow
           icon={IconPaletteFilled}
           title="Theme"
@@ -89,21 +94,23 @@ export function AppearanceTab() {
           }
         />
         )}
-        <InterfaceFontRow />
+        {classic && <InterfaceFontRow />}
         {/* Two values, so the design gives this one a switch rather
             than a two-up segmented control. */}
-        <SettingRow
-          icon={IconPhotoFilled}
-          title="Ambient Background"
-          description="Tint the window with the current album art, or keep it plain."
-          control={
-            <Switch
-              checked={background === "ambient"}
-              onCheckedChange={(v) => setBackground(v ? "ambient" : "plain")}
-              aria-label="Ambient Background"
-            />
-          }
-        />
+        {classic && (
+          <SettingRow
+            icon={IconPhotoFilled}
+            title="Ambient Background"
+            description="Tint the window with the current album art, or keep it plain."
+            control={
+              <Switch
+                checked={background === "ambient"}
+                onCheckedChange={(v) => setBackground(v ? "ambient" : "plain")}
+                aria-label="Ambient Background"
+              />
+            }
+          />
+        )}
         <SettingRow
           icon={IconHeartFilled}
           title="Rating Buttons"
