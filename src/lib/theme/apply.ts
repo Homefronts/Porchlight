@@ -1,4 +1,4 @@
-import { CLASSIC_ID, type Look } from "./looks";
+import { BUILT_IN_LOOKS, CLASSIC_ID, type Look } from "./looks";
 import { deriveTokens } from "./tokens";
 import { activeLook, useThemeStore } from "./store";
 
@@ -32,12 +32,22 @@ export function applyLook(look: Look, root: HTMLElement = document.documentEleme
   }
 }
 
+/** Applies a stored look; a damaged one (old build, hand-edited storage) falls back to Classic so the app still opens. */
+export function applySavedLook(look: Look, root: HTMLElement = document.documentElement): void {
+  try {
+    applyLook(look, root);
+  } catch (e) {
+    console.error("[theme] could not apply look, using Classic", e);
+    applyLook(BUILT_IN_LOOKS.classic, root);
+  }
+}
+
 // Imported once from main.tsx, so both windows apply the look.
 if (typeof document !== "undefined") {
-  applyLook(activeLook(useThemeStore.getState()));
+  applySavedLook(activeLook(useThemeStore.getState()));
   useThemeStore.subscribe((s, prev) => {
     if (s.activeId !== prev.activeId || s.custom !== prev.custom) {
-      applyLook(activeLook(s));
+      applySavedLook(activeLook(s));
     }
   });
 }

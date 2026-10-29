@@ -12,9 +12,9 @@ vi.hoisted(() => {
   });
 });
 
-import { BUILT_IN_LOOKS } from "./looks";
+import { BUILT_IN_LOOKS, type Look } from "./looks";
 import { activeLook, initialLookFor, useThemeStore } from "./store";
-import { applyLook } from "./apply";
+import { applyLook, applySavedLook } from "./apply";
 
 beforeEach(() => useThemeStore.setState({ activeId: "classic", custom: [] }));
 
@@ -47,6 +47,15 @@ it("applies a look and Classic removes every trace", () => {
   expect(el.style.length).toBe(0);
   expect(el.hasAttribute("data-look")).toBe(false);
   expect(el.hasAttribute("data-touch-vinyl")).toBe(false);
+});
+
+it("falls back to Classic when a stored look is damaged", () => {
+  const el = document.documentElement;
+  const broken = { ...BUILT_IN_LOOKS.sleeve, id: "custom-x", seeds: undefined } as unknown as Look;
+  vi.spyOn(console, "error").mockImplementation(() => {});
+  expect(() => applySavedLook(broken)).not.toThrow();
+  expect(el.style.length).toBe(0);
+  expect(el.hasAttribute("data-look")).toBe(false);
 });
 
 it("keeps styles other code put on <html>", () => {
