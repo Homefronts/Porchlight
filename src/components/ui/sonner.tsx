@@ -24,7 +24,7 @@ import { useLayoutStore } from "@/lib/store/layout";
  * list instead of fighting it per toast.
  */
 const TOAST =
-  "group pointer-events-auto flex w-full items-center gap-3 rounded-xl border " +
+  "group pointer-events-auto flex w-full items-center gap-3 rounded-[var(--radius-window,var(--radius-xl))] border " +
   "border-w090 bg-glass2 p-3 backdrop-blur-[26px] backdrop-saturate-150 " +
   "shadow-[0_18px_42px_-14px_var(--k850)] " +
   // Errors carry their own tint rather than only a red icon: a flat red
@@ -39,13 +39,13 @@ const TOAST =
  * in the stack.
  */
 const ICON =
-  "grid size-8 shrink-0 place-items-center rounded-[10px] bg-w080 text-t3 " +
+  "grid size-8 shrink-0 place-items-center rounded-[var(--radius-button,10px)] bg-w080 text-t3 " +
   "group-data-[type=success]:bg-[rgba(34,176,125,0.14)] group-data-[type=success]:text-[#22B07D] " +
   "group-data-[type=warning]:bg-[rgba(240,160,60,0.14)] group-data-[type=warning]:text-[#F0A03C] " +
   "group-data-[type=error]:bg-[#F0324F] group-data-[type=error]:text-white";
 
 const BUTTON =
-  "shrink-0 cursor-pointer rounded-md bg-w060 px-[9px] py-1 text-[11.5px] " +
+  "shrink-0 cursor-pointer rounded-[var(--radius-button,var(--radius-md))] bg-w060 px-[9px] py-1 text-[11.5px] " +
   "font-semibold transition-colors duration-[140ms] hover:bg-w090";
 
 const Toaster = ({ ...props }: ToasterProps) => {
@@ -91,7 +91,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           // Sonner renders the close button first in the DOM, where it
           // would land ahead of the icon in a flex row.
           closeButton:
-            "order-last grid size-7 shrink-0 cursor-pointer place-items-center rounded-md " +
+            "order-last grid size-7 shrink-0 cursor-pointer place-items-center rounded-[var(--radius-button,var(--radius-md))] " +
             "text-t7 transition-colors duration-[140ms] hover:bg-w090 hover:text-t2",
         },
       }}

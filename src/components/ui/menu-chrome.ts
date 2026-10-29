@@ -11,10 +11,11 @@
  * still separates.
  *
  * Radius nesting: 12px panel minus 5px padding leaves 7px for the item,
- * rounded up to the 8px step (`rounded-md`).
+ * rounded up to the 8px step (`rounded-md`). Looks swap in their window
+ * and button radii; Classic sets neither, so these values stand.
  */
 export const MENU_PANEL =
-  "z-50 min-w-[8rem] rounded-[12px] border border-w100 bg-glass3 p-[5px] " +
+  "z-50 min-w-[8rem] rounded-[var(--radius-window,12px)] border border-w100 bg-glass3 p-[5px] " +
   "text-t3 backdrop-blur-[22px] backdrop-saturate-[1.4] " +
   "shadow-[0_18px_40px_-12px_var(--k850)]";
 
@@ -36,7 +37,7 @@ export const MENU_MOTION =
  * glyph next to dim text.
  */
 export const MENU_ITEM =
-  "relative flex cursor-pointer items-center gap-[11px] rounded-md px-2.5 py-1.5 " +
+  "relative flex cursor-pointer items-center gap-[11px] rounded-[var(--radius-button,var(--radius-md))] px-2.5 py-1.5 " +
   "text-[13.5px] outline-hidden transition-colors duration-[140ms] select-none " +
   "focus:bg-w070 focus:text-t1 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 " +
   "data-[inset]:pl-8 [&_svg]:pointer-events-none [&_svg]:shrink-0 " +
@@ -62,7 +63,7 @@ export const MENU_ITEM_DESTRUCTIVE =
  * ate the width these submenus need.
  */
 export const MENU_CHOICE_ITEM =
-  "relative flex cursor-pointer items-center gap-[11px] whitespace-nowrap rounded-md px-2.5 py-1.5 " +
+  "relative flex cursor-pointer items-center gap-[11px] whitespace-nowrap rounded-[var(--radius-button,var(--radius-md))] px-2.5 py-1.5 " +
   "text-[13.5px] outline-hidden transition-colors duration-[140ms] select-none " +
   "focus:bg-w070 focus:text-t1 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 " +
   "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 " +
@@ -72,6 +73,6 @@ export const MENU_CHOICE_ITEM =
 export const MENU_SEPARATOR = "mx-1 my-[5px] h-px bg-w080";
 
 export const MENU_LABEL =
-  "px-2.5 py-1.5 text-[13px] font-semibold text-t2 data-[inset]:pl-8";
+  "px-2.5 py-1.5 font-meta text-[13px] font-semibold text-t2 data-[inset]:pl-8";
 
-export const MENU_SHORTCUT = "ml-auto text-[12px] text-t7";
+export const MENU_SHORTCUT = "ml-auto font-meta text-[12px] text-t7";

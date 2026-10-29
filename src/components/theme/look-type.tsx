@@ -23,6 +23,16 @@ export function recordTitleClass(family: LookFamily): string {
   return "";
 }
 
+/**
+ * A heading's face under a look: serif at its own weight, so put it after the
+ * element's classes. Nothing under Classic.
+ */
+export function headlineClass(family: LookFamily): string {
+  if (family === "liner") return "font-headline font-normal";
+  if (family === "ink") return "font-headline font-medium";
+  return "";
+}
+
 /** A page's title: big serif under Liner, quiet sans under Ink, today's heading under Classic. */
 export function PageTitle({
   children,

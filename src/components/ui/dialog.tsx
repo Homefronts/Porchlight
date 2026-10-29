@@ -6,6 +6,7 @@ import { Dialog as DialogPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { useLookFamily } from "@/components/theme/look-type"
 import { frostedOverlay, frostedSurface } from "@/components/ui/frosted"
 
 // Same glass the menus use — see components/ui/frosted.ts.
@@ -117,7 +118,7 @@ function DialogContent({
           onInteractOutside?.(e);
         }}
         className={cn(
-          "fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border bg-background p-6 shadow-lg duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-lg",
+          "fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-[var(--radius-window,var(--radius-lg))] border bg-background p-6 shadow-lg duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-lg",
           className
         )}
         {...props}
@@ -178,10 +179,19 @@ function DialogTitle({
   className,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Title>) {
+  const family = useLookFamily()
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-lg leading-none font-semibold", className)}
+      // The look's weight wins over the caller's (a bold serif is
+      // synthesized); its face doesn't, so a caller can still pick font-meta.
+      className={cn(
+        "text-lg leading-none font-semibold",
+        family !== "classic" && "font-headline",
+        className,
+        family === "liner" && "font-normal",
+        family === "ink" && "font-medium"
+      )}
       {...props}
     />
   )

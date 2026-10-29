@@ -53,7 +53,7 @@ export function SegmentedControl<T extends string>({
         // The segment's radius is the track's minus the 2px padding
         // (10 - 2 = 8, i.e. `rounded-md` here, since `--radius` is 10px).
         // Matching the two made the inner corner bulge past the outer one.
-        "inline-flex shrink-0 items-center gap-0.5 rounded-[10px] border border-w070 bg-w050 p-0.5",
+        "inline-flex shrink-0 items-center gap-0.5 rounded-[var(--radius-button,10px)] border border-w070 bg-w050 p-0.5",
         fullWidth && "flex w-full",
         disabled && "pointer-events-none opacity-50",
         className,
@@ -70,7 +70,7 @@ export function SegmentedControl<T extends string>({
             disabled={disabled}
             onClick={() => onChange(opt.value)}
             className={cn(
-              "relative flex h-7 items-center justify-center rounded-md px-4 text-[13px] whitespace-nowrap transition-colors duration-[140ms]",
+              "relative flex h-7 items-center justify-center rounded-[var(--radius-button,var(--radius-md))] px-4 text-[13px] whitespace-nowrap transition-colors duration-[140ms]",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               fullWidth && "flex-1",
               active
@@ -82,7 +82,7 @@ export function SegmentedControl<T extends string>({
               <motion.span
                 layout
                 layoutId={layoutId}
-                className="absolute inset-0 rounded-md bg-w140 shadow-[0_1px_2px_var(--k350),inset_0_1px_0_var(--w080)]"
+                className="absolute inset-0 rounded-[var(--radius-button,var(--radius-md))] bg-w140 shadow-[0_1px_2px_var(--k350),inset_0_1px_0_var(--w080)]"
                 transition={shouldReduceMotion ? { duration: 0 } : SPRING}
               />
             )}

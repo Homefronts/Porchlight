@@ -1060,6 +1060,10 @@
 :root[data-look] .on-brand {
   color: var(--brand-foreground);
 }
+/* Same for the switch knob: a white knob vanishes on Ink's cream accent. */
+:root[data-look] [data-slot="switch-thumb"][data-state="checked"] {
+  background: var(--brand-foreground);
+}
 
 /* Text transport touch: TransportLabel swaps icons for words, so the
    icon-sized buttons around them grow to fit. Unlayered so it beats the
