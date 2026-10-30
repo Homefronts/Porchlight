@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { createStore, get, set } from "idb-keyval";
 import { toast } from "sonner";
-import type { HandoffFrontend } from "./handoff";
+import type { HandoffFrontend, HandoffTake } from "./handoff";
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
@@ -16,23 +16,28 @@ function isHandoff(v: unknown): v is HandoffFrontend {
   );
 }
 
+const isTake = (v: unknown): v is HandoffTake =>
+  isRecord(v) && typeof v.overwrite === "boolean" && isHandoff(v.frontend);
+
 /**
  * Copies the old app's in-app state into this app's storage before any store
  * loads. Only fills keys that are absent, so it is safe to repeat and never
- * overwrites Porchlight data. Acks (deletes the handoff) only on success; an
- * invalid file is left in place for diagnosis.
+ * overwrites Porchlight data, unless `overwrite` says Porchlight only ran on
+ * fresh data before the move finished. Acks (deletes the handoff) only on
+ * success; an invalid file is left in place for diagnosis.
  */
 export async function importHandoff(): Promise<"imported" | "none" | "invalid"> {
   const data = await invoke<unknown>("take_handoff_frontend");
   if (data == null) return "none";
-  if (!isHandoff(data)) return "invalid";
-  for (const [k, v] of Object.entries(data.localStorage)) {
-    if (localStorage.getItem(k) === null) localStorage.setItem(k, v);
+  if (!isTake(data)) return "invalid";
+  const { frontend, overwrite } = data;
+  for (const [k, v] of Object.entries(frontend.localStorage)) {
+    if (overwrite || localStorage.getItem(k) === null) localStorage.setItem(k, v);
   }
-  for (const [db, entries] of Object.entries(data.idb)) {
+  for (const [db, entries] of Object.entries(frontend.idb)) {
     const store = createStore(db, "kv");
     for (const [k, v] of Object.entries(entries)) {
-      if ((await get(k, store)) === undefined) await set(k, v, store);
+      if (overwrite || (await get(k, store)) === undefined) await set(k, v, store);
     }
   }
   await invoke("ack_handoff_imported");

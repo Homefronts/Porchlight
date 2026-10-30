@@ -76,6 +76,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
         text: "Shared links now use porchlight://. Old ytubic-plus:// links still open the app.",
       },
     ],
+    note: "Known issues: Linux package users can remove the old YTubic Plus package themselves.",
   },
   {
     version: "0.9.1",

@@ -43,8 +43,11 @@ it("imports_missing_keys_only", async () => {
   h.m.set("keep", "mine");
   h.idb.set("ytubic-stores/a", "mine");
   serve({
-    localStorage: { keep: "old", fresh: "x" },
-    idb: { "ytubic-stores": { a: "old", b: 1 }, "ytubic-rewind": { c: { n: 2 } } },
+    frontend: {
+      localStorage: { keep: "old", fresh: "x" },
+      idb: { "ytubic-stores": { a: "old", b: 1 }, "ytubic-rewind": { c: { n: 2 } } },
+    },
+    overwrite: false,
   });
   expect(await importHandoff()).toBe("imported");
   expect(h.m.get("keep")).toBe("mine");
@@ -55,10 +58,25 @@ it("imports_missing_keys_only", async () => {
   expect(h.invoke).toHaveBeenCalledWith("ack_handoff_imported");
 });
 
+it("overwrites_when_flagged", async () => {
+  h.m.set("ytm-look", "fresh");
+  h.idb.set("ytubic-stores/a", "fresh");
+  serve({
+    frontend: { localStorage: { "ytm-look": "ink" }, idb: { "ytubic-stores": { a: "old" } } },
+    overwrite: true,
+  });
+  expect(await importHandoff()).toBe("imported");
+  expect(h.m.get("ytm-look")).toBe("ink");
+  expect(h.idb.get("ytubic-stores/a")).toBe("old");
+  expect(h.invoke).toHaveBeenCalledWith("ack_handoff_imported");
+});
+
 it("invalid_shape_writes_nothing_and_does_not_ack", async () => {
-  serve({ localStorage: { a: 5 }, idb: {} });
+  serve({ frontend: { localStorage: { a: 5 }, idb: {} }, overwrite: false });
   expect(await importHandoff()).toBe("invalid");
-  serve({ idb: {} });
+  serve({ frontend: { idb: {} }, overwrite: false });
+  expect(await importHandoff()).toBe("invalid");
+  serve({ frontend: { localStorage: { a: "x" }, idb: {} } });
   expect(await importHandoff()).toBe("invalid");
   expect(h.m.size).toBe(0);
   expect(h.invoke).not.toHaveBeenCalledWith("ack_handoff_imported");

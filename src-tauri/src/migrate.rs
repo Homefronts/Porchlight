@@ -16,6 +16,8 @@ use tauri::{AppHandle, Manager, State};
 
 pub const OLD_IDENTIFIER: &str = "com.github.ivasy.ytubic";
 const MARKER: &str = "plus-marker.json";
+/// The marker after the import, so a later fresh install doesn't import stale data.
+const MOVED_MARKER: &str = "plus-marker.moved.json";
 const INSTALL_STAMP: &str = "plus-install.json";
 const HANDOFF: &str = "porchlight-handoff.json";
 const STATE: &str = "moved-from-plus.json";
@@ -99,6 +101,9 @@ pub trait System {
     fn old_desktop_shortcut(&self) -> bool;
     fn ensure_shortcuts(&self, desktop: bool) -> Result<(), String>;
     fn store_key(&self, base64: &str) -> Result<(), String>;
+    /// Whether the old app's launch-at-login entry starts a program in `dir`.
+    fn old_autostart(&self, dir: &Path) -> bool;
+    fn enable_autostart(&self) -> Result<(), String>;
 }
 
 #[derive(Default)]
@@ -180,9 +185,10 @@ fn old_install() -> Found {
     }
 }
 
-/// deb/rpm are swapped by the package's Replaces, and an AppImage updates in
-/// place, so there is never an old Plus install to remove. A YTubic binary on
-/// the system is NUber's package, which still reads the old downloads.
+/// An AppImage updates in place, so there is never an old Plus install to
+/// remove. A YTubic binary on the system is a package (NUber's, or Plus's)
+/// that still reads the old downloads.
+// shortcut: deb/rpm keep the old Plus package, since "ytubic" may be NUber's; users remove it themselves.
 // shortcut: an AppImage of NUber's app can't be detected and counts as no
 // install, so downloads move; check a known AppImage path if that's reported.
 #[cfg(not(any(windows, target_os = "macos")))]
@@ -235,6 +241,10 @@ struct Record {
     attempts: u32,
     key_stored: bool,
     had_desktop: bool,
+    /// The old app launched at login; carried over once it's uninstalled.
+    had_autostart: bool,
+    /// Porchlight ran on fresh data while `pending`, so the import overwrites.
+    ran_before_done: bool,
     uninstalled: bool,
     cleanup_attempts: u32,
     /// "moved" or "copied" once taken.
@@ -279,10 +289,12 @@ fn outcome(state: MoveState, attempts: u32, notice: Option<Notice>) -> MoveOutco
 /// b. a proven Plus install uninstalled; c. downloads moved or copied.
 /// Each step is recorded, so a crash anywhere resumes at the step it reached.
 pub fn run(paths: &MovePaths, sys: &dyn System) -> MoveOutcome {
-    if !read_json(&paths.old_roaming.join(MARKER)).is_some_and(|v| v["app"] == "ytubic-plus") {
+    let plus = |name: &str| read_json(&paths.old_roaming.join(name)).is_some_and(|v| v["app"] == "ytubic-plus");
+    let dir = &paths.new_roaming;
+    // Once imported, the marker is renamed: only a move already under way carries on.
+    if !plus(MARKER) && !(plus(MOVED_MARKER) && dir.join(STATE).exists()) {
         return outcome(MoveState::NotPlus, 0, None);
     }
-    let dir = &paths.new_roaming;
     let mut rec = Record::load(dir);
     let mut notice = None;
     if !rec.done() {
@@ -290,6 +302,7 @@ pub fn run(paths: &MovePaths, sys: &dyn System) -> MoveOutcome {
             eprintln!("[migrate] move from YTubic Plus failed: {e}");
             rec.state = "pending".into();
             rec.attempts += 1;
+            rec.ran_before_done = true;
             rec.save_logged(dir);
             let notice = (rec.attempts >= FAILED_AFTER).then_some(Notice::Failed);
             return outcome(MoveState::Pending, rec.attempts, notice);
@@ -310,14 +323,28 @@ pub fn run(paths: &MovePaths, sys: &dyn System) -> MoveOutcome {
                 rec.had_desktop = true;
                 rec.save_logged(dir);
             }
+            // Read first too: the old uninstaller deletes its login entry.
+            if sys.old_autostart(old) && !rec.had_autostart {
+                rec.had_autostart = true;
+                rec.save_logged(dir);
+            }
             match sys.uninstall(old) {
-                Ok(()) => (rec.uninstalled, uninstalled_now) = (true, true),
+                Ok(()) => {
+                    (rec.uninstalled, uninstalled_now) = (true, true);
+                    remove_install_leftovers(old);
+                }
                 Err(e) => {
                     eprintln!("[migrate] old install not removed: {e}");
                     failed = true;
                 }
             }
             dirty = true;
+        }
+    }
+    if rec.uninstalled && rec.had_autostart {
+        match sys.enable_autostart() {
+            Ok(()) => (rec.had_autostart, dirty) = (false, true),
+            Err(e) => eprintln!("[migrate] launch at login not carried over: {e}"),
         }
     }
 
@@ -396,6 +423,18 @@ fn copy_files(paths: &MovePaths, sys: &dyn System, rec: &mut Record) -> Result<(
     rec.save(dir)
 }
 
+/// The old uninstaller doesn't know the stamp 0.9.1 added, so it leaves the
+/// folder behind. Non-recursive: anything else in it isn't ours to delete.
+fn remove_install_leftovers(dir: &Path) {
+    use std::io::ErrorKind::{DirectoryNotEmpty, NotFound};
+    let _ = fs::remove_file(dir.join(INSTALL_STAMP));
+    if let Err(e) = fs::remove_dir(dir) {
+        if !matches!(e.kind(), DirectoryNotEmpty | NotFound) {
+            eprintln!("[migrate] old install folder kept: {e}");
+        }
+    }
+}
+
 /// Proves only the copies made in this run: an earlier run's files were checked then.
 fn verify(copied: &[(PathBuf, u64)]) -> Result<(), String> {
     for (path, len) in copied {
@@ -406,25 +445,40 @@ fn verify(copied: &[(PathBuf, u64)]) -> Result<(), String> {
     Ok(())
 }
 
+/// What `take_handoff_frontend` serves. `overwrite`: Porchlight already ran
+/// on fresh data, so the handoff's keys replace its own.
+#[derive(Debug, Serialize)]
+pub struct HandoffTake {
+    frontend: Value,
+    overwrite: bool,
+}
+
 /// The handoff's frontend data, served until the import is acknowledged, and
 /// only once the files are in.
-fn handoff_frontend(paths: &MovePaths) -> Option<Value> {
+fn handoff_frontend(paths: &MovePaths) -> Option<HandoffTake> {
     let rec = Record::load(&paths.new_roaming);
     if !rec.done() || rec.frontend_imported {
         return None;
     }
-    read_handoff(&paths.old_roaming).ok()??.get_mut("frontend").map(Value::take)
+    let frontend = read_handoff(&paths.old_roaming).ok()??.get_mut("frontend").map(Value::take)?;
+    Some(HandoffTake { frontend, overwrite: rec.ran_before_done })
 }
 
-/// Deletes the handoff and records the import.
+/// Deletes the handoff, records the import and retires the marker.
 fn ack_import(paths: &MovePaths) -> Result<(), String> {
-    match fs::remove_file(paths.old_roaming.join(HANDOFF)) {
+    let old = &paths.old_roaming;
+    match fs::remove_file(old.join(HANDOFF)) {
         Err(e) if e.kind() != std::io::ErrorKind::NotFound => return Err(format!("handoff: {e}")),
         _ => {}
     }
     let mut rec = Record::load(&paths.new_roaming);
     rec.frontend_imported = true;
-    rec.save(&paths.new_roaming)
+    rec.save(&paths.new_roaming)?;
+    match fs::rename(old.join(MARKER), old.join(MOVED_MARKER)) {
+        Err(e) if e.kind() != std::io::ErrorKind::NotFound => eprintln!("[migrate] marker kept: {e}"),
+        _ => {}
+    }
+    Ok(())
 }
 
 fn read_json(path: &Path) -> Option<Value> {
@@ -587,6 +641,7 @@ fn holds_no_files(dir: &Path) -> bool {
 
 struct RealSystem {
     identifier: String,
+    app: AppHandle,
 }
 
 impl System for RealSystem {
@@ -602,11 +657,36 @@ impl System for RealSystem {
     fn store_key(&self, base64: &str) -> Result<(), String> {
         crate::secure_store::store_cookie_key_base64(base64)
     }
+    fn old_autostart(&self, dir: &Path) -> bool {
+        old_autostart(dir)
+    }
+    fn enable_autostart(&self) -> Result<(), String> {
+        use tauri_plugin_autostart::ManagerExt;
+        self.app.autolaunch().enable().map_err(|e| e.to_string())
+    }
 }
 
 #[cfg(windows)]
 fn old_desktop_shortcut() -> bool {
     win::on_desktop("YTubic.lnk")
+}
+
+#[cfg(windows)]
+fn old_autostart(dir: &Path) -> bool {
+    win::run_value("YTubic").is_some_and(|cmd| runs_from(&cmd, dir))
+}
+
+#[cfg(not(windows))]
+fn old_autostart(_dir: &Path) -> bool {
+    false
+}
+
+/// Whether a Run command line, quoted or not, starts a program inside `dir`.
+#[cfg_attr(not(windows), allow(dead_code))]
+fn runs_from(command: &str, dir: &Path) -> bool {
+    let exe = command.trim().trim_start_matches('"').to_lowercase();
+    let dir = dir.to_string_lossy().trim_end_matches('\\').to_lowercase();
+    exe.starts_with(&format!("{dir}\\"))
 }
 
 #[cfg(not(windows))]
@@ -701,9 +781,19 @@ mod win {
     };
 
     const UNINSTALL_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\YTubic";
+    const RUN_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
 
     pub fn reg_string(root: HKEY, name: &str) -> Option<String> {
-        let (key, name) = (HSTRING::from(UNINSTALL_KEY), HSTRING::from(name));
+        reg_value(root, UNINSTALL_KEY, name)
+    }
+
+    /// The user's launch-at-login command for `name`.
+    pub fn run_value(name: &str) -> Option<String> {
+        reg_value(HKEY_CURRENT_USER, RUN_KEY, name)
+    }
+
+    fn reg_value(root: HKEY, key: &str, name: &str) -> Option<String> {
+        let (key, name) = (HSTRING::from(key), HSTRING::from(name));
         let mut len = 0u32;
         unsafe {
             RegGetValueW(root, &key, &name, RRF_RT_REG_SZ, None, None, Some(&mut len))
@@ -766,22 +856,31 @@ mod win {
     }
 
     pub fn uninstall(dir: &Path) -> Result<(), String> {
-        let status = std::process::Command::new(dir.join("uninstall.exe"))
+        let mut child = std::process::Command::new(dir.join("uninstall.exe"))
             .arg("/S")
-            .status()
+            .spawn()
             .map_err(|e| format!("old uninstaller: {e}"))?;
-        if !status.success() {
-            return Err(format!("old uninstaller exited with {status}"));
-        }
         // NSIS relaunches itself from %TEMP%, so the first process exits before it's done.
+        // A hung uninstaller is left running, so startup never waits past the deadline.
         let deadline = Instant::now() + Duration::from_secs(30);
-        while key_exists(HKEY_CURRENT_USER) {
+        let mut exited = false;
+        loop {
+            if !exited {
+                if let Some(status) = child.try_wait().map_err(|e| format!("old uninstaller: {e}"))? {
+                    if !status.success() {
+                        return Err(format!("old uninstaller exited with {status}"));
+                    }
+                    exited = true;
+                }
+            }
+            if exited && !key_exists(HKEY_CURRENT_USER) {
+                return Ok(());
+            }
             if Instant::now() > deadline {
                 return Err("old uninstaller did not finish".into());
             }
             std::thread::sleep(Duration::from_millis(250));
         }
-        Ok(())
     }
 
     /// The updater's /UPDATE install makes no shortcuts, and the old uninstall
@@ -861,7 +960,7 @@ static MOVING: Mutex<()> = Mutex::new(());
 
 fn move_now(app: &AppHandle, at_launch: bool) -> MoveOutcome {
     let _one_at_a_time = MOVING.lock().unwrap_or_else(|e| e.into_inner());
-    let sys = RealSystem { identifier: app.config().identifier.clone() };
+    let sys = RealSystem { identifier: app.config().identifier.clone(), app: app.clone() };
     match MovePaths::detect(app) {
         Ok(mut paths) => {
             // After launch the downloads module has the folder open: copy, never rename.
@@ -892,7 +991,7 @@ pub fn start(app: &AppHandle) {
 /// The Plus handoff's `frontend` object to import, or null. Returns the same
 /// data on every call until `ack_handoff_imported`.
 #[tauri::command]
-pub fn take_handoff_frontend(app: AppHandle) -> Option<Value> {
+pub fn take_handoff_frontend(app: AppHandle) -> Option<HandoffTake> {
     handoff_frontend(&MovePaths::detect(&app).ok()?)
 }
 
@@ -952,6 +1051,8 @@ mod tests {
         old_desktop: bool,
         shortcuts: RefCell<Vec<bool>>,
         keys: RefCell<Vec<String>>,
+        old_autostart: bool,
+        autostarts: Cell<u32>,
         /// Whether this path still existed when the uninstall ran.
         watch: Option<PathBuf>,
         watched: RefCell<Vec<bool>>,
@@ -967,6 +1068,8 @@ mod tests {
                 return Err("uninstaller missing".into());
             }
             self.uninstalls.borrow_mut().push(dir.to_path_buf());
+            // Like NSIS: its own files go, the stamp it doesn't know stays.
+            let _ = fs::remove_file(dir.join("ytubic.exe"));
             Ok(())
         }
         fn old_desktop_shortcut(&self) -> bool {
@@ -978,6 +1081,13 @@ mod tests {
         }
         fn store_key(&self, key: &str) -> Result<(), String> {
             self.keys.borrow_mut().push(key.to_string());
+            Ok(())
+        }
+        fn old_autostart(&self, _dir: &Path) -> bool {
+            self.old_autostart
+        }
+        fn enable_autostart(&self) -> Result<(), String> {
+            self.autostarts.set(self.autostarts.get() + 1);
             Ok(())
         }
     }
@@ -1070,7 +1180,7 @@ mod tests {
         assert_eq!(st["downloads"], "moved");
         assert!(!new.join(MARKER).exists() && !new.join(HANDOFF).exists());
         assert!(old.join(MARKER).exists(), "the old folder is otherwise left alone");
-        assert_eq!(handoff_frontend(&paths).unwrap()["localStorage"]["k"], "v");
+        assert_eq!(handoff_frontend(&paths).unwrap().frontend["localStorage"]["k"], "v");
 
         let again = run(&paths, &fake);
         assert_eq!((again.state, again.notice), (MoveState::Done, None));
@@ -1363,11 +1473,11 @@ mod tests {
     fn handoff_survives_until_acknowledged() {
         let paths = plus_tree("survives");
         assert_eq!(run(&paths, &Fake::default()).state, MoveState::Done);
-        assert_eq!(handoff_frontend(&paths).unwrap()["localStorage"]["k"], "v");
+        assert_eq!(handoff_frontend(&paths).unwrap().frontend["localStorage"]["k"], "v");
         // A crash before the import: the next launch serves the same data.
         assert_eq!(run(&paths, &Fake::default()).state, MoveState::Done);
         assert!(paths.old_roaming.join(HANDOFF).exists());
-        assert_eq!(handoff_frontend(&paths).unwrap()["localStorage"]["k"], "v");
+        assert_eq!(handoff_frontend(&paths).unwrap().frontend["localStorage"]["k"], "v");
     }
 
     #[test]
@@ -1381,6 +1491,85 @@ mod tests {
         assert!(handoff_frontend(&paths).is_none());
         let again = run(&paths, &Fake::default());
         assert_eq!((again.state, again.notice), (MoveState::Done, None));
+    }
+
+    #[test]
+    fn overwrite_flag_set_after_pending_launch() {
+        let paths = plus_tree("overwrite");
+        let blocker = paths.new_roaming.join("accounts.json");
+        fs::create_dir_all(&blocker).unwrap();
+        // The first launch fails and Porchlight runs on fresh data.
+        assert_eq!(run(&paths, &Fake::default()).state, MoveState::Pending);
+        assert_eq!(state(&paths)["ranBeforeDone"], true);
+        fs::remove_dir(&blocker).unwrap();
+        assert_eq!(run(&paths, &Fake::default()).state, MoveState::Done);
+        let take = handoff_frontend(&paths).unwrap();
+        assert!(take.overwrite);
+        assert_eq!(take.frontend["localStorage"]["k"], "v");
+
+        let clean = plus_tree("no-overwrite");
+        run(&clean, &Fake::default());
+        assert!(!handoff_frontend(&clean).unwrap().overwrite);
+    }
+
+    #[test]
+    fn autostart_carried_over_after_uninstall() {
+        let paths = plus_tree("autostart");
+        let fake = Fake { old_autostart: true, ..Fake::default() };
+        fake.fail_uninstall.set(true);
+        run(&paths, &fake);
+        assert_eq!(fake.autostarts.get(), 0, "not while the old app still starts at login");
+        assert_eq!(state(&paths)["hadAutostart"], true);
+        fake.fail_uninstall.set(false);
+        run(&paths, &fake);
+        run(&paths, &fake);
+        assert_eq!(fake.autostarts.get(), 1);
+        assert_eq!(state(&paths)["hadAutostart"], false);
+
+        let off = plus_tree("no-autostart");
+        let fake = Fake::default();
+        run(&off, &fake);
+        assert_eq!(fake.autostarts.get(), 0);
+    }
+
+    #[test]
+    fn stamp_and_empty_dir_removed_after_uninstall() {
+        let paths = plus_tree("leftovers");
+        let install = paths.old_install_dir.clone().unwrap();
+        run(&paths, &Fake::default());
+        assert!(!install.exists());
+
+        let paths = plus_tree("leftovers-kept");
+        let install = paths.old_install_dir.clone().unwrap();
+        put(&install.join("notes.txt"), "the user's");
+        run(&paths, &Fake::default());
+        assert!(!install.join(INSTALL_STAMP).exists());
+        assert!(install.join("notes.txt").exists(), "other files stay");
+    }
+
+    #[test]
+    fn marker_renamed_after_ack() {
+        let paths = plus_tree("marker");
+        let old = &paths.old_roaming;
+        run(&paths, &Fake::default());
+        ack_import(&paths).unwrap();
+        assert!(!old.join(MARKER).exists() && old.join(MOVED_MARKER).exists());
+        // A launch with the move under way still finishes it.
+        assert_eq!(run(&paths, &Fake::default()).state, MoveState::Done);
+        // A fresh reinstall later finds no Plus data to import.
+        fs::remove_dir_all(&paths.new_roaming).unwrap();
+        assert_eq!(run(&paths, &Fake::default()).state, MoveState::NotPlus);
+        assert!(!paths.new_roaming.exists());
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn run_value_matches_install_dir() {
+        let dir = Path::new(r"C:\Users\me\AppData\Local\YTubic");
+        assert!(runs_from(r#""C:\Users\me\AppData\Local\YTubic\ytubic.exe" --minimized"#, dir));
+        assert!(runs_from(r"c:\users\me\appdata\local\ytubic\ytubic.exe", dir));
+        assert!(!runs_from(r#""C:\Users\me\AppData\Local\YTubicOther\ytubic.exe""#, dir));
+        assert!(!runs_from(r#""C:\Program Files\YTubic\ytubic.exe""#, dir));
     }
 
     #[test]

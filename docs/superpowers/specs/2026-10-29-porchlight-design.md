@@ -159,7 +159,9 @@ shape this design:
   - The handoff file is readable only by the user's account (owner-only permissions).
   - Porchlight stores the key under its own keychain service, then deletes the handoff
     right after a verified import.
-  - The key is on disk only for the moment between the 0.9.1 export and the 1.0.0 import.
+  - The key is not on disk only for a moment. On macOS and Linux, 0.9.1 rewrites the
+    handoff with the key on every quit, so while the user stays on 0.9.1 the key sits
+    beside `cookies.enc` (owner-only). 1.0.0 removes it from the handoff on import.
   - On Windows, the cookies use DPAPI with a fixed entropy string, so they move as plain
     file copies and no key is involved.
 
@@ -199,8 +201,9 @@ shape this design:
   the old folders, because the old folders are shared with NUber's YTubic.
 - `ytubic-plus://` stays handled for at least the life of the bridge. The share page keeps
   making Porchlight links (`porchlight://`) with a web fallback.
-- macOS and Linux get the same handoff/import path. Linux deb/rpm get Replaces/Conflicts on
-  the old package name so the update doesn't leave two packages.
+- macOS and Linux get the same handoff/import path. Linux deb/rpm get no Replaces/Conflicts
+  on "ytubic", since that name may be NUber's package; the old Plus package stays until the
+  user removes it.
 
 ## Left to the builder
 

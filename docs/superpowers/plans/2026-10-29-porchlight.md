@@ -246,13 +246,19 @@
 
 **Files:** none (operations). Record what was done in the handoff doc.
 
-- [ ] **Step 1:** Release 0.9.1 from the current repo (tag `v0.9.1`, draft, publish as Latest). Check that `…/YTubic-Plus/releases/latest/download/latest.json` shows `"version": "0.9.1"`.
-- [ ] **Step 2:** Let 0.9.1 spread. The user decides how long.
-- [ ] **Step 3:** Rename the repo `Homefronts/YTubic-Plus` → `Homefronts/Porchlight` and leave NUber's fork network (repo Settings, or GitHub Support if that option isn't offered). Run `git remote set-url origin` locally.
-- [ ] **Step 4:** Create the stub repo `Homefronts/YTubic-Plus`:
-  - copy the `v0.9.1` release and all its assets, including `latest.json`, with `gh release download` + `gh release create --latest`
-  - add `docs/s/` with GitHub Pages enabled, so old share links keep working
-  - write a README pointing to Porchlight
-  - check the old feed URL returns 0.9.1 and its asset URLs download
-- [ ] **Step 5:** Release 1.0.0 from `Homefronts/Porchlight` (tag `v1.0.0`, draft, then publish as Latest). Check that the new feed URL returns `"version": "1.0.0"`.
-- [ ] **Step 6:** Update the README/memory notes: the release repo is now `Homefronts/Porchlight`, and the bridge code can be removed once almost everyone has moved.
+- [ ] **Step 1:** Rename the repo `Homefronts/YTubic-Plus` → `Homefronts/Porchlight` and leave NUber's fork network (repo Settings, or GitHub Support if that option isn't offered). Run `git remote set-url origin` locally.
+- [ ] **Step 2:** Release 0.9.1 from `Homefronts/Porchlight` (tag `v0.9.1` on commit `42406eb`, draft). Publish it only if all four builds succeeded and its `latest.json` lists the `darwin`, `linux`, `windows-x86_64` and `windows-aarch64` platforms.
+- [ ] **Step 3:** Immediately create the stub repo `Homefronts/YTubic-Plus`:
+  - copy the `v0.9.1` release and all its assets, including `latest.json`, as Latest (`gh release download` + `gh release create --latest`)
+  - push `docs/s/` taken from `42406eb` (it uses `ytubic-plus://`) with GitHub Pages enabled, so old share links keep working
+  - push the `ai-data` branch (0.9.x reads `raw.githubusercontent.com/Homefronts/YTubic-Plus/ai-data/ai-artists.json`)
+  - push `src-tauri/icons/icon.png` on `main` (Discord `LOGO_URL`)
+  - add a README pointing to Porchlight
+- [ ] **Step 4:** **Hard gate before 1.0.0:** `curl -sI https://github.com/Homefronts/YTubic-Plus/releases/latest/download/latest.json` must not redirect to Porchlight, and the file's body must say `"version": "0.9.1"`. Stop here if either check fails.
+- [ ] **Step 5:** Let 0.9.1 spread. The user decides how long.
+- [ ] **Step 6:** Release v1.0.0 from `Homefronts/Porchlight` (tag `v1.0.0`, draft, then publish as Latest). Check that the new feed URL returns `"version": "1.0.0"`.
+- [ ] **Step 7:** Update the README/memory notes: the release repo is now `Homefronts/Porchlight`, and the bridge code can be removed once almost everyone has moved.
+
+**Known issues:**
+- The old uninstaller kills a running per-machine NUber `ytubic.exe` (rare).
+- Linux deb/rpm users keep the old YTubic Plus package; they can remove it themselves.
