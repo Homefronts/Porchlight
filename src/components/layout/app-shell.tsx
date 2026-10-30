@@ -21,6 +21,7 @@ import { useEntityHeaderStore } from "@/lib/store/entity-header";
 import { SettingsDialog } from "@/components/settings/settings-dialog";
 import { PremiumGateDialog } from "@/components/layout/premium-gate-dialog";
 import { ChannelPickerDialog } from "@/components/layout/channel-picker-dialog";
+import { MoveNotice } from "@/components/layout/move-notice";
 import { WhatsNewDialog } from "@/components/layout/whats-new-dialog";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -309,6 +310,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {pickerSeen ? <WhatsNewDialog /> : <MakeItYours />}
         </div>
       </SidebarProvider>
+      <MoveNotice ready={pickerSeen} />
       <Toaster />
     </TooltipProvider>
   );
