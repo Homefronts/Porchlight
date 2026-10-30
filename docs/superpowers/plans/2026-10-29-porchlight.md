@@ -254,7 +254,12 @@
   - push the `ai-data` branch (0.9.x reads `raw.githubusercontent.com/Homefronts/YTubic-Plus/ai-data/ai-artists.json`)
   - push `src-tauri/icons/icon.png` on `main` (Discord `LOGO_URL`)
   - add a README pointing to Porchlight
-- [ ] **Step 4:** **Hard gate before 1.0.0:** `curl -sI https://github.com/Homefronts/YTubic-Plus/releases/latest/download/latest.json` must not redirect to Porchlight, and the file's body must say `"version": "0.9.1"`. Stop here if either check fails.
+  - **also create a second stub, `Homefronts/YTubic-`.** Plus 0.6.0, 0.7.0 and 0.7.1 have the feed `https://github.com/Homefronts/YTubic-/releases/latest/download/latest.json`, from the repo's name before "YTubic-Plus". After the rename, GitHub would redirect that name to Porchlight and those users would skip the bridge. Copy the same `v0.9.1` release and assets to `YTubic-` as Latest, and give it a README pointing to Porchlight.
+- [ ] **Step 4:** **Hard gate before 1.0.0.** For BOTH old feeds:
+  - `https://github.com/Homefronts/YTubic-Plus/releases/latest/download/latest.json`
+  - `https://github.com/Homefronts/YTubic-/releases/latest/download/latest.json`
+
+  run `curl -sI` and confirm neither redirects to Porchlight, then fetch each body and confirm it says `"version": "0.9.1"`. Stop here if any check fails.
 - [ ] **Step 5:** Let 0.9.1 spread. The user decides how long.
 - [ ] **Step 6:** Release v1.0.0 from `Homefronts/Porchlight` (tag `v1.0.0`, draft, then publish as Latest). Check that the new feed URL returns `"version": "1.0.0"`.
 - [ ] **Step 7:** Update the README/memory notes: the release repo is now `Homefronts/Porchlight`, and the bridge code can be removed once almost everyone has moved.

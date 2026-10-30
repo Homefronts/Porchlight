@@ -21,7 +21,8 @@ Read this first, then the ledger at `.superpowers/sdd/2026-10-29-porchlight/prog
    - the `ai-data` branch
    - `src-tauri/icons/icon.png` on main
    - a README pointing to Porchlight
-4. **Hard gate:** `curl -sI https://github.com/Homefronts/YTubic-Plus/releases/latest/download/latest.json` must not redirect to Porchlight, and the body must say 0.9.1.
+   Also create a **second stub, `Homefronts/YTubic-`**, with the same v0.9.1 release as Latest. Plus 0.6.0 to 0.7.1 check `Homefronts/YTubic-/…/latest.json`, from the repo's old name, and would otherwise be redirected to Porchlight and skip the bridge.
+4. **Hard gate:** for both `YTubic-Plus` and `YTubic-`, `curl -sI …/releases/latest/download/latest.json` must not redirect to Porchlight, and each body must say 0.9.1.
 5. Let 0.9.1 spread. The user decides how long.
 6. Merge `porchlight` to main, then release v1.0.0 from Porchlight. Check the new feed says 1.0.0.
 
