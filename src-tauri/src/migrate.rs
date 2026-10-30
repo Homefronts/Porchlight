@@ -8,6 +8,7 @@ use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
+use std::time::SystemTime;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -82,10 +83,14 @@ pub struct MovePaths {
     pub old_install_exe: Option<PathBuf>,
     /// The version the slot's uninstall entry reports; `None` skips that check.
     pub old_install_version: Option<String>,
+    /// When the slot's uninstall entry was last written; `None` skips that check.
+    pub old_install_key_time: Option<SystemTime>,
     /// Some other YTubic install (per-machine, a system package) that may read
     /// the old downloads.
     pub other_install: bool,
     pub may_rename_downloads: bool,
+    /// The user pressed "Try again": retry the uninstall past the launch limit.
+    pub user_retry: bool,
 }
 
 /// The parts of a move that touch the system, so tests can stand in for them.
@@ -102,6 +107,7 @@ struct Found {
     stamp: Option<PathBuf>,
     exe: Option<PathBuf>,
     version: Option<String>,
+    key_time: Option<SystemTime>,
     other: bool,
 }
 
@@ -121,8 +127,10 @@ impl MovePaths {
             old_install_stamp: found.stamp,
             old_install_exe: found.exe,
             old_install_version: found.version,
+            old_install_key_time: found.key_time,
             other_install: found.other,
             may_rename_downloads: true,
+            user_retry: false,
         };
         // Dev runs have their own identifier, but the old folders and install
         // they find are the user's real ones: copy only, never uninstall.
@@ -139,8 +147,11 @@ impl MovePaths {
 fn old_install() -> Found {
     use win::{key_exists, reg_string, HKEY_CURRENT_USER as HKCU, HKEY_LOCAL_MACHINE as HKLM};
     let dir = install_dir_from(reg_string(HKCU, "InstallLocation"), reg_string(HKCU, "UninstallString"));
+    let key_time = win::key_written(HKCU);
     Found {
-        stamp: dir.as_ref().map(|d| d.join(INSTALL_STAMP)),
+        // Without the entry's write time the slot can't be proven Plus.
+        stamp: dir.as_ref().filter(|_| key_time.is_some()).map(|d| d.join(INSTALL_STAMP)),
+        key_time,
         exe: dir.as_ref().map(|d| d.join("ytubic.exe")),
         // A missing value reads as "", which matches no stamp.
         version: Some(reg_string(HKCU, "DisplayVersion").unwrap_or_default()),
@@ -163,6 +174,7 @@ fn old_install() -> Found {
         stamp: dir.as_ref().map(|d| d.join("Contents/Resources").join(INSTALL_STAMP)),
         exe: dir.as_ref().map(|d| d.join("Contents/MacOS/ytubic")),
         version: None,
+        key_time: None,
         other: false,
         dir,
     }
@@ -188,9 +200,12 @@ fn install_dir_from(location: Option<String>, uninstall_string: Option<String>) 
     })
 }
 
-/// The slot holds Plus only if its stamp is Plus's, matches the installed
-/// version, and is newer than the exe. 0.9.1 rewrites the stamp on every
-/// launch; NUber's installer rewrites the exe and leaves a stale stamp behind.
+/// The slot holds Plus only if its stamp, which 0.9.1 rewrites on every
+/// launch, is Plus's and no install came after it. NUber's installer leaves a
+/// stale stamp behind, and each check catches that differently:
+/// - the version: the uninstall entry then reports NUber's version;
+/// - the entry's write time: NSIS rewrites it on the user's clock at install;
+/// - the exe's mtime: weak, since NSIS keeps build-time mtimes, but free.
 fn proven_plus(paths: &MovePaths) -> bool {
     let (Some(stamp), Some(exe)) = (&paths.old_install_stamp, &paths.old_install_exe) else {
         return false;
@@ -202,7 +217,13 @@ fn proven_plus(paths: &MovePaths) -> bool {
         return false;
     }
     let mtime = |p: &Path| fs::metadata(p).and_then(|m| m.modified()).ok();
-    matches!((mtime(stamp), mtime(exe)), (Some(s), Some(e)) if s >= e)
+    let Some(stamped) = mtime(stamp) else {
+        return false;
+    };
+    if paths.old_install_key_time.is_some_and(|k| stamped < k) {
+        return false;
+    }
+    mtime(exe).is_some_and(|e| stamped >= e)
 }
 
 /// The move's progress, kept in `moved-from-plus.json` in the new data folder.
@@ -276,8 +297,13 @@ pub fn run(paths: &MovePaths, sys: &dyn System) -> MoveOutcome {
         notice = Some(Notice::Moved);
     }
 
+    forget_key(paths, &rec);
+
     let (mut failed, mut dirty, mut uninstalled_now) = (false, false, false);
-    if !rec.uninstalled && proven_plus(paths) {
+    let proven = !rec.uninstalled && proven_plus(paths);
+    // After the limit only "Try again" retries, so a launch never waits on a
+    // failing uninstaller again.
+    if proven && (rec.cleanup_attempts < FAILED_AFTER || paths.user_retry) {
         if let Some(old) = &paths.old_install_dir {
             // Recorded first, so a crash mid-uninstall still makes the shortcut.
             if sys.old_desktop_shortcut() && !rec.had_desktop {
@@ -295,15 +321,12 @@ pub fn run(paths: &MovePaths, sys: &dyn System) -> MoveOutcome {
         }
     }
 
+    // Only rename when nothing else can still read the old folder.
+    let install_gone = paths.old_install_dir.is_none() || uninstalled_now;
+    let may_move = paths.may_rename_downloads && !paths.other_install && install_gone;
+    let (old_downloads, new_downloads) = (paths.old_roaming.join("downloads"), dir.join("downloads"));
     if rec.downloads.is_none() {
-        // Only rename when nothing else can still read the old folder.
-        let install_gone = paths.old_install_dir.is_none() || uninstalled_now;
-        let may_move = paths.may_rename_downloads && !paths.other_install && install_gone;
-        match take_downloads(
-            &paths.old_roaming.join("downloads"),
-            &dir.join("downloads"),
-            may_move,
-        ) {
+        match take_downloads(&old_downloads, &new_downloads, may_move) {
             Ok(moved) => rec.downloads = Some(if moved { "moved" } else { "copied" }.into()),
             Err(e) => {
                 eprintln!("[migrate] downloads not taken: {e}");
@@ -311,22 +334,34 @@ pub fn run(paths: &MovePaths, sys: &dyn System) -> MoveOutcome {
             }
         }
         dirty = true;
+    } else if may_move && rec.downloads.as_deref() == Some("copied") {
+        // Copied while the old install still read them: drop the old copy now,
+        // so downloads don't take double the space for good.
+        if all_taken(&old_downloads, &new_downloads) {
+            match fs::remove_dir_all(&old_downloads) {
+                Ok(()) => (rec.downloads, dirty) = (Some("moved".into()), true),
+                Err(e) => eprintln!("[migrate] old downloads not removed: {e}"),
+            }
+        } else {
+            eprintln!("[migrate] old downloads kept: not every file is in the new folder");
+        }
     }
 
     if failed {
         rec.cleanup_attempts += 1;
     }
-    if rec.uninstalled || paths.old_install_dir.is_none() {
-        match sys.ensure_shortcuts(rec.had_desktop) {
-            Ok(()) if rec.had_desktop => (rec.had_desktop, dirty) = (false, true),
-            Ok(()) => {}
-            Err(e) => eprintln!("[migrate] shortcuts not made: {e}"),
-        }
+    // Every launch: Porchlight.lnk never clashes with YTubic.lnk, and an
+    // /UPDATE install made none.
+    match sys.ensure_shortcuts(rec.had_desktop) {
+        Ok(()) if rec.had_desktop => (rec.had_desktop, dirty) = (false, true),
+        Ok(()) => {}
+        Err(e) => eprintln!("[migrate] shortcuts not made: {e}"),
     }
     if dirty {
         rec.save_logged(dir);
     }
-    if failed && rec.cleanup_attempts >= FAILED_AFTER {
+    let unfinished = (proven && !rec.uninstalled) || rec.downloads.is_none();
+    if unfinished && rec.cleanup_attempts >= FAILED_AFTER {
         notice = Some(Notice::Failed);
     }
     outcome(MoveState::Done, rec.cleanup_attempts, notice)
@@ -351,9 +386,6 @@ fn copy_files(paths: &MovePaths, sys: &dyn System, rec: &mut Record) -> Result<(
                     sys.store_key(key)?;
                     rec.key_stored = true;
                     rec.save(dir)?;
-                }
-                if let Err(e) = strip_key(&paths.old_roaming, handoff) {
-                    eprintln!("[migrate] key left in the handoff: {e}");
                 }
             }
         }
@@ -412,7 +444,19 @@ fn read_handoff(dir: &Path) -> Result<Option<Value>, String> {
     Ok(Some(v))
 }
 
-/// The key now lives in the keychain, so it must not stay on disk.
+/// The key now lives in the keychain, so it must not stay on disk. Retried
+/// on every run until the handoff is clean or gone.
+fn forget_key(paths: &MovePaths, rec: &Record) {
+    let Ok(Some(handoff)) = read_handoff(&paths.old_roaming) else {
+        return;
+    };
+    if rec.key_stored && handoff.get("cookieKey").is_some_and(|k| !k.is_null()) {
+        if let Err(e) = strip_key(&paths.old_roaming, handoff) {
+            eprintln!("[migrate] key left in the handoff: {e}");
+        }
+    }
+}
+
 fn strip_key(dir: &Path, mut handoff: Value) -> Result<(), String> {
     if let Some(fields) = handoff.as_object_mut() {
         fields.remove("cookieKey");
@@ -511,6 +555,25 @@ fn take_downloads(src: &Path, dst: &Path, may_move: bool) -> Result<bool, String
     verify(&copied)?;
     eprintln!("[migrate] copied downloads in {:?}", started.elapsed());
     Ok(false)
+}
+
+/// True when every file under `src` has a copy in `dst` at least as new.
+fn all_taken(src: &Path, dst: &Path) -> bool {
+    let Ok(entries) = fs::read_dir(src) else {
+        return false;
+    };
+    entries.into_iter().all(|e| {
+        e.is_ok_and(|e| {
+            let to = dst.join(e.file_name());
+            match e.metadata() {
+                Ok(m) if m.is_dir() => all_taken(&e.path(), &to),
+                Ok(m) if m.is_file() => up_to_date(&to, &m),
+                // Links were never copied.
+                Ok(_) => true,
+                Err(_) => false,
+            }
+        })
+    })
 }
 
 /// True for an existing folder tree with no files in it.
@@ -666,6 +729,26 @@ mod win {
         }
     }
 
+    /// When the uninstall entry was last written.
+    pub fn key_written(root: HKEY) -> Option<std::time::SystemTime> {
+        use windows::Win32::Foundation::FILETIME;
+        use windows::Win32::System::Registry::RegQueryInfoKeyW;
+        let mut key = HKEY::default();
+        let mut ft = FILETIME::default();
+        unsafe {
+            RegOpenKeyExW(root, &HSTRING::from(UNINSTALL_KEY), None, KEY_READ, &mut key).ok().ok()?;
+            let res = RegQueryInfoKeyW(
+                key, None, None, None, None, None, None, None, None, None, None, Some(&mut ft),
+            );
+            let _ = RegCloseKey(key);
+            res.ok().ok()?;
+        }
+        // FILETIME counts 100 ns ticks from 1601; the Unix epoch is this many ticks in.
+        let ticks = (((ft.dwHighDateTime as u64) << 32) | ft.dwLowDateTime as u64)
+            .checked_sub(116_444_736_000_000_000)?;
+        Some(std::time::UNIX_EPOCH + std::time::Duration::from_nanos(ticks * 100))
+    }
+
     fn known_folder(id: &windows::core::GUID) -> Option<PathBuf> {
         use windows::Win32::System::Com::CoTaskMemFree;
         use windows::Win32::UI::Shell::{SHGetKnownFolderPath, KF_FLAG_DEFAULT};
@@ -783,6 +866,7 @@ fn move_now(app: &AppHandle, at_launch: bool) -> MoveOutcome {
         Ok(mut paths) => {
             // After launch the downloads module has the folder open: copy, never rename.
             paths.may_rename_downloads &= at_launch;
+            paths.user_retry = !at_launch;
             run(&paths, &sys)
         }
         Err(e) => {
@@ -863,6 +947,7 @@ mod tests {
     #[derive(Default)]
     struct Fake {
         uninstalls: RefCell<Vec<PathBuf>>,
+        tries: Cell<u32>,
         fail_uninstall: Cell<bool>,
         old_desktop: bool,
         shortcuts: RefCell<Vec<bool>>,
@@ -874,6 +959,7 @@ mod tests {
 
     impl System for Fake {
         fn uninstall(&self, dir: &Path) -> Result<(), String> {
+            self.tries.set(self.tries.get() + 1);
             if let Some(w) = &self.watch {
                 self.watched.borrow_mut().push(w.exists());
             }
@@ -924,9 +1010,11 @@ mod tests {
             old_install_stamp: Some(install.join(INSTALL_STAMP)),
             old_install_exe: Some(install.join("ytubic.exe")),
             old_install_version: Some("0.9.1".into()),
+            old_install_key_time: Some(SystemTime::now() - Duration::from_secs(3600)),
             old_install_dir: Some(install),
             other_install: false,
             may_rename_downloads: true,
+            user_retry: false,
         }
     }
 
@@ -1129,7 +1217,7 @@ mod tests {
 
     #[test]
     fn uninstall_failure_keeps_data_done_and_retries() {
-        let paths = plus_tree("uninstall-fails");
+        let mut paths = plus_tree("uninstall-fails");
         let fake = Fake::default();
         fake.fail_uninstall.set(true);
         let first = run(&paths, &fake);
@@ -1139,15 +1227,81 @@ mod tests {
         assert!(handoff_frontend(&paths).is_some(), "the import doesn't wait for the uninstall");
         // The old Plus is still there and still reads its downloads.
         assert!(old_track(&paths) && new_track(&paths));
-        assert!(fake.shortcuts.borrow().is_empty());
         assert_eq!(run(&paths, &fake).notice, None);
         assert_eq!(run(&paths, &fake).notice, Some(Notice::Failed));
-
+        // After three failures a launch stops trying, but keeps showing the notice.
         fake.fail_uninstall.set(false);
+        assert_eq!(run(&paths, &fake).notice, Some(Notice::Failed));
+        assert_eq!(fake.tries.get(), 3);
+
+        // "Try again".
+        paths.user_retry = true;
+        paths.may_rename_downloads = false;
         let fixed = run(&paths, &fake);
         assert_eq!((fixed.state, fixed.notice), (MoveState::Done, None));
         assert_eq!(state(&paths)["uninstalled"], true);
         assert_eq!(fake.uninstalls.borrow().len(), 1);
+    }
+
+    #[test]
+    fn copied_downloads_cleaned_once_install_gone() {
+        let paths = plus_tree("cleanup");
+        let fake = Fake::default();
+        fake.fail_uninstall.set(true);
+        run(&paths, &fake);
+        assert_eq!(state(&paths)["downloads"], "copied");
+        // Porchlight rewrote its index since; that still counts as taken.
+        put(&paths.new_roaming.join("downloads/index.json"), r#"{"version":1,"more":1}"#);
+        fake.fail_uninstall.set(false);
+        run(&paths, &fake);
+        assert!(!paths.old_roaming.join("downloads").exists() && new_track(&paths));
+        assert_eq!(state(&paths)["downloads"], "moved");
+    }
+
+    #[test]
+    fn copied_downloads_kept_when_a_file_is_missing() {
+        let paths = plus_tree("cleanup-missing");
+        let fake = Fake::default();
+        fake.fail_uninstall.set(true);
+        run(&paths, &fake);
+        fs::remove_file(paths.new_roaming.join("downloads/tracks/a.m4a")).unwrap();
+        fake.fail_uninstall.set(false);
+        run(&paths, &fake);
+        assert!(old_track(&paths));
+        assert_eq!(state(&paths)["downloads"], "copied");
+    }
+
+    #[test]
+    fn uninstall_key_newer_than_stamp_means_not_plus_install() {
+        let mut paths = plus_tree("key-newer");
+        // The slot was (re)installed after Plus last wrote its stamp.
+        paths.old_install_key_time = Some(SystemTime::now() + Duration::from_secs(3600));
+        let fake = Fake::default();
+        assert_eq!(run(&paths, &fake).state, MoveState::Done);
+        assert_copy_only(&paths, &fake);
+    }
+
+    #[test]
+    fn shortcut_ensured_when_slot_not_proven() {
+        let mut paths = plus_tree("shortcut-unproven");
+        paths.old_install_version = Some("0.9.0".into());
+        let fake = Fake::default();
+        run(&paths, &fake);
+        assert_eq!(*fake.shortcuts.borrow(), vec![false]);
+    }
+
+    #[test]
+    fn key_strip_retried_on_later_runs() {
+        let paths = plus_tree("strip-retry");
+        let handoff = paths.old_roaming.join(HANDOFF);
+        // An earlier run stored the key but couldn't rewrite the handoff.
+        put(&handoff, r#"{"format":1,"frontend":{},"cookieKey":"a2V5"}"#);
+        put(&paths.new_roaming.join(STATE), r#"{"state":"done","keyStored":true,"uninstalled":true}"#);
+        let fake = Fake::default();
+        run(&paths, &fake);
+        let left: Value = serde_json::from_str(&fs::read_to_string(&handoff).unwrap()).unwrap();
+        assert!(left.get("cookieKey").is_none());
+        assert!(fake.keys.borrow().is_empty());
     }
 
     #[test]
