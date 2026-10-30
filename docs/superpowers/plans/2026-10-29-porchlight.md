@@ -262,7 +262,9 @@
   run `curl -sI` and confirm neither redirects to Porchlight, then fetch each body and confirm it says `"version": "0.9.1"`. Stop here if any check fails.
 - [ ] **Step 5:** Let 0.9.1 spread. The user decides how long.
 - [ ] **Step 6:** Release v1.0.0 from `Homefronts/Porchlight` (tag `v1.0.0`, draft, then publish as Latest). Check that the new feed URL returns `"version": "1.0.0"`.
-- [ ] **Step 7:** Update the README/memory notes: the release repo is now `Homefronts/Porchlight`, and the bridge code can be removed once almost everyone has moved.
+- [ ] **Step 7:** Update the README/memory notes: the release repo is now `Homefronts/Porchlight`.
+  - **Keep both stub repos (`YTubic-Plus`, `YTubic-`) forever.** Without them, any old Plus install is stranded.
+  - **Keep the move code (`migrate.rs`, `import.ts`) long-term.** It is dormant without the Plus marker, and users update on their own schedule. Revisit only after 0.9.1 download counts have stayed near zero for a year or more, and then trim it to a "found an old YTubic Plus install" message rather than deleting it outright.
 
 **Known issues:**
 - The old uninstaller kills a running per-machine NUber `ytubic.exe` (rare).
