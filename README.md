@@ -5,8 +5,8 @@
 <h1 align="center">Porchlight</h1>
 
 <p align="center">
-  A fast, responsive YouTube Music desktop client for Windows, Linux, and macOS,<br />
-  now with radio mixes and offline downloads.
+  A desktop YouTube Music app with its own look.<br />
+  Fast, private, and yours to restyle.
 </p>
 
 <p align="center">
@@ -33,7 +33,172 @@
 
 Built as a reaction to the sluggish webview-wrapper experience — YTubic talks to YouTube's InnerTube API directly, renders its own UI, and caches aggressively, so navigation and playback feel instant.
 
-![Porchlight — home with the player and synced lyrics](assets/screenshots/home.jpg)
+<p align="center">
+  <img src="assets/screenshots/porchlight-home-sleeve.jpg" alt="Porchlight in the Sleeve look: the home screen with the player card and synced lyrics" width="900" />
+</p>
+
+
+
+## Looks
+
+Porchlight ships with five looks. Switch any time in Settings > Appearance.
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="assets/screenshots/porchlight-home-sleeve.jpg" alt="Porchlight in the Sleeve look, dark liner notes with a red accent" /><br />
+      <b>Sleeve</b><br />
+      Dark liner notes. Serif headlines, mono details, uppercase titles and one red accent. Records get A1 and B2 side numbers, and a vinyl peeks out of the last-played record.
+    </td>
+    <td width="50%" valign="top">
+      <img src="assets/screenshots/porchlight-home-paper.jpg" alt="Porchlight in the Paper look, a cream sleeve with black ink" /><br />
+      <b>Paper</b><br />
+      The light liner notes. A cream sleeve, black ink, hard offset shadows on the covers and a red accent.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="assets/screenshots/porchlight-home-inkliner.jpg" alt="Porchlight in the Ink liner look, liner notes type on pure black" /><br />
+      <b>Ink liner</b><br />
+      Liner notes type on pure black with no accent colour, so the cover art is the only colour on screen.
+    </td>
+    <td width="50%" valign="top">
+      <img src="assets/screenshots/porchlight-home-ink.jpg" alt="Porchlight in the Ink look, pure black with quiet lowercase text" /><br />
+      <b>Ink</b><br />
+      Pure black and quiet lowercase sans. No boxes and no numbering.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="assets/screenshots/porchlight-home-classic.jpg" alt="Porchlight in the Classic look, the original YTubic style with an ambient album art background" /><br />
+      <b>Classic</b><br />
+      The original YTubic look, unchanged. Light, dark or system, with the ambient album art background.
+    </td>
+    <td></td>
+  </tr>
+</table>
+
+## Make it yours
+
+Pick a look on first launch, with a live preview of your own library. Then keep tweaking: change colours, fonts, corner shapes and the little record touches, and save the result as a custom look. Export a look as a theme file to share it, or import a friend's.
+
+More looks and layouts are coming in content updates before 1.1.
+
+<table>
+  <tr>
+    <td width="50%" valign="top"><img src="assets/screenshots/porchlight-make-it-yours.jpg" alt="The Make it yours picker with a live preview of the library" /></td>
+    <td width="50%" valign="top"><img src="assets/screenshots/porchlight-settings-looks.jpg" alt="Settings, Appearance: choose a look, then edit colours, fonts and shapes" /></td>
+  </tr>
+</table>
+
+## Features
+
+### Home and layout
+
+- **Like and dislike buttons**: swap the heart for a like and dislike pair, like on YouTube Music.
+- **Liked songs cover**: choose the cover for your Liked songs playlist.
+- **Resizable layout**: drag to resize the sidebar and the player panel.
+- **Home your way**: refresh the feed, reorder or hide its sections, and play any album or playlist from its card.
+- **Lyrics in the player, optional**: turn lyrics off in the side card and floating player to give the cover and controls the whole card.
+
+### Playback
+
+<p align="center">
+  <img src="assets/screenshots/porchlight-fullscreen-sleeve.jpg" alt="The full-screen player in the Sleeve look" width="800" />
+</p>
+
+- **Fast and responsive UI**: instant navigation with prefetch and aggressive caching, no page reloads.
+- **Music videos**: the Song/Video switch plays the real music video, synced to the song, in the player and in full screen.
+- **Video that sticks**: video stays on as you skip, with quality from 360p to 4K.
+- **Flexible players**: dock the player at the bottom bar or as a right-side card, or pop it out into a compact always-on-top floating widget.
+- **Full-screen player**: a big-screen view of what's playing, with three layouts.
+- **Playback settings**: crossfade, volume normalization, an equalizer with presets, and output device choice.
+- **Picks up where you left off**: the app remembers your song, queue and position across restarts and updates.
+- **Radio button**: start a mix from whatever is playing, and click again to return to your album or playlist where you left off.
+- **Mood chips**: reshape a running mix with YouTube Music's chips (All, Familiar, Discover, Chill and more).
+- **Radio skips your dislikes**: songs you disliked don't turn up in radio, mixes or autoplay.
+- **True shuffle**: shuffling a playlist uses YouTube Music's server-side shuffle across every track.
+- **Select several tracks**: shift-click rows, then save them to a playlist, play them next or add them to the queue.
+- **Hi-res cover art**: upgrades album covers to high-resolution studio art when available.
+- **Cover menu**: right-click the player cover for the track menu, or to download the best artwork available.
+
+### Library and offline
+
+- **Full library support**: your playlists, likes, albums and artists, plus search with filters.
+- **Sidebar playlists**: every playlist in your library is listed, and you can pin or hide them.
+- **Add to library**: add any playlist to the app's own library from the right-click menu or its page.
+- **Manage your playlists**: rename or delete your own playlists, and remove tracks from the track menu. Changes show in YouTube Music too.
+- **Playlist suggestions**: suggested tracks live in their own section at the end, with a Refresh button.
+- **Artist and album pages**: artist pages have a Subscribe button and full track, album and release lists, and right-clicking an album cover lets you play, queue, shuffle or start album radio.
+- **Accounts**: switch between the YouTube channels on one Google account, and your library and likes follow.
+- **Offline downloads**: download any playlist, album or Liked Songs, or single songs, and they play from your disk with no internet.
+- **Downloads page**: everything you've saved, in the sidebar, opening instantly online or off.
+- **Downloads stay in sync**: downloaded playlists pick up new songs automatically, and failed songs show the reason and retry on their own.
+- **Offline for 30 days**: downloads keep playing without a connection until your next Premium check-in.
+- **Storage settings**: move the cache folder, see real song titles for cached tracks, and see when the next auto-clean is due.
+
+### Lyrics
+
+- **Synced lyrics**: line-by-line synced lyrics from LRCLIB, Musixmatch, Genius and YouTube Music itself, matched to the right song.
+- **Lyrics that follow you**: the text tracks the progress slider while you drag it.
+- **Copyable text**: lyrics, playback errors and notifications can be selected and copied.
+
+### Discovery and Rewind
+
+- **Rewind**: every quarter, a bold full-screen recap of your listening: minutes, top artists, songs and genres, your listening personality, and a share card, with your favourite songs playing underneath. Save any slide as an image.
+- **Import past listening**: bring this quarter's plays in from a Google Takeout export so your first Rewind isn't empty.
+- **Private history**: your listening history stays on your computer and is never uploaded. Pause or clear it any time in Settings > Storage.
+- **AI music filter**: one button in the top bar hides AI-generated music from search, home, mixes and artist pages, and skips it in your library, where you can still choose Play anyway.
+- **AI tags**: songs by known AI artists carry an AI tag, and AI? marks an artist who only shares a name with a known AI act.
+- **Your own calls**: right-click a song to mark its artist as AI or Not AI, or report an AI artist to the community list.
+- **Community lists**: detection uses community lists checked against Spotify, refreshed every day.
+
+### Integrations
+
+- **Discord Rich Presence**: show what you're listening to on your Discord profile, with album art and a progress bar.
+- **Last.fm**: scrobble every track you play, love and unlove songs from the app, and queue scrobbles made offline until you're back online.
+- **Share links**: Share copies a link that opens in Porchlight (old ytubic-plus:// links still work), or a plain music.youtube.com link if you prefer.
+- **Report a bug**: a bug icon in the top bar opens the report form, so it's always one click away.
+
+### Desktop touches
+
+- **Media keys and system controls**: media keys, the system Now Playing tile, a tray or menu-bar icon, and a single running instance.
+- **Taskbar media controls**: on Windows, shuffle, skip, play, repeat and like from the taskbar button without opening the window.
+- **Startup and notifications**: launch at startup and playback notifications, both optional.
+- **Auto-updates**: the app updates itself from GitHub Releases, checks every 6 hours while open, has a Check now button, and keeps its yt-dlp copy fresh.
+- **Moves over from YTubic Plus**: your library, settings, looks and downloads come with you automatically on first launch.
+- **Its own app**: Porchlight sits next to the original YTubic without the two getting in each other's way.
+- **Every desktop**: Windows (x64 and arm64), macOS and Linux (both in beta).
+
+> **Disclaimer:** YTubic is an unofficial client. It is not affiliated with,
+> endorsed by, or sponsored by Google or YouTube. "YouTube" and "YouTube Music"
+> are trademarks of Google LLC. The app streams audio through
+> [yt-dlp](https://github.com/yt-dlp/yt-dlp) and may stop working at any time if
+> YouTube changes its internals. Use at your own risk.
+
+## Install
+
+Download the latest installer from the [Releases](https://github.com/Homefronts/Porchlight/releases) page and run it.
+
+- **Windows 10/11:** run the `.exe` NSIS installer. Pick the `x64` build, or
+  the `arm64` one on a Windows on ARM device.
+- **macOS 10.15+ (beta):** open the universal `.dmg`; the same build supports
+  Apple Silicon and Intel. Login cookies are encrypted with a Keychain-backed
+  key.
+- **Linux (beta):** install the `.deb` or `.rpm`, or run the `.AppImage`.
+  Playback requires WebKitGTK 4.1, GTK 3 and the GStreamer base, good and
+  libav plugins. Signing in also requires a desktop Secret Service provider
+  such as GNOME Keyring or a compatible KWallet setup.
+- On first launch the app downloads its own copy of yt-dlp (~12 MB) into its
+  data folder and keeps it updated automatically.
+- Signing in is optional: browse and playback work anonymously; sign in to get
+  your library, likes, and playlists.
+
+> **Tested on Windows. macOS and Linux builds are included, but haven't been
+> tested on real machines yet.** They are compiled and unit-tested in CI. If something
+> breaks, please [open an issue](../../issues) — or use the in-app reporter
+> (⋯ menu → Report an issue), which attaches your app version and OS
+> automatically.
 
 ## What's new in Porchlight
 
@@ -438,116 +603,6 @@ Every release of Porchlight, and of YTubic Plus before it, newest first.
 > who designed and built YTubic. Plus only adds features on top. If you enjoy it,
 > please [star the original](https://github.com/NUber-dev/YTubic) and
 > [support its author](https://donatello.to/NUber).
-
-## Features
-
-### Looks and customization
-
-- **Five looks**: Sleeve (record-sleeve type, serif headlines, one red accent), Paper, Ink liner, Ink, and Classic, the original look.
-- **Welcome and "Make it yours"**: a short picker on first launch with a live preview, so you choose a look before you start.
-- **Custom looks**: copy any look, change its colours, fonts and details, and preview it live before you save.
-- **Share a look**: export a look as a file, import a friend's, and rename or delete looks in Settings > Appearance.
-- **Interface font**: pick the font the whole app uses.
-- **Like and dislike buttons**: swap the heart for a like and dislike pair, like on YouTube Music.
-- **Liked songs cover**: choose the cover for your Liked songs playlist.
-- **Resizable layout**: drag to resize the sidebar and the player panel.
-- **Home your way**: refresh the feed, reorder or hide its sections, and play any album or playlist from its card.
-- **Lyrics in the player, optional**: turn lyrics off in the side card and floating player to give the cover and controls the whole card.
-
-### Playback
-
-- **Fast and responsive UI**: instant navigation with prefetch and aggressive caching, no page reloads.
-- **Music videos**: the Song/Video switch plays the real music video, synced to the song, in the player and in full screen.
-- **Video that sticks**: video stays on as you skip, with quality from 360p to 4K.
-- **Flexible players**: dock the player at the bottom bar or as a right-side card, or pop it out into a compact always-on-top floating widget.
-- **Full-screen player**: a big-screen view of what's playing, with three layouts.
-- **Playback settings**: crossfade, volume normalization, an equalizer with presets, and output device choice.
-- **Picks up where you left off**: the app remembers your song, queue and position across restarts and updates.
-- **Radio button**: start a mix from whatever is playing, and click again to return to your album or playlist where you left off.
-- **Mood chips**: reshape a running mix with YouTube Music's chips (All, Familiar, Discover, Chill and more).
-- **Radio skips your dislikes**: songs you disliked don't turn up in radio, mixes or autoplay.
-- **True shuffle**: shuffling a playlist uses YouTube Music's server-side shuffle across every track.
-- **Select several tracks**: shift-click rows, then save them to a playlist, play them next or add them to the queue.
-- **Hi-res cover art**: upgrades album covers to high-resolution studio art when available.
-- **Cover menu**: right-click the player cover for the track menu, or to download the best artwork available.
-
-### Library and offline
-
-- **Full library support**: your playlists, likes, albums and artists, plus search with filters.
-- **Sidebar playlists**: every playlist in your library is listed, and you can pin or hide them.
-- **Add to library**: add any playlist to the app's own library from the right-click menu or its page.
-- **Manage your playlists**: rename or delete your own playlists, and remove tracks from the track menu. Changes show in YouTube Music too.
-- **Playlist suggestions**: suggested tracks live in their own section at the end, with a Refresh button.
-- **Artist and album pages**: artist pages have a Subscribe button and full track, album and release lists, and right-clicking an album cover lets you play, queue, shuffle or start album radio.
-- **Accounts**: switch between the YouTube channels on one Google account, and your library and likes follow.
-- **Offline downloads**: download any playlist, album or Liked Songs, or single songs, and they play from your disk with no internet.
-- **Downloads page**: everything you've saved, in the sidebar, opening instantly online or off.
-- **Downloads stay in sync**: downloaded playlists pick up new songs automatically, and failed songs show the reason and retry on their own.
-- **Offline for 30 days**: downloads keep playing without a connection until your next Premium check-in.
-- **Storage settings**: move the cache folder, see real song titles for cached tracks, and see when the next auto-clean is due.
-
-### Lyrics
-
-- **Synced lyrics**: line-by-line synced lyrics from LRCLIB, Musixmatch, Genius and YouTube Music itself, matched to the right song.
-- **Lyrics that follow you**: the text tracks the progress slider while you drag it.
-- **Copyable text**: lyrics, playback errors and notifications can be selected and copied.
-
-### Discovery and Rewind
-
-- **Rewind**: every quarter, a bold full-screen recap of your listening: minutes, top artists, songs and genres, your listening personality, and a share card, with your favourite songs playing underneath. Save any slide as an image.
-- **Import past listening**: bring this quarter's plays in from a Google Takeout export so your first Rewind isn't empty.
-- **Private history**: your listening history stays on your computer and is never uploaded. Pause or clear it any time in Settings > Storage.
-- **AI music filter**: one button in the top bar hides AI-generated music from search, home, mixes and artist pages, and skips it in your library, where you can still choose Play anyway.
-- **AI tags**: songs by known AI artists carry an AI tag, and AI? marks an artist who only shares a name with a known AI act.
-- **Your own calls**: right-click a song to mark its artist as AI or Not AI, or report an AI artist to the community list.
-- **Community lists**: detection uses community lists checked against Spotify, refreshed every day.
-
-### Integrations
-
-- **Discord Rich Presence**: show what you're listening to on your Discord profile, with album art and a progress bar.
-- **Last.fm**: scrobble every track you play, love and unlove songs from the app, and queue scrobbles made offline until you're back online.
-- **Share links**: Share copies a link that opens in Porchlight (old ytubic-plus:// links still work), or a plain music.youtube.com link if you prefer.
-- **Report a bug**: a bug icon in the top bar opens the report form, so it's always one click away.
-
-### Desktop touches
-
-- **Media keys and system controls**: media keys, the system Now Playing tile, a tray or menu-bar icon, and a single running instance.
-- **Taskbar media controls**: on Windows, shuffle, skip, play, repeat and like from the taskbar button without opening the window.
-- **Startup and notifications**: launch at startup and playback notifications, both optional.
-- **Auto-updates**: the app updates itself from GitHub Releases, checks every 6 hours while open, has a Check now button, and keeps its yt-dlp copy fresh.
-- **Moves over from YTubic Plus**: your library, settings, looks and downloads come with you automatically on first launch.
-- **Its own app**: Porchlight sits next to the original YTubic without the two getting in each other's way.
-- **Every desktop**: Windows (x64 and arm64), macOS and Linux (both in beta).
-
-> **Disclaimer:** YTubic is an unofficial client. It is not affiliated with,
-> endorsed by, or sponsored by Google or YouTube. "YouTube" and "YouTube Music"
-> are trademarks of Google LLC. The app streams audio through
-> [yt-dlp](https://github.com/yt-dlp/yt-dlp) and may stop working at any time if
-> YouTube changes its internals. Use at your own risk.
-
-## Install
-
-Download the latest installer from the [Releases](https://github.com/Homefronts/Porchlight/releases) page and run it.
-
-- **Windows 10/11:** run the `.exe` NSIS installer. Pick the `x64` build, or
-  the `arm64` one on a Windows on ARM device.
-- **macOS 10.15+ (beta):** open the universal `.dmg`; the same build supports
-  Apple Silicon and Intel. Login cookies are encrypted with a Keychain-backed
-  key.
-- **Linux (beta):** install the `.deb` or `.rpm`, or run the `.AppImage`.
-  Playback requires WebKitGTK 4.1, GTK 3 and the GStreamer base, good and
-  libav plugins. Signing in also requires a desktop Secret Service provider
-  such as GNOME Keyring or a compatible KWallet setup.
-- On first launch the app downloads its own copy of yt-dlp (~12 MB) into its
-  data folder and keeps it updated automatically.
-- Signing in is optional: browse and playback work anonymously; sign in to get
-  your library, likes, and playlists.
-
-> **Tested on Windows. macOS and Linux builds are included, but haven't been
-> tested on real machines yet.** They are compiled and unit-tested in CI. If something
-> breaks, please [open an issue](../../issues) — or use the in-app reporter
-> (⋯ menu → Report an issue), which attaches your app version and OS
-> automatically.
 
 ### FAQ
 
