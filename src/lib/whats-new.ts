@@ -73,7 +73,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
       {
         type: "improved",
         title: "New links",
-        text: "Shared links now open with porchlight:// links. Old ytubic-plus:// links still open it.",
+        text: "Shared links now use porchlight://. Old ytubic-plus:// links still open the app.",
       },
     ],
   },

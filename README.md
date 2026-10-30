@@ -50,7 +50,7 @@ Built as a reaction to the sluggish webview-wrapper experience — YTubic talks 
 
 Ideas for future Porchlight releases. Not promises.
 
-### Coming in 1.0 (maybe sooner)
+### Coming next
 
 - [ ] **More layouts**: new layouts (Gatefold, Index, Crate, Panels) follow in later updates, on top of the looks that shipped.
 

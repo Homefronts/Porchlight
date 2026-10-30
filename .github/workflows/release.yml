@@ -92,7 +92,7 @@ jobs:
           YTUBIC_LASTFM_API_SECRET: ${{ secrets.YTUBIC_LASTFM_API_SECRET }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: "YTubic ${{ github.ref_name }}"
+          releaseName: "Porchlight ${{ github.ref_name }}"
           releaseBody: "See the assets below to download and install this version."
           releaseDraft: true
           prerelease: false
@@ -100,7 +100,7 @@ jobs:
 
   # The bundler names its output per-packager (`_x64-setup.exe`, `_amd64.deb`,
   # `-1.x86_64.rpm`), which doesn't tell a visitor which file is for which OS.
-  # Rename every asset to `YTubic_<version>_<OS>_<arch>.<ext>` once all three
+  # Rename every asset to `Porchlight_<version>_<OS>_<arch>.<ext>` once all three
   # builds have uploaded. `latest.json` points at the assets by URL, so it is
   # rewritten in the same step — the minisign signatures cover file contents,
   # not names, so they stay valid. Runs after `build` so the manifest is final.
@@ -141,13 +141,13 @@ jobs:
                 gh api --method DELETE "repos/$REPO/releases/assets/$id" < /dev/null
                 echo "removed $name"
                 continue ;;
-              *_arm64-setup.exe)           new="YTubic_${version}_Windows_arm64_Setup.exe" ;;
-              *-setup.exe)                 new="YTubic_${version}_Windows_x64_Setup.exe" ;;
-              *.app.tar.gz)                new="YTubic_${version}_macOS_Universal.app.tar.gz" ;;
-              *.dmg)                       new="YTubic_${version}_macOS_Universal.dmg" ;;
-              *.AppImage)                  new="YTubic_${version}_Linux_x86_64.AppImage" ;;
-              *.deb)                       new="YTubic_${version}_Linux_x86_64.deb" ;;
-              *.rpm)                       new="YTubic_${version}_Linux_x86_64.rpm" ;;
+              *_arm64-setup.exe)           new="Porchlight_${version}_Windows_arm64_Setup.exe" ;;
+              *-setup.exe)                 new="Porchlight_${version}_Windows_x64_Setup.exe" ;;
+              *.app.tar.gz)                new="Porchlight_${version}_macOS_Universal.app.tar.gz" ;;
+              *.dmg)                       new="Porchlight_${version}_macOS_Universal.dmg" ;;
+              *.AppImage)                  new="Porchlight_${version}_Linux_x86_64.AppImage" ;;
+              *.deb)                       new="Porchlight_${version}_Linux_x86_64.deb" ;;
+              *.rpm)                       new="Porchlight_${version}_Linux_x86_64.rpm" ;;
               *)                           echo "skipping unrecognized asset: $name"; continue ;;
             esac
             # `[ ... ] && continue` would abort the whole step under `set -e`
