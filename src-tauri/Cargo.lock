@@ -3566,7 +3566,7 @@ dependencies = [
 
 [[package]]
 name = "porchlight"
-version = "0.9.1"
+version = "1.0.0"
 dependencies = [
  "aes-gcm",
  "axum",

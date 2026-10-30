@@ -21,7 +21,6 @@ describe("universalShareUrl", () => {
   afterEach(() => useSettingsStore.setState({ shareYtMusicLinks: false }));
 
   it("points at the share page by default", () => {
-    // The share page still lives at SHARE_BASE; Task 6 moves it.
     expect(universalShareUrl("watch", "dQw4w9WgXcQ")).toBe(`${SHARE_BASE}?v=dQw4w9WgXcQ`);
   });
 

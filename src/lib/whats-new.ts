@@ -56,6 +56,28 @@ export type WhatsNewEntry = {
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "1.0.0",
+    date: "October 29, 2026",
+    summary: "Porchlight",
+    changes: [
+      {
+        type: "new",
+        title: "YTubic Plus is now Porchlight",
+        text: "Same app, new name. Your library, settings, looks and downloads came with you.",
+      },
+      {
+        type: "new",
+        title: "Its own app",
+        text: "Porchlight can sit next to the original YTubic without the two getting in each other's way.",
+      },
+      {
+        type: "improved",
+        title: "New links",
+        text: "Shared links now open with porchlight:// links. Old ytubic-plus:// links still open it.",
+      },
+    ],
+  },
+  {
     version: "0.9.1",
     date: "October 29, 2026",
     summary: "Getting ready for Porchlight",

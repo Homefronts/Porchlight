@@ -2,7 +2,7 @@
   <img src="assets/branding/ytubic-icon.svg" alt="YTubic" width="96" />
 </p>
 
-<h1 align="center">YTubic Plus</h1>
+<h1 align="center">Porchlight</h1>
 
 <p align="center">
   A fast, responsive YouTube Music desktop client for Windows, Linux, and macOS,<br />
@@ -15,12 +15,16 @@
 </p>
 
 <p align="center">
+  <sub>Formerly YTubic Plus. Your library and settings move over on first launch.</sub>
+</p>
+
+<p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-blue.svg" alt="License: GPL-3.0" /></a>
 </p>
 
 <p align="center">
-  <a href="../../releases/latest">
-    <img src="https://img.shields.io/badge/%E2%AC%87%20Download%20YTubic%20Plus-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Download YTubic Plus" height="60" />
+  <a href="https://github.com/Homefronts/Porchlight/releases/latest">
+    <img src="https://img.shields.io/badge/%E2%AC%87%20Download%20Porchlight-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Download Porchlight" height="60" />
   </a>
   <a href="https://discord.gg/4gccUpZyYH">
     <img src="https://img.shields.io/badge/Join%20the%20Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join the YTubic Discord" height="60" />
@@ -29,9 +33,9 @@
 
 Built as a reaction to the sluggish webview-wrapper experience — YTubic talks to YouTube's InnerTube API directly, renders its own UI, and caches aggressively, so navigation and playback feel instant.
 
-![YTubic Plus — home with the player and synced lyrics](assets/screenshots/home.jpg)
+![Porchlight — home with the player and synced lyrics](assets/screenshots/home.jpg)
 
-## What's new in Plus
+## What's new in Porchlight
 
 - **Radio button** — start a mix from whatever is playing, right next to the queue button. Click it again to stop and resume your album or playlist where you left off.
 - **Mood chips** — while a mix plays, the queue shows YouTube Music's chips (All, Familiar, Discover, Chill, …) to reshape what's coming up.
@@ -40,11 +44,11 @@ Built as a reaction to the sluggish webview-wrapper experience — YTubic talks 
 - **AI music filter** — one button in the top bar hides AI-generated music from search, home and mixes, using community lists checked against Spotify. Songs by AI artists carry an **AI** tag either way.
 - **Rewind** — a year-in-review style recap of your own listening, every quarter: bold full-screen slides of your minutes, top artists, songs and genres, your listening personality, and a share card, with your favourite songs playing underneath. Built and kept on your computer only; you can also import this quarter's plays from a Google Takeout export.
 - **Music videos** — the Song/Video switch actually plays the music video, synced to the song, in the player and in full screen. Video stays on as you skip, like YouTube Music, with quality from 360p to 4K.
-- **Own update channel** — Plus updates itself from [this fork's releases](../../releases), so it never gets replaced by an upstream build.
+- **Own update channel** — Porchlight updates itself from [this fork's releases](https://github.com/Homefronts/Porchlight/releases), so it never gets replaced by an upstream build.
 
 ## Roadmap
 
-Ideas for future Plus releases. Not promises.
+Ideas for future Porchlight releases. Not promises.
 
 ### Coming in 1.0 (maybe sooner)
 
@@ -84,11 +88,11 @@ Bigger pieces of work.
 Complicated changes, some needing new servers or apps.
 
 - [ ] **Sign in with Spotify** — an optional extra for an instant import and playlists that stay in sync. Spotify limits new apps to a few users, so this uses your own free Spotify developer key, with a short guide.
-- [ ] **Cast to devices on your network** — send playback to a Chromecast, Google TV or DLNA/UPnP speaker or TV, keeping the queue, shuffle and media keys. YouTube's audio links are tied to your connection, so the app would stream through a small local server. On a TV, a YTubic Plus screen shows what's playing, Up Next and the lyrics.
-- [ ] **Phone remote** — control YTubic Plus from your phone on the same Wi-Fi, by scanning a QR code.
+- [ ] **Cast to devices on your network** — send playback to a Chromecast, Google TV or DLNA/UPnP speaker or TV, keeping the queue, shuffle and media keys. YouTube's audio links are tied to your connection, so the app would stream through a small local server. On a TV, a Porchlight screen shows what's playing, Up Next and the lyrics.
+- [ ] **Phone remote** — control Porchlight from your phone on the same Wi-Fi, by scanning a QR code.
 - [ ] **Community add-ons** — browse and install add-ons and shared looks from inside the app, like [Spicetify](https://spicetify.app) for Spotify but built in. No patching the client.
-- [ ] **Listen together** — a Jams-style shared session with friends on YTubic Plus. Needs a small relay server, so maybe someday.
-- [ ] **Android TV app** — a remote-friendly YTubic Plus for the big screen. Voice search and the Now Playing tile on the ATV home screen come first, since the existing apps miss them. A separate app, so maybe someday.
+- [ ] **Listen together** — a Jams-style shared session with friends on Porchlight. Needs a small relay server, so maybe someday.
+- [ ] **Android TV app** — a remote-friendly Porchlight for the big screen. Voice search and the Now Playing tile on the ATV home screen come first, since the existing apps miss them. A separate app, so maybe someday.
 
 > **All the credit for the app itself goes to [George Shyshov (NUber)](https://github.com/NUber-dev)**,
 > who designed and built YTubic. Plus only adds features on top. If you enjoy it,
@@ -115,7 +119,7 @@ Complicated changes, some needing new servers or apps.
 
 ## Install
 
-Download the latest installer from the [Releases](../../releases) page and run it.
+Download the latest installer from the [Releases](https://github.com/Homefronts/Porchlight/releases) page and run it.
 
 - **Windows 10/11:** run the `.exe` NSIS installer. Pick the `x64` build, or
   the `arm64` one on a Windows on ARM device.
@@ -229,8 +233,8 @@ docs/                    # Design docs and build plans (see docs/README.md)
 
 ## Credits
 
-- **[YTubic](https://github.com/NUber-dev/YTubic) by George Shyshov (NUber)** — the original app; YTubic Plus is a fork of it
-- **[Homefronts](https://github.com/Homefronts)** — YTubic Plus (radio mixes, offline downloads, AI music filter)
+- **[YTubic](https://github.com/NUber-dev/YTubic) by George Shyshov (NUber)** — the original app; Porchlight is a fork of it
+- **[Homefronts](https://github.com/Homefronts)** — Porchlight (radio mixes, offline downloads, AI music filter)
 - AI music detection uses community lists: [spotify-ai-blocker](https://github.com/CennoxX/spotify-ai-blocker) by CennoxX (MIT), [loved-music-ai-artists](https://github.com/gounetmusic/loved-music-ai-artists) by gounetmusic (CC BY 4.0) and [CevvalYoutubeAIBlocklist](https://github.com/cevvalkoala/CevvalYoutubeAIBlocklist) by CevvalKoala (Unlicense)
 - [yt-dlp](https://github.com/yt-dlp/yt-dlp) — audio streaming
 - [LRCLIB](https://lrclib.net) — synced lyrics

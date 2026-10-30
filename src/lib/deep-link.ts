@@ -20,11 +20,11 @@ const ID_RE = /^[A-Za-z0-9_-]{6,}$/;
 
 /**
  * Universal share link: a GitHub Pages landing page (docs/s/) that offers
- * "Open in YTubic Plus" (the porchlight:// link above) and falls back to YouTube
+ * "Open in Porchlight" (the porchlight:// link above) and falls back to YouTube
  * Music, so the link works for people without the app too. Songs get
  * their metadata from YouTube's oEmbed; other entities carry a title.
  */
-export const SHARE_BASE = "https://homefronts.github.io/YTubic-Plus/s/";
+export const SHARE_BASE = "https://homefronts.github.io/Porchlight/s/";
 
 export function universalShareUrl(
   kind: DeepLinkTarget["kind"],
