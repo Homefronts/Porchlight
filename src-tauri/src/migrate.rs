@@ -1,14 +1,15 @@
 //! Porchlight first launch: moves a YTubic Plus user's data over from the old
 //! app ID's folders and removes the old Plus install. NUber's YTubic shares
 //! those folders and the old install slot, so nothing happens without the Plus
-//! marker, and the install is removed only when it carries the Plus stamp too.
-//! Temporary, like bridge.rs.
+//! marker, and the install is removed (and downloads moved) only when it is
+//! proven to be Plus. Temporary, like bridge.rs.
 use std::ffi::OsStr;
 use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::{AppHandle, Manager, State};
 
@@ -20,7 +21,7 @@ const STATE: &str = "moved-from-plus.json";
 const FAILED_AFTER: u32 = 3;
 
 /// Top-level names in the old data folder that never come over. Downloads are
-/// handled on their own, since they may move instead of copy.
+/// handled on their own, after the uninstall, since they may move instead.
 const SKIP: &[&str] = &[MARKER, HANDOFF, "porchlight-handoff.json.tmp", "downloads"];
 /// On Linux the data folder is also WebKitGTK's; that storage travels in the handoff.
 #[cfg(target_os = "linux")]
@@ -57,6 +58,8 @@ pub enum Notice {
     Failed,
 }
 
+/// `attempts` counts failed copy attempts while `Pending`, and failed
+/// uninstall/downloads attempts once `Done`.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct MoveOutcome {
     pub state: MoveState,
@@ -73,8 +76,33 @@ pub struct MovePaths {
     pub new_roaming: PathBuf,
     pub old_config: PathBuf,
     pub new_config: PathBuf,
-    pub old_install_stamp: Option<PathBuf>,
+    /// The old per-user install slot, the only thing ever uninstalled.
     pub old_install_dir: Option<PathBuf>,
+    pub old_install_stamp: Option<PathBuf>,
+    pub old_install_exe: Option<PathBuf>,
+    /// The version the slot's uninstall entry reports; `None` skips that check.
+    pub old_install_version: Option<String>,
+    /// Some other YTubic install (per-machine, a system package) that may read
+    /// the old downloads.
+    pub other_install: bool,
+    pub may_rename_downloads: bool,
+}
+
+/// The parts of a move that touch the system, so tests can stand in for them.
+pub trait System {
+    fn uninstall(&self, dir: &Path) -> Result<(), String>;
+    fn old_desktop_shortcut(&self) -> bool;
+    fn ensure_shortcuts(&self, desktop: bool) -> Result<(), String>;
+    fn store_key(&self, base64: &str) -> Result<(), String>;
+}
+
+#[derive(Default)]
+struct Found {
+    dir: Option<PathBuf>,
+    stamp: Option<PathBuf>,
+    exe: Option<PathBuf>,
+    version: Option<String>,
+    other: bool,
 }
 
 impl MovePaths {
@@ -82,39 +110,48 @@ impl MovePaths {
         let old_of = |new: &Path| new.with_file_name(OLD_IDENTIFIER);
         let new_roaming = app.path().app_data_dir().map_err(|e| e.to_string())?;
         let new_config = app.path().app_config_dir().map_err(|e| e.to_string())?;
-        let (old_install_dir, old_install_stamp) = old_install();
+        let found = old_install();
         #[allow(unused_mut)]
         let mut paths = MovePaths {
             old_roaming: old_of(&new_roaming),
             old_config: old_of(&new_config),
             new_roaming,
             new_config,
-            old_install_stamp,
-            old_install_dir,
+            old_install_dir: found.dir,
+            old_install_stamp: found.stamp,
+            old_install_exe: found.exe,
+            old_install_version: found.version,
+            other_install: found.other,
+            may_rename_downloads: true,
         };
-        // Dev runs share the release identifier: copy only, so a dev build never
-        // moves the real downloads or uninstalls the real app.
+        // Dev runs have their own identifier, but the old folders and install
+        // they find are the user's real ones: copy only, never uninstall.
         #[cfg(debug_assertions)]
         {
             paths.old_install_stamp = None;
-            if paths.old_install_dir.is_none() {
-                paths.old_install_dir = Some(paths.old_roaming.clone());
-            }
+            paths.may_rename_downloads = false;
         }
         Ok(paths)
     }
 }
 
-/// The old install slot and its Plus stamp, when present.
 #[cfg(windows)]
-fn old_install() -> (Option<PathBuf>, Option<PathBuf>) {
-    let dir = install_dir_from(win::reg_string("InstallLocation"), win::reg_string("UninstallString"));
-    let stamp = dir.as_ref().map(|d| d.join(INSTALL_STAMP)).filter(|p| p.exists());
-    (dir, stamp)
+fn old_install() -> Found {
+    use win::{key_exists, reg_string, HKEY_CURRENT_USER as HKCU, HKEY_LOCAL_MACHINE as HKLM};
+    let dir = install_dir_from(reg_string(HKCU, "InstallLocation"), reg_string(HKCU, "UninstallString"));
+    Found {
+        stamp: dir.as_ref().map(|d| d.join(INSTALL_STAMP)),
+        exe: dir.as_ref().map(|d| d.join("ytubic.exe")),
+        // A missing value reads as "", which matches no stamp.
+        version: Some(reg_string(HKCU, "DisplayVersion").unwrap_or_default()),
+        // Plus only ever installed per user, so a per-machine YTubic is NUber's.
+        other: key_exists(HKLM),
+        dir,
+    }
 }
 
 #[cfg(target_os = "macos")]
-fn old_install() -> (Option<PathBuf>, Option<PathBuf>) {
+fn old_install() -> Found {
     // The updater replaces the running bundle in place, so only a second
     // YTubic.app elsewhere is an old install.
     let running = mac::running_bundle().and_then(|b| b.canonicalize().ok());
@@ -122,20 +159,23 @@ fn old_install() -> (Option<PathBuf>, Option<PathBuf>) {
     let dir = [PathBuf::from("/Applications/YTubic.app"), home.join("Applications/YTubic.app")]
         .into_iter()
         .find(|p| p.exists() && p.canonicalize().ok() != running);
-    let stamp = dir
-        .as_ref()
-        .map(|d| d.join("Contents/Resources").join(INSTALL_STAMP))
-        .filter(|p| p.exists());
-    (dir, stamp)
+    Found {
+        stamp: dir.as_ref().map(|d| d.join("Contents/Resources").join(INSTALL_STAMP)),
+        exe: dir.as_ref().map(|d| d.join("Contents/MacOS/ytubic")),
+        version: None,
+        other: false,
+        dir,
+    }
 }
 
 /// deb/rpm are swapped by the package's Replaces, and an AppImage updates in
 /// place, so there is never an old Plus install to remove. A YTubic binary on
 /// the system is NUber's package, which still reads the old downloads.
+// shortcut: an AppImage of NUber's app can't be detected and counts as no
+// install, so downloads move; check a known AppImage path if that's reported.
 #[cfg(not(any(windows, target_os = "macos")))]
-fn old_install() -> (Option<PathBuf>, Option<PathBuf>) {
-    let dir = Path::new("/usr/bin");
-    (dir.join("ytubic").exists().then(|| dir.to_path_buf()), None)
+fn old_install() -> Found {
+    Found { other: Path::new("/usr/bin/ytubic").exists(), ..Found::default() }
 }
 
 /// `InstallLocation`, or the folder of `UninstallString`; NSIS writes both quoted.
@@ -148,24 +188,64 @@ fn install_dir_from(location: Option<String>, uninstall_string: Option<String>) 
     })
 }
 
-pub fn run(paths: &MovePaths, uninstall: &dyn Fn(&Path) -> Result<(), String>) -> MoveOutcome {
-    if !is_plus_stamp(&paths.old_roaming.join(MARKER)) {
-        return outcome(MoveState::NotPlus, 0, None);
+/// The slot holds Plus only if its stamp is Plus's, matches the installed
+/// version, and is newer than the exe. 0.9.1 rewrites the stamp on every
+/// launch; NUber's installer rewrites the exe and leaves a stale stamp behind.
+fn proven_plus(paths: &MovePaths) -> bool {
+    let (Some(stamp), Some(exe)) = (&paths.old_install_stamp, &paths.old_install_exe) else {
+        return false;
+    };
+    let Some(v) = read_json(stamp).filter(|v| v["app"] == "ytubic-plus") else {
+        return false;
+    };
+    if paths.old_install_version.as_ref().is_some_and(|ver| v["version"] != ver.as_str()) {
+        return false;
     }
-    let (done, attempts) = read_state(&paths.new_roaming);
-    if done {
-        return outcome(MoveState::Done, attempts, None);
+    let mtime = |p: &Path| fs::metadata(p).and_then(|m| m.modified()).ok();
+    matches!((mtime(stamp), mtime(exe)), (Some(s), Some(e)) if s >= e)
+}
+
+/// The move's progress, kept in `moved-from-plus.json` in the new data folder.
+#[derive(Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+struct Record {
+    /// "pending" until the files are in, then "done".
+    state: String,
+    attempts: u32,
+    key_stored: bool,
+    had_desktop: bool,
+    uninstalled: bool,
+    cleanup_attempts: u32,
+    /// "moved" or "copied" once taken.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    downloads: Option<String>,
+    frontend_imported: bool,
+    at: String,
+}
+
+impl Record {
+    fn load(dir: &Path) -> Record {
+        fs::read(dir.join(STATE))
+            .ok()
+            .and_then(|b| serde_json::from_slice(&b).ok())
+            .unwrap_or_default()
     }
-    match attempt(paths, uninstall, attempts) {
-        Ok(()) => outcome(MoveState::Done, attempts, Some(Notice::Moved)),
-        Err(e) => {
-            eprintln!("[migrate] move from YTubic Plus failed: {e}");
-            let attempts = attempts + 1;
-            if let Err(e) = write_state(&paths.new_roaming, false, attempts) {
-                eprintln!("[migrate] state not saved: {e}");
-            }
-            let notice = (attempts >= FAILED_AFTER).then_some(Notice::Failed);
-            outcome(MoveState::Pending, attempts, notice)
+
+    fn done(&self) -> bool {
+        self.state == "done"
+    }
+
+    fn save(&mut self, dir: &Path) -> Result<(), String> {
+        self.at = time::OffsetDateTime::now_utc()
+            .format(&time::format_description::well_known::Rfc3339)
+            .unwrap_or_default();
+        let body = serde_json::to_vec(self).map_err(|e| e.to_string())?;
+        write_atomic(&dir.join(STATE), &body)
+    }
+
+    fn save_logged(&mut self, dir: &Path) {
+        if let Err(e) = self.save(dir) {
+            eprintln!("[migrate] state not saved: {e}");
         }
     }
 }
@@ -174,96 +254,151 @@ fn outcome(state: MoveState, attempts: u32, notice: Option<Notice>) -> MoveOutco
     MoveOutcome { state, attempts, notice }
 }
 
-fn attempt(
-    paths: &MovePaths,
-    uninstall: &dyn Fn(&Path) -> Result<(), String>,
-    attempts: u32,
-) -> Result<(), String> {
-    write_state(&paths.new_roaming, false, attempts)?;
+/// a. files in and verified, key stored, `done` (the import may start);
+/// b. a proven Plus install uninstalled; c. downloads moved or copied.
+/// Each step is recorded, so a crash anywhere resumes at the step it reached.
+pub fn run(paths: &MovePaths, sys: &dyn System) -> MoveOutcome {
+    if !read_json(&paths.old_roaming.join(MARKER)).is_some_and(|v| v["app"] == "ytubic-plus") {
+        return outcome(MoveState::NotPlus, 0, None);
+    }
+    let dir = &paths.new_roaming;
+    let mut rec = Record::load(dir);
+    let mut notice = None;
+    if !rec.done() {
+        if let Err(e) = copy_files(paths, sys, &mut rec) {
+            eprintln!("[migrate] move from YTubic Plus failed: {e}");
+            rec.state = "pending".into();
+            rec.attempts += 1;
+            rec.save_logged(dir);
+            let notice = (rec.attempts >= FAILED_AFTER).then_some(Notice::Failed);
+            return outcome(MoveState::Pending, rec.attempts, notice);
+        }
+        notice = Some(Notice::Moved);
+    }
+
+    let (mut failed, mut dirty, mut uninstalled_now) = (false, false, false);
+    if !rec.uninstalled && proven_plus(paths) {
+        if let Some(old) = &paths.old_install_dir {
+            // Recorded first, so a crash mid-uninstall still makes the shortcut.
+            if sys.old_desktop_shortcut() && !rec.had_desktop {
+                rec.had_desktop = true;
+                rec.save_logged(dir);
+            }
+            match sys.uninstall(old) {
+                Ok(()) => (rec.uninstalled, uninstalled_now) = (true, true),
+                Err(e) => {
+                    eprintln!("[migrate] old install not removed: {e}");
+                    failed = true;
+                }
+            }
+            dirty = true;
+        }
+    }
+
+    if rec.downloads.is_none() {
+        // Only rename when nothing else can still read the old folder.
+        let install_gone = paths.old_install_dir.is_none() || uninstalled_now;
+        let may_move = paths.may_rename_downloads && !paths.other_install && install_gone;
+        match take_downloads(
+            &paths.old_roaming.join("downloads"),
+            &dir.join("downloads"),
+            may_move,
+        ) {
+            Ok(moved) => rec.downloads = Some(if moved { "moved" } else { "copied" }.into()),
+            Err(e) => {
+                eprintln!("[migrate] downloads not taken: {e}");
+                failed = true;
+            }
+        }
+        dirty = true;
+    }
+
+    if failed {
+        rec.cleanup_attempts += 1;
+    }
+    if rec.uninstalled || paths.old_install_dir.is_none() {
+        match sys.ensure_shortcuts(rec.had_desktop) {
+            Ok(()) if rec.had_desktop => (rec.had_desktop, dirty) = (false, true),
+            Ok(()) => {}
+            Err(e) => eprintln!("[migrate] shortcuts not made: {e}"),
+        }
+    }
+    if dirty {
+        rec.save_logged(dir);
+    }
+    if failed && rec.cleanup_attempts >= FAILED_AFTER {
+        notice = Some(Notice::Failed);
+    }
+    outcome(MoveState::Done, rec.cleanup_attempts, notice)
+}
+
+fn copy_files(paths: &MovePaths, sys: &dyn System, rec: &mut Record) -> Result<(), String> {
+    let dir = &paths.new_roaming;
+    rec.state = "pending".into();
+    rec.save(dir)?;
     let mut copied = Vec::new();
-    copy_tree(&paths.old_roaming, &paths.new_roaming, true, &mut copied)?;
+    copy_tree(&paths.old_roaming, dir, true, &mut copied)?;
     if paths.old_config != paths.old_roaming {
         copy_tree(&paths.old_config, &paths.new_config, true, &mut copied)?;
     }
-    let plus_install = paths.old_install_stamp.as_deref().is_some_and(is_plus_stamp);
-    // An install without the Plus stamp is NUber's YTubic, which still reads these.
-    let may_move = paths.old_install_dir.is_none() || plus_install;
-    take_downloads(
-        &paths.old_roaming.join("downloads"),
-        &paths.new_roaming.join("downloads"),
-        may_move,
-        &mut copied,
-    )?;
-    for (path, len) in &copied {
+    verify(&copied)?;
+    // A bad handoff only means there is nothing to import.
+    match read_handoff(&paths.old_roaming) {
+        Ok(Some(handoff)) => {
+            if let Some(key) = handoff["cookieKey"].as_str() {
+                // Never again once stored: by then Porchlight may have made its own.
+                if !rec.key_stored {
+                    sys.store_key(key)?;
+                    rec.key_stored = true;
+                    rec.save(dir)?;
+                }
+                if let Err(e) = strip_key(&paths.old_roaming, handoff) {
+                    eprintln!("[migrate] key left in the handoff: {e}");
+                }
+            }
+        }
+        Ok(None) => {}
+        Err(e) => eprintln!("[migrate] {e}; nothing to import"),
+    }
+    rec.state = "done".into();
+    rec.save(dir)
+}
+
+/// Proves only the copies made in this run: an earlier run's files were checked then.
+fn verify(copied: &[(PathBuf, u64)]) -> Result<(), String> {
+    for (path, len) in copied {
         if fs::metadata(path).map(|m| m.len()).ok() != Some(*len) {
             return Err(format!("{} did not copy intact", path.display()));
         }
     }
-    let handoff = read_handoff(&paths.old_roaming)?;
-    if let Some(key) = handoff.as_ref().and_then(|h| h["cookieKey"].as_str()) {
-        crate::secure_store::store_cookie_key_base64(key)?;
-    }
-    if plus_install {
-        if let Some(dir) = &paths.old_install_dir {
-            uninstall(dir)?;
-        }
-    }
-    // The handoff stays until the frontend confirms its import (ack_import),
-    // so a crash in between never loses that state.
-    write_state(&paths.new_roaming, true, attempts)
+    Ok(())
 }
 
 /// The handoff's frontend data, served until the import is acknowledged, and
-/// only once the files are moved.
+/// only once the files are in.
 fn handoff_frontend(paths: &MovePaths) -> Option<Value> {
-    let state = state_json(&paths.new_roaming);
-    if state["state"] != "done" || state["frontendImported"] == true {
+    let rec = Record::load(&paths.new_roaming);
+    if !rec.done() || rec.frontend_imported {
         return None;
     }
     read_handoff(&paths.old_roaming).ok()??.get_mut("frontend").map(Value::take)
 }
 
-/// Deletes the handoff (it may carry the login key) and records the import.
+/// Deletes the handoff and records the import.
 fn ack_import(paths: &MovePaths) -> Result<(), String> {
     match fs::remove_file(paths.old_roaming.join(HANDOFF)) {
         Err(e) if e.kind() != std::io::ErrorKind::NotFound => return Err(format!("handoff: {e}")),
         _ => {}
     }
-    let mut state = state_json(&paths.new_roaming);
-    state["frontendImported"] = Value::Bool(true);
-    fs::write(paths.new_roaming.join(STATE), state.to_string()).map_err(|e| e.to_string())
+    let mut rec = Record::load(&paths.new_roaming);
+    rec.frontend_imported = true;
+    rec.save(&paths.new_roaming)
 }
 
-fn is_plus_stamp(path: &Path) -> bool {
-    fs::read(path)
-        .ok()
-        .and_then(|b| serde_json::from_slice::<Value>(&b).ok())
-        .is_some_and(|v| v["app"] == "ytubic-plus")
+fn read_json(path: &Path) -> Option<Value> {
+    serde_json::from_slice(&fs::read(path).ok()?).ok()
 }
 
-/// (done, attempts). A missing or unreadable state is a first attempt.
-fn read_state(dir: &Path) -> (bool, u32) {
-    let v = state_json(dir);
-    (v["state"] == "done", v["attempts"].as_u64().unwrap_or(0) as u32)
-}
-
-fn state_json(dir: &Path) -> Value {
-    fs::read(dir.join(STATE))
-        .ok()
-        .and_then(|b| serde_json::from_slice::<Value>(&b).ok())
-        .filter(Value::is_object)
-        .unwrap_or_else(|| serde_json::json!({}))
-}
-
-fn write_state(dir: &Path, done: bool, attempts: u32) -> Result<(), String> {
-    let state = if done { "done" } else { "pending" };
-    let body = serde_json::json!({ "state": state, "attempts": attempts }).to_string();
-    fs::create_dir_all(dir)
-        .and_then(|_| fs::write(dir.join(STATE), body))
-        .map_err(|e| format!("{}: {e}", dir.join(STATE).display()))
-}
-
-/// Absent is fine; present must parse, or the move stays pending.
 fn read_handoff(dir: &Path) -> Result<Option<Value>, String> {
     let bytes = match fs::read(dir.join(HANDOFF)) {
         Ok(b) => b,
@@ -275,6 +410,35 @@ fn read_handoff(dir: &Path) -> Result<Option<Value>, String> {
         return Err("handoff: unknown format".into());
     }
     Ok(Some(v))
+}
+
+/// The key now lives in the keychain, so it must not stay on disk.
+fn strip_key(dir: &Path, mut handoff: Value) -> Result<(), String> {
+    if let Some(fields) = handoff.as_object_mut() {
+        fields.remove("cookieKey");
+    }
+    write_atomic(&dir.join(HANDOFF), handoff.to_string().as_bytes())
+}
+
+/// Owner-only on unix, written beside then renamed, so a crash never leaves half a file.
+fn write_atomic(path: &Path, body: &[u8]) -> Result<(), String> {
+    let at = |e: std::io::Error| format!("{}: {e}", path.display());
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(at)?;
+    }
+    let mut tmp = path.as_os_str().to_owned();
+    tmp.push(".tmp");
+    let tmp = PathBuf::from(tmp);
+    // A leftover file could keep looser permissions; the mode only applies on create.
+    let _ = fs::remove_file(&tmp);
+    let mut opts = fs::OpenOptions::new();
+    opts.write(true).create_new(true);
+    #[cfg(unix)]
+    std::os::unix::fs::OpenOptionsExt::mode(&mut opts, 0o600);
+    let mut file = opts.open(&tmp).map_err(at)?;
+    file.write_all(body).map_err(at)?;
+    drop(file);
+    fs::rename(&tmp, path).map_err(at)
 }
 
 /// Copies files, recording each with its size for the check. A file already
@@ -300,7 +464,15 @@ fn copy_tree(src: &Path, dst: &Path, top: bool, copied: &mut Vec<(PathBuf, u64)>
         if meta.is_dir() {
             copy_tree(&from, &to, false, copied)?;
         } else if meta.is_file() && !up_to_date(&to, &meta) {
-            fs::copy(&from, &to).map_err(|e| at(&to, e))?;
+            // Through a temp name, so a killed copy never leaves a partial file
+            // under the real one.
+            let mut part = name.clone();
+            part.push(".porchlight-part");
+            let part = dst.join(part);
+            if let Err(e) = fs::copy(&from, &part).and_then(|_| fs::rename(&part, &to)) {
+                let _ = fs::remove_file(&part);
+                return Err(at(&to, e));
+            }
             copied.push((to, meta.len()));
         }
     }
@@ -318,26 +490,27 @@ fn up_to_date(dst: &Path, src: &fs::Metadata) -> bool {
     }
 }
 
-/// Renames the folder across when allowed (instant on one volume), else copies.
-fn take_downloads(
-    src: &Path,
-    dst: &Path,
-    may_move: bool,
-    copied: &mut Vec<(PathBuf, u64)>,
-) -> Result<(), String> {
+/// Renames the folder across when allowed (instant on one volume), else
+/// copies. True when nothing is left at the source.
+fn take_downloads(src: &Path, dst: &Path, may_move: bool) -> Result<bool, String> {
     if !src.is_dir() {
-        return Ok(());
+        return Ok(true);
     }
     if may_move {
-        // downloads::init leaves empty folders behind on a launch where the move failed.
+        // downloads::init leaves empty folders behind on a launch before this.
         if holds_no_files(dst) {
             let _ = fs::remove_dir_all(dst);
         }
         if !dst.exists() && fs::rename(src, dst).is_ok() {
-            return Ok(());
+            return Ok(true);
         }
     }
-    copy_tree(src, dst, false, copied)
+    let started = std::time::Instant::now();
+    let mut copied = Vec::new();
+    copy_tree(src, dst, false, &mut copied)?;
+    verify(&copied)?;
+    eprintln!("[migrate] copied downloads in {:?}", started.elapsed());
+    Ok(false)
 }
 
 /// True for an existing folder tree with no files in it.
@@ -349,15 +522,55 @@ fn holds_no_files(dir: &Path) -> bool {
     })
 }
 
-/// The real uninstall: Windows runs the old NSIS uninstaller, macOS removes the
-/// old bundle, Linux has nothing to remove (see `old_install`).
+struct RealSystem {
+    identifier: String,
+}
+
+impl System for RealSystem {
+    fn uninstall(&self, dir: &Path) -> Result<(), String> {
+        uninstall_old(dir)
+    }
+    fn old_desktop_shortcut(&self) -> bool {
+        old_desktop_shortcut()
+    }
+    fn ensure_shortcuts(&self, desktop: bool) -> Result<(), String> {
+        ensure_shortcuts(desktop, &self.identifier)
+    }
+    fn store_key(&self, base64: &str) -> Result<(), String> {
+        crate::secure_store::store_cookie_key_base64(base64)
+    }
+}
+
 #[cfg(windows)]
-fn uninstall_old(dir: &Path, identifier: &str) -> Result<(), String> {
-    win::uninstall(dir, identifier)
+fn old_desktop_shortcut() -> bool {
+    win::on_desktop("YTubic.lnk")
+}
+
+#[cfg(not(windows))]
+fn old_desktop_shortcut() -> bool {
+    false
+}
+
+#[cfg(all(windows, not(debug_assertions)))]
+fn ensure_shortcuts(desktop: bool, aumid: &str) -> Result<(), String> {
+    win::ensure_shortcuts(desktop, aumid)
+}
+
+/// A dev build must not point the real Start entry at itself.
+#[cfg(not(all(windows, not(debug_assertions))))]
+fn ensure_shortcuts(_desktop: bool, _aumid: &str) -> Result<(), String> {
+    Ok(())
+}
+
+/// Windows runs the old NSIS uninstaller, macOS removes the old bundle, Linux
+/// has nothing to remove (see `old_install`).
+#[cfg(windows)]
+fn uninstall_old(dir: &Path) -> Result<(), String> {
+    win::uninstall(dir)
 }
 
 #[cfg(target_os = "macos")]
-fn uninstall_old(dir: &Path, _identifier: &str) -> Result<(), String> {
+fn uninstall_old(dir: &Path) -> Result<(), String> {
     let running = mac::running_bundle().and_then(|b| b.canonicalize().ok());
     if dir.canonicalize().ok() == running {
         return Ok(());
@@ -366,7 +579,7 @@ fn uninstall_old(dir: &Path, _identifier: &str) -> Result<(), String> {
 }
 
 #[cfg(not(any(windows, target_os = "macos")))]
-fn uninstall_old(_dir: &Path, _identifier: &str) -> Result<(), String> {
+fn uninstall_old(_dir: &Path) -> Result<(), String> {
     Ok(())
 }
 
@@ -419,40 +632,33 @@ mod win {
     use std::time::{Duration, Instant};
 
     use windows::core::{Interface, HSTRING};
+    pub use windows::Win32::System::Registry::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE};
     use windows::Win32::System::Registry::{
-        RegCloseKey, RegGetValueW, RegOpenKeyExW, HKEY, HKEY_CURRENT_USER, KEY_READ, RRF_RT_REG_SZ,
+        RegCloseKey, RegGetValueW, RegOpenKeyExW, HKEY, KEY_READ, RRF_RT_REG_SZ,
     };
 
     const UNINSTALL_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\YTubic";
 
-    pub fn reg_string(name: &str) -> Option<String> {
+    pub fn reg_string(root: HKEY, name: &str) -> Option<String> {
         let (key, name) = (HSTRING::from(UNINSTALL_KEY), HSTRING::from(name));
         let mut len = 0u32;
         unsafe {
-            RegGetValueW(HKEY_CURRENT_USER, &key, &name, RRF_RT_REG_SZ, None, None, Some(&mut len))
+            RegGetValueW(root, &key, &name, RRF_RT_REG_SZ, None, None, Some(&mut len))
                 .ok()
                 .ok()?;
             let mut buf = vec![0u16; len as usize / 2 + 1];
-            RegGetValueW(
-                HKEY_CURRENT_USER,
-                &key,
-                &name,
-                RRF_RT_REG_SZ,
-                None,
-                Some(buf.as_mut_ptr().cast()),
-                Some(&mut len),
-            )
-            .ok()
-            .ok()?;
+            RegGetValueW(root, &key, &name, RRF_RT_REG_SZ, None, Some(buf.as_mut_ptr().cast()), Some(&mut len))
+                .ok()
+                .ok()?;
             let end = buf.iter().position(|&c| c == 0).unwrap_or(buf.len());
             Some(String::from_utf16_lossy(&buf[..end]))
         }
     }
 
-    fn key_exists() -> bool {
+    pub fn key_exists(root: HKEY) -> bool {
         let mut key = HKEY::default();
         unsafe {
-            let open = RegOpenKeyExW(HKEY_CURRENT_USER, &HSTRING::from(UNINSTALL_KEY), None, KEY_READ, &mut key);
+            let open = RegOpenKeyExW(root, &HSTRING::from(UNINSTALL_KEY), None, KEY_READ, &mut key);
             if open.is_ok() {
                 let _ = RegCloseKey(key);
             }
@@ -471,10 +677,12 @@ mod win {
         }
     }
 
-    pub fn uninstall(dir: &Path, aumid: &str) -> Result<(), String> {
-        use windows::Win32::UI::Shell::{FOLDERID_Desktop, FOLDERID_Programs};
-        let desktop = known_folder(&FOLDERID_Desktop);
-        let had_desktop = desktop.as_ref().is_some_and(|d| d.join("YTubic.lnk").exists());
+    pub fn on_desktop(name: &str) -> bool {
+        use windows::Win32::UI::Shell::FOLDERID_Desktop;
+        known_folder(&FOLDERID_Desktop).is_some_and(|d| d.join(name).exists())
+    }
+
+    pub fn uninstall(dir: &Path) -> Result<(), String> {
         let status = std::process::Command::new(dir.join("uninstall.exe"))
             .arg("/S")
             .status()
@@ -484,34 +692,41 @@ mod win {
         }
         // NSIS relaunches itself from %TEMP%, so the first process exits before it's done.
         let deadline = Instant::now() + Duration::from_secs(30);
-        while key_exists() {
+        while key_exists(HKEY_CURRENT_USER) {
             if Instant::now() > deadline {
                 return Err("old uninstaller did not finish".into());
             }
             std::thread::sleep(Duration::from_millis(250));
         }
-        // The updater's /UPDATE install makes no shortcuts, and the uninstaller
-        // just removed YTubic's, so without these the app has no Start entry
-        // and the media tile has no shortcut to resolve its AUMID against.
+        Ok(())
+    }
+
+    /// The updater's /UPDATE install makes no shortcuts, and the old uninstall
+    /// removed YTubic's, so without these the app has no Start entry and the
+    /// media tile has no shortcut to resolve its AUMID against.
+    #[cfg_attr(debug_assertions, allow(dead_code))]
+    pub fn ensure_shortcuts(desktop: bool, aumid: &str) -> Result<(), String> {
+        use windows::Win32::UI::Shell::{FOLDERID_Desktop, FOLDERID_Programs};
         let exe = std::env::current_exe().map_err(|e| e.to_string())?;
         let mut folders = vec![known_folder(&FOLDERID_Programs)];
-        if had_desktop {
-            folders.push(desktop);
+        if desktop {
+            folders.push(known_folder(&FOLDERID_Desktop));
         }
         for folder in folders.into_iter().flatten() {
             let lnk = folder.join("Porchlight.lnk");
-            if let Err(e) = create_shortcut(&lnk, &exe, aumid) {
-                eprintln!("[migrate] shortcut {} not created: {e}", lnk.display());
+            if !lnk.exists() {
+                create_shortcut(&lnk, &exe, aumid).map_err(|e| format!("{}: {e}", lnk.display()))?;
             }
         }
         Ok(())
     }
 
+    #[cfg_attr(debug_assertions, allow(dead_code))]
     fn create_shortcut(lnk: &Path, target: &Path, aumid: &str) -> windows::core::Result<()> {
         use std::mem::ManuallyDrop;
         use windows::Win32::Storage::EnhancedStorage::PKEY_AppUserModel_ID;
         use windows::Win32::System::Com::StructuredStorage::{
-            PROPVARIANT, PROPVARIANT_0, PROPVARIANT_0_0, PROPVARIANT_0_0_0,
+            PropVariantClear, PROPVARIANT, PROPVARIANT_0, PROPVARIANT_0_0, PROPVARIANT_0_0_0,
         };
         use windows::Win32::System::Com::{
             CoCreateInstance, CoInitializeEx, CoUninitialize, IPersistFile, CLSCTX_INPROC_SERVER,
@@ -529,8 +744,8 @@ mod win {
                 if let Some(dir) = target.parent() {
                     link.SetWorkingDirectory(&HSTRING::from(dir.as_os_str()))?;
                 }
-                // The shell wants VT_LPWSTR here; PROPVARIANT's Drop frees the string.
-                let id = PROPVARIANT {
+                // The shell wants VT_LPWSTR here; the string is CoTaskMem, freed by the clear.
+                let mut id = PROPVARIANT {
                     Anonymous: PROPVARIANT_0 {
                         Anonymous: ManuallyDrop::new(PROPVARIANT_0_0 {
                             vt: VT_LPWSTR,
@@ -542,7 +757,9 @@ mod win {
                     },
                 };
                 let store: IPropertyStore = link.cast()?;
-                store.SetValue(&PKEY_AppUserModel_ID, &id)?;
+                let set = store.SetValue(&PKEY_AppUserModel_ID, &id);
+                let _ = PropVariantClear(&mut id);
+                set?;
                 store.Commit()?;
                 link.cast::<IPersistFile>()?.Save(&HSTRING::from(lnk.as_os_str()), true)
             })();
@@ -559,11 +776,15 @@ pub struct MoveCell(Mutex<MoveOutcome>);
 
 static MOVING: Mutex<()> = Mutex::new(());
 
-fn move_now(app: &AppHandle) -> MoveOutcome {
+fn move_now(app: &AppHandle, at_launch: bool) -> MoveOutcome {
     let _one_at_a_time = MOVING.lock().unwrap_or_else(|e| e.into_inner());
-    let identifier = app.config().identifier.clone();
+    let sys = RealSystem { identifier: app.config().identifier.clone() };
     match MovePaths::detect(app) {
-        Ok(paths) => run(&paths, &|dir| uninstall_old(dir, &identifier)),
+        Ok(mut paths) => {
+            // After launch the downloads module has the folder open: copy, never rename.
+            paths.may_rename_downloads &= at_launch;
+            run(&paths, &sys)
+        }
         Err(e) => {
             eprintln!("[migrate] paths unavailable: {e}");
             outcome(MoveState::NotPlus, 0, None)
@@ -574,7 +795,7 @@ fn move_now(app: &AppHandle) -> MoveOutcome {
 /// Runs in setup, before anything reads the data folder; the frontend's calls
 /// queue behind setup, so the result is ready when it asks.
 pub fn start(app: &AppHandle) {
-    let outcome = move_now(app);
+    let outcome = move_now(app, true);
     eprintln!("[migrate] {outcome:?}");
     // Not on the launch that moved, so the first run isn't interrupted.
     #[cfg(target_os = "macos")]
@@ -605,7 +826,7 @@ pub fn move_status(cell: State<'_, MoveCell>) -> MoveOutcome {
 #[tauri::command]
 pub async fn retry_move(app: AppHandle) -> Result<MoveOutcome, String> {
     let handle = app.clone();
-    let outcome = tauri::async_runtime::spawn_blocking(move || move_now(&handle))
+    let outcome = tauri::async_runtime::spawn_blocking(move || move_now(&handle, false))
         .await
         .map_err(|e| e.to_string())?;
     *app.state::<MoveCell>().0.lock().unwrap_or_else(|e| e.into_inner()) = outcome.clone();
@@ -615,8 +836,8 @@ pub async fn retry_move(app: AppHandle) -> Result<MoveOutcome, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::cell::RefCell;
-    use std::fs;
+    use std::cell::{Cell, RefCell};
+    use std::time::{Duration, SystemTime};
 
     const STAMP: &str = r#"{"app":"ytubic-plus","version":"0.9.1"}"#;
 
@@ -632,7 +853,50 @@ mod tests {
         fs::write(path, body).unwrap();
     }
 
-    /// A Plus user's old folders and install, with both stamps.
+    fn shift_mtime(path: &Path, secs: i64) {
+        let delta = Duration::from_secs(secs.unsigned_abs());
+        let t = if secs >= 0 { SystemTime::now() + delta } else { SystemTime::now() - delta };
+        fs::File::options().write(true).open(path).unwrap().set_modified(t).unwrap();
+    }
+
+    /// Stands in for the uninstaller, shortcuts and keychain.
+    #[derive(Default)]
+    struct Fake {
+        uninstalls: RefCell<Vec<PathBuf>>,
+        fail_uninstall: Cell<bool>,
+        old_desktop: bool,
+        shortcuts: RefCell<Vec<bool>>,
+        keys: RefCell<Vec<String>>,
+        /// Whether this path still existed when the uninstall ran.
+        watch: Option<PathBuf>,
+        watched: RefCell<Vec<bool>>,
+    }
+
+    impl System for Fake {
+        fn uninstall(&self, dir: &Path) -> Result<(), String> {
+            if let Some(w) = &self.watch {
+                self.watched.borrow_mut().push(w.exists());
+            }
+            if self.fail_uninstall.get() {
+                return Err("uninstaller missing".into());
+            }
+            self.uninstalls.borrow_mut().push(dir.to_path_buf());
+            Ok(())
+        }
+        fn old_desktop_shortcut(&self) -> bool {
+            self.old_desktop
+        }
+        fn ensure_shortcuts(&self, desktop: bool) -> Result<(), String> {
+            self.shortcuts.borrow_mut().push(desktop);
+            Ok(())
+        }
+        fn store_key(&self, key: &str) -> Result<(), String> {
+            self.keys.borrow_mut().push(key.to_string());
+            Ok(())
+        }
+    }
+
+    /// A Plus user's old folders and a proven Plus install.
     fn plus_tree(name: &str) -> MovePaths {
         let root = scratch(name);
         let old = root.join("old-roaming");
@@ -649,6 +913,8 @@ mod tests {
             &old.join(HANDOFF),
             r#"{"format":1,"frontend":{"localStorage":{"k":"v"},"idb":{}},"cookieKey":null}"#,
         );
+        put(&install.join("ytubic.exe"), "exe");
+        shift_mtime(&install.join("ytubic.exe"), -3600);
         put(&install.join(INSTALL_STAMP), STAMP);
         MovePaths {
             old_config: old.clone(),
@@ -656,7 +922,11 @@ mod tests {
             old_roaming: old,
             new_roaming: new,
             old_install_stamp: Some(install.join(INSTALL_STAMP)),
+            old_install_exe: Some(install.join("ytubic.exe")),
+            old_install_version: Some("0.9.1".into()),
             old_install_dir: Some(install),
+            other_install: false,
+            may_rename_downloads: true,
         }
     }
 
@@ -664,68 +934,111 @@ mod tests {
         serde_json::from_str(&fs::read_to_string(paths.new_roaming.join(STATE)).unwrap()).unwrap()
     }
 
+    fn old_track(paths: &MovePaths) -> bool {
+        paths.old_roaming.join("downloads/tracks/a.m4a").exists()
+    }
+
+    fn new_track(paths: &MovePaths) -> bool {
+        paths.new_roaming.join("downloads/tracks/a.m4a").exists()
+    }
+
+    /// The old install must be left alone and downloads copied.
+    fn assert_copy_only(paths: &MovePaths, fake: &Fake) {
+        assert!(fake.uninstalls.borrow().is_empty());
+        assert!(old_track(paths) && new_track(paths));
+        assert_eq!(state(paths)["downloads"], "copied");
+    }
+
     #[test]
     fn not_plus_without_marker() {
         let paths = plus_tree("not-plus");
         fs::remove_file(paths.old_roaming.join(MARKER)).unwrap();
-        let calls = RefCell::new(0);
-        let out = run(&paths, &|_| {
-            *calls.borrow_mut() += 1;
-            Ok(())
-        });
+        let fake = Fake::default();
+        let out = run(&paths, &fake);
         assert_eq!(out.state, MoveState::NotPlus);
         assert_eq!(out.notice, None);
         assert!(!paths.new_roaming.exists());
         assert!(paths.old_roaming.join(HANDOFF).exists());
-        assert_eq!(*calls.borrow(), 0);
+        assert!(fake.uninstalls.borrow().is_empty() && fake.shortcuts.borrow().is_empty());
     }
 
     #[test]
     fn copies_and_uninstalls_with_both_stamps() {
         let paths = plus_tree("both-stamps");
-        let calls = RefCell::new(Vec::new());
-        let uninstall = |dir: &Path| {
-            calls.borrow_mut().push(dir.to_path_buf());
-            Ok(())
-        };
-        let out = run(&paths, &uninstall);
+        let fake = Fake::default();
+        let out = run(&paths, &fake);
         assert_eq!(out.state, MoveState::Done);
         assert_eq!(out.notice, Some(Notice::Moved));
-        assert_eq!(*calls.borrow(), vec![paths.old_install_dir.clone().unwrap()]);
-        assert_eq!(state(&paths)["state"], "done");
+        assert_eq!(*fake.uninstalls.borrow(), vec![paths.old_install_dir.clone().unwrap()]);
+        let st = state(&paths);
+        assert_eq!((st["state"].as_str(), st["uninstalled"].as_bool()), (Some("done"), Some(true)));
+        assert!(st["at"].as_str().is_some_and(|s| s.contains('T')));
         let (old, new) = (&paths.old_roaming, &paths.new_roaming);
         for f in ["accounts.json", "accounts/acct-1/cookies.enc", "bin/yt-dlp.exe", "settings.json"] {
             assert_eq!(fs::read(old.join(f)).unwrap(), fs::read(new.join(f)).unwrap(), "{f}");
         }
-        // Plus owns the old slot, so downloads move instead of doubling.
-        assert_eq!(fs::read_to_string(new.join("downloads/tracks/a.m4a")).unwrap(), "audio");
-        assert!(!old.join("downloads").exists());
+        // Plus owned the old slot, so downloads move instead of doubling.
+        assert!(new_track(&paths) && !old.join("downloads").exists());
+        assert_eq!(st["downloads"], "moved");
         assert!(!new.join(MARKER).exists() && !new.join(HANDOFF).exists());
         assert!(old.join(MARKER).exists(), "the old folder is otherwise left alone");
         assert_eq!(handoff_frontend(&paths).unwrap()["localStorage"]["k"], "v");
 
-        let again = run(&paths, &uninstall);
-        assert_eq!(again.state, MoveState::Done);
-        assert_eq!(again.notice, None);
-        assert_eq!(calls.borrow().len(), 1);
+        let again = run(&paths, &fake);
+        assert_eq!((again.state, again.notice), (MoveState::Done, None));
+        assert_eq!(fake.uninstalls.borrow().len(), 1);
     }
 
     #[test]
     fn copies_but_never_uninstalls_without_install_stamp() {
-        let mut paths = plus_tree("no-stamp");
-        // NUber's YTubic was installed over Plus: the slot exists, the stamp is gone.
-        fs::remove_file(paths.old_install_stamp.take().unwrap()).unwrap();
-        let calls = RefCell::new(0);
-        let out = run(&paths, &|_| {
-            *calls.borrow_mut() += 1;
-            Ok(())
-        });
-        assert_eq!(out.state, MoveState::Done);
-        assert_eq!(*calls.borrow(), 0);
+        let paths = plus_tree("no-stamp");
+        // NUber's YTubic was installed over Plus and the stamp went with it.
+        fs::remove_file(paths.old_install_stamp.as_ref().unwrap()).unwrap();
+        let fake = Fake::default();
+        assert_eq!(run(&paths, &fake).state, MoveState::Done);
         assert!(paths.new_roaming.join("accounts.json").exists());
-        // NUber's app still reads these, so they are copied, never moved.
-        assert!(paths.old_roaming.join("downloads/tracks/a.m4a").exists());
-        assert!(paths.new_roaming.join("downloads/tracks/a.m4a").exists());
+        assert_copy_only(&paths, &fake);
+    }
+
+    #[test]
+    fn stamp_version_mismatch_means_not_plus_install() {
+        let mut paths = plus_tree("version");
+        paths.old_install_version = Some("0.9.0".into());
+        let fake = Fake::default();
+        assert_eq!(run(&paths, &fake).state, MoveState::Done);
+        assert_copy_only(&paths, &fake);
+    }
+
+    #[test]
+    fn exe_newer_than_stamp_means_not_plus_install() {
+        let paths = plus_tree("exe-newer");
+        // NUber's installer rewrote the exe and left the Plus stamp behind.
+        shift_mtime(paths.old_install_exe.as_ref().unwrap(), 3600);
+        let fake = Fake::default();
+        assert_eq!(run(&paths, &fake).state, MoveState::Done);
+        assert_copy_only(&paths, &fake);
+    }
+
+    #[test]
+    fn other_install_means_copy_only() {
+        let mut paths = plus_tree("other");
+        // No per-user slot, but a per-machine (or system) YTubic is present.
+        (paths.old_install_dir, paths.old_install_stamp, paths.old_install_exe) = (None, None, None);
+        paths.other_install = true;
+        let fake = Fake::default();
+        assert_eq!(run(&paths, &fake).state, MoveState::Done);
+        assert_copy_only(&paths, &fake);
+    }
+
+    #[test]
+    fn retry_never_renames_downloads() {
+        let mut paths = plus_tree("retry");
+        paths.may_rename_downloads = false;
+        let fake = Fake::default();
+        run(&paths, &fake);
+        assert_eq!(fake.uninstalls.borrow().len(), 1);
+        assert!(old_track(&paths) && new_track(&paths));
+        assert_eq!(state(&paths)["downloads"], "copied");
     }
 
     #[test]
@@ -733,7 +1046,7 @@ mod tests {
         let paths = plus_tree("no-accounts");
         fs::remove_file(paths.old_roaming.join("accounts.json")).unwrap();
         fs::remove_dir_all(paths.old_roaming.join("accounts")).unwrap();
-        let out = run(&paths, &|_| Ok(()));
+        let out = run(&paths, &Fake::default());
         assert_eq!(out.state, MoveState::Done);
         assert_eq!(state(&paths)["state"], "done");
     }
@@ -747,25 +1060,32 @@ mod tests {
         put(&new.join("accounts.json"), r#"{"accounts":[]}"#);
         put(&new.join("settings.json"), r#"{"changed":"in porchlight"}"#);
         fs::create_dir_all(new.join("downloads/tracks")).unwrap();
-        let calls = RefCell::new(0);
-        let uninstall = |_: &Path| {
-            *calls.borrow_mut() += 1;
-            Ok(())
-        };
-        let out = run(&paths, &uninstall);
-        assert_eq!(out.state, MoveState::Done);
-        assert_eq!(out.attempts, 1);
-        assert_eq!(out.notice, Some(Notice::Moved));
+        let fake = Fake::default();
+        let out = run(&paths, &fake);
+        assert_eq!((out.state, out.notice), (MoveState::Done, Some(Notice::Moved)));
+        assert_eq!(state(&paths)["attempts"], 1);
         assert!(new.join("accounts/acct-1/cookies.enc").exists());
         assert_eq!(
             fs::read_to_string(new.join("settings.json")).unwrap(),
             r#"{"changed":"in porchlight"}"#,
             "a newer file Porchlight wrote is kept"
         );
-        assert!(new.join("downloads/tracks/a.m4a").exists());
-        assert!(!paths.old_roaming.join("downloads").exists());
-        assert_eq!(run(&paths, &uninstall).state, MoveState::Done);
-        assert_eq!(*calls.borrow(), 1);
+        assert!(new_track(&paths) && !paths.old_roaming.join("downloads").exists());
+        assert_eq!(run(&paths, &fake).state, MoveState::Done);
+        assert_eq!(fake.uninstalls.borrow().len(), 1);
+    }
+
+    #[test]
+    fn leftover_part_file_is_replaced() {
+        let paths = plus_tree("part");
+        // A copy killed mid-way left only the temp name behind.
+        put(&paths.new_roaming.join("accounts.json.porchlight-part"), "{\"acc");
+        run(&paths, &Fake::default());
+        assert_eq!(
+            fs::read_to_string(paths.new_roaming.join("accounts.json")).unwrap(),
+            r#"{"accounts":[]}"#
+        );
+        assert!(!paths.new_roaming.join("accounts.json.porchlight-part").exists());
     }
 
     #[test]
@@ -773,16 +1093,12 @@ mod tests {
         let paths = plus_tree("copy-error");
         // A folder where a file has to go: that copy cannot succeed.
         fs::create_dir_all(paths.new_roaming.join("accounts.json")).unwrap();
-        let calls = RefCell::new(0);
-        let out = run(&paths, &|_| {
-            *calls.borrow_mut() += 1;
-            Ok(())
-        });
-        assert_eq!(out.state, MoveState::Pending);
-        assert_eq!(out.attempts, 1);
-        assert_eq!(out.notice, None);
-        assert_eq!(*calls.borrow(), 0);
+        let fake = Fake::default();
+        let out = run(&paths, &fake);
+        assert_eq!((out.state, out.attempts, out.notice), (MoveState::Pending, 1, None));
+        assert!(fake.uninstalls.borrow().is_empty());
         assert_eq!(state(&paths)["state"], "pending");
+        assert!(handoff_frontend(&paths).is_none(), "no import before the files are in");
         let old = &paths.old_roaming;
         for f in ["accounts.json", "downloads/tracks/a.m4a", HANDOFF, MARKER] {
             assert!(old.join(f).exists(), "{f}");
@@ -793,51 +1109,109 @@ mod tests {
     fn corrupt_handoff_does_not_block_files() {
         let paths = plus_tree("corrupt");
         put(&paths.old_roaming.join(HANDOFF), "not json");
-        let calls = RefCell::new(0);
-        let uninstall = |_: &Path| {
-            *calls.borrow_mut() += 1;
-            Ok(())
-        };
-        let out = run(&paths, &uninstall);
-        assert_eq!(out.state, MoveState::Pending);
-        assert_eq!(out.attempts, 1);
-        assert!(handoff_frontend(&paths).is_none());
+        let fake = Fake::default();
+        let out = run(&paths, &fake);
+        assert_eq!((out.state, out.notice), (MoveState::Done, Some(Notice::Moved)));
         assert!(paths.new_roaming.join("accounts/acct-1/cookies.enc").exists());
-        assert_eq!(*calls.borrow(), 0);
-
-        fs::remove_file(paths.old_roaming.join(HANDOFF)).unwrap();
-        let out = run(&paths, &uninstall);
-        assert_eq!(out.state, MoveState::Done);
-        assert_eq!(out.notice, Some(Notice::Moved));
         assert!(handoff_frontend(&paths).is_none());
-        assert_eq!(*calls.borrow(), 1);
+        assert_eq!(fake.uninstalls.borrow().len(), 1);
     }
 
     #[test]
     fn failed_notice_after_three_attempts() {
         let paths = plus_tree("three");
-        put(&paths.old_roaming.join(HANDOFF), "not json");
-        let notices: Vec<_> = (0..3).map(|_| run(&paths, &|_| Ok(())).notice).collect();
+        fs::create_dir_all(paths.new_roaming.join("accounts.json")).unwrap();
+        let fake = Fake::default();
+        let notices: Vec<_> = (0..3).map(|_| run(&paths, &fake).notice).collect();
         assert_eq!(notices, vec![None, None, Some(Notice::Failed)]);
         assert_eq!(state(&paths)["attempts"], 3);
     }
 
     #[test]
-    fn failed_uninstall_stays_pending() {
+    fn uninstall_failure_keeps_data_done_and_retries() {
         let paths = plus_tree("uninstall-fails");
-        let out = run(&paths, &|_| Err("uninstaller missing".into()));
-        assert_eq!(out.state, MoveState::Pending);
-        assert!(paths.old_roaming.join(HANDOFF).exists());
-        assert_eq!(run(&paths, &|_| Ok(())).state, MoveState::Done);
+        let fake = Fake::default();
+        fake.fail_uninstall.set(true);
+        let first = run(&paths, &fake);
+        assert_eq!((first.state, first.notice), (MoveState::Done, Some(Notice::Moved)));
+        let st = state(&paths);
+        assert_eq!((st["uninstalled"].as_bool(), st["cleanupAttempts"].as_u64()), (Some(false), Some(1)));
+        assert!(handoff_frontend(&paths).is_some(), "the import doesn't wait for the uninstall");
+        // The old Plus is still there and still reads its downloads.
+        assert!(old_track(&paths) && new_track(&paths));
+        assert!(fake.shortcuts.borrow().is_empty());
+        assert_eq!(run(&paths, &fake).notice, None);
+        assert_eq!(run(&paths, &fake).notice, Some(Notice::Failed));
+
+        fake.fail_uninstall.set(false);
+        let fixed = run(&paths, &fake);
+        assert_eq!((fixed.state, fixed.notice), (MoveState::Done, None));
+        assert_eq!(state(&paths)["uninstalled"], true);
+        assert_eq!(fake.uninstalls.borrow().len(), 1);
+    }
+
+    #[test]
+    fn downloads_moved_after_uninstall_only() {
+        let mut paths = plus_tree("after-uninstall");
+        let fake = Fake { watch: Some(paths.old_roaming.join("downloads")), ..Fake::default() };
+        paths.may_rename_downloads = true;
+        run(&paths, &fake);
+        assert_eq!(*fake.watched.borrow(), vec![true], "downloads were still in place at uninstall");
+        assert!(!old_track(&paths) && new_track(&paths));
+    }
+
+    #[test]
+    fn crash_after_uninstall_still_takes_downloads() {
+        let mut paths = plus_tree("crash");
+        // The uninstall finished, then the app died before the downloads moved.
+        put(&paths.new_roaming.join(STATE), r#"{"state":"done","attempts":0,"uninstalled":true}"#);
+        (paths.old_install_dir, paths.old_install_stamp, paths.old_install_exe) = (None, None, None);
+        let fake = Fake::default();
+        let out = run(&paths, &fake);
+        assert_eq!((out.state, out.notice), (MoveState::Done, None));
+        assert!(fake.uninstalls.borrow().is_empty());
+        assert!(!old_track(&paths) && new_track(&paths));
+        assert_eq!(state(&paths)["downloads"], "moved");
+    }
+
+    #[test]
+    fn shortcuts_follow_the_recorded_desktop_shortcut() {
+        let paths = plus_tree("shortcuts");
+        let fake = Fake { old_desktop: true, ..Fake::default() };
+        run(&paths, &fake);
+        run(&paths, &fake);
+        // Desktop once, from the run that saw YTubic's; Start on every launch.
+        assert_eq!(*fake.shortcuts.borrow(), vec![true, false]);
+        assert_eq!(state(&paths)["hadDesktop"], false);
+    }
+
+    #[test]
+    fn key_stored_once_and_stripped_from_handoff() {
+        let paths = plus_tree("key");
+        let handoff = paths.old_roaming.join(HANDOFF);
+        put(&handoff, r#"{"format":1,"frontend":{"localStorage":{}},"cookieKey":"a2V5"}"#);
+        let fake = Fake::default();
+        run(&paths, &fake);
+        assert_eq!(*fake.keys.borrow(), vec!["a2V5".to_string()]);
+        assert_eq!(state(&paths)["keyStored"], true);
+        let left: Value = serde_json::from_str(&fs::read_to_string(&handoff).unwrap()).unwrap();
+        assert!(left.get("cookieKey").is_none());
+        assert_eq!(left["frontend"]["localStorage"], serde_json::json!({}));
+
+        // A later retry must never overwrite a key Porchlight may have made since.
+        put(&handoff, r#"{"format":1,"frontend":{},"cookieKey":"b3RoZXI="}"#);
+        put(&paths.new_roaming.join(STATE), r#"{"state":"pending","attempts":1,"keyStored":true}"#);
+        run(&paths, &fake);
+        assert_eq!(fake.keys.borrow().len(), 1);
     }
 
     #[test]
     fn handoff_survives_until_acknowledged() {
         let paths = plus_tree("survives");
-        assert_eq!(run(&paths, &|_| Ok(())).state, MoveState::Done);
+        assert_eq!(run(&paths, &Fake::default()).state, MoveState::Done);
         assert_eq!(handoff_frontend(&paths).unwrap()["localStorage"]["k"], "v");
         // A crash before the import: the next launch serves the same data.
-        assert_eq!(run(&paths, &|_| Ok(())).state, MoveState::Done);
+        assert_eq!(run(&paths, &Fake::default()).state, MoveState::Done);
         assert!(paths.old_roaming.join(HANDOFF).exists());
         assert_eq!(handoff_frontend(&paths).unwrap()["localStorage"]["k"], "v");
     }
@@ -845,14 +1219,13 @@ mod tests {
     #[test]
     fn ack_deletes_handoff_and_records_import() {
         let paths = plus_tree("ack");
-        run(&paths, &|_| Ok(()));
+        run(&paths, &Fake::default());
         ack_import(&paths).unwrap();
         assert!(!paths.old_roaming.join(HANDOFF).exists());
         let st = state(&paths);
-        assert_eq!(st["state"], "done");
-        assert_eq!(st["frontendImported"], true);
+        assert_eq!((st["state"].as_str(), st["frontendImported"].as_bool()), (Some("done"), Some(true)));
         assert!(handoff_frontend(&paths).is_none());
-        let again = run(&paths, &|_| Ok(()));
+        let again = run(&paths, &Fake::default());
         assert_eq!((again.state, again.notice), (MoveState::Done, None));
     }
 

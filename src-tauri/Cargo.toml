@@ -50,7 +50,8 @@ axum = "0.7"
 tower-http = { version = "0.6", features = ["cors", "fs"] }
 tower = "0.5"
 cookie = "0.18"
-time = "0.3"
+# formatting: RFC 3339 timestamps in migrate.rs's state file.
+time = { version = "0.3", features = ["formatting"] }
 tauri-plugin-updater = "2.10.1"
 tauri-plugin-process = "2.3.1"
 tauri-plugin-autostart = "2"
