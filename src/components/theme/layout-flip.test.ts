@@ -52,6 +52,18 @@ it("two quick turns during a flip land two notches on", async () => {
   await flush();
 });
 
+it("Ctrl+L leaves an open dialog alone, since a swap would remount it", () => {
+  const e = { key: "l", ctrlKey: true, metaKey: false, altKey: false, target: document.body };
+  useThemeStore.setState({ pickerSeen: true });
+  for (const role of ["dialog", "alertdialog"]) {
+    document.body.innerHTML = `<div role="${role}" data-state="open"></div>`;
+    expect(cycleOnKey(e)).toBe(false);
+  }
+  document.body.innerHTML = `<div role="dialog" data-state="closed"></div>`;
+  expect(cycleOnKey(e)).toBe(true);
+  document.body.innerHTML = "";
+});
+
 it("a cancelled second half doesn't swap or name the layout twice", async () => {
   flipTo("crate");
   runs[0].resolve();

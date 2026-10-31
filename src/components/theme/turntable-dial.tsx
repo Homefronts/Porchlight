@@ -5,7 +5,7 @@ import { dialTipOpen, LAYOUT_NAMES, LAYOUT_ORDER, nextLayout } from "@/lib/theme
 import type { LayoutId } from "@/lib/theme/looks";
 import { useThemeStore } from "@/lib/theme/store";
 import { cn } from "@/lib/utils";
-import { turnFrom, useLayoutFlip } from "./layout-flip";
+import { flipTo, turnFrom } from "./layout-flip";
 
 // Notch angles across the top of the knob, like a 33/45 speed switch.
 const ANGLES = [-64, -32, 0, 32, 64];
@@ -44,7 +44,6 @@ export function TurntableDial() {
   // The collapsed rail hides the dial, so the tip waits for it to open.
   const expanded = useSidebar().state === "expanded";
   const tip = useThemeStore((s) => dialTipOpen(s, expanded));
-  const flip = useLayoutFlip();
   const ref = useRef<HTMLDivElement>(null);
   const lastWheel = useRef(0);
   const at = LAYOUT_ORDER.indexOf(layout);
@@ -53,7 +52,7 @@ export function TurntableDial() {
   const go = (id: LayoutId) => {
     if (useThemeStore.getState().dialSound) click();
     seeTip();
-    flip(id);
+    flipTo(id);
   };
   const turn = (dir: 1 | -1) => go(nextLayout(turnFrom(), dir));
 

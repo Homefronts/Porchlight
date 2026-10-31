@@ -62,13 +62,11 @@ export function flipTo(id: LayoutId): void {
     });
 }
 
-export function useLayoutFlip(): (id: LayoutId) => void {
-  return flipTo;
-}
-
 /** Ctrl+L: the next layout, once the first-launch picker is done. */
 export function cycleOnKey(e: Parameters<typeof shouldCycleOnKey>[0]): boolean {
   if (!shouldCycleOnKey(e) || !useThemeStore.getState().pickerSeen) return false;
+  // A swap remounts TopBar, which would drop an open dialog (a half-typed report).
+  if (document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]')) return false;
   flipTo(nextLayout(turnFrom()));
   return true;
 }
