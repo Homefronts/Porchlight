@@ -1,8 +1,8 @@
-import { useSyncExternalStore } from "react";
 import {
   IconExternalLink,
   IconLayoutSidebarRightFilled,
 } from "@tabler/icons-react";
+import { COVER_RADIUS } from "@/components/layout/player-chrome";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Thumbnail } from "@/components/shared/thumbnail";
@@ -16,21 +16,6 @@ import { currentTrack, usePlaybackStore } from "@/lib/store/playback";
 import { cn } from "@/lib/utils";
 import { toggleFloating } from "./floating";
 
-// Below this the nav turns into an icon rail and Now playing folds into the bar.
-const COMPACT = "(max-width: 1099px)";
-
-function subscribe(onChange: () => void) {
-  const m = matchMedia(COMPACT);
-  m.addEventListener("change", onChange);
-  return () => m.removeEventListener("change", onChange);
-}
-
-export function useCompact(): boolean {
-  return useSyncExternalStore(subscribe, () => matchMedia(COMPACT).matches);
-}
-
-// Classic leaves --radius-cover unset: today's rounded-md.
-const COVER_RADIUS = "rounded-[var(--radius-cover,var(--radius-md))]";
 // The hairline keeps a panel apart from the ground when the look's own ground is black (Ink).
 export const PANEL = "rounded-[var(--radius-window,12px)] border border-w110 bg-background";
 

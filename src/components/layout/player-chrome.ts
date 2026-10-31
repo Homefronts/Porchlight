@@ -15,5 +15,8 @@
 export const playerIconButton =
   "size-8 rounded-md text-t4 hover:bg-w090 hover:text-t1 [&_svg]:size-4";
 
+// Classic leaves --radius-cover unset: today's rounded-md.
+export const COVER_RADIUS = "rounded-[var(--radius-cover,var(--radius-md))]";
+
 export const playerIconButtonOn =
   "bg-[rgba(var(--acc1rgb),0.14)] text-acc1 hover:bg-[rgba(var(--acc1rgb),0.14)] hover:text-acc1";

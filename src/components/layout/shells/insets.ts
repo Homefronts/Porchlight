@@ -1,4 +1,4 @@
-import { useLayoutEffect } from "react";
+import { useLayoutEffect, useState, type RefObject } from "react";
 import type { LayoutMode } from "@/lib/store/layout";
 import type { ShellInsets } from "./types";
 
@@ -30,4 +30,18 @@ export function useShellInsets({ left, bottom, right }: ShellInsets): void {
       s.removeProperty("--shell-right-inset");
     };
   }, [left, bottom, right]);
+}
+
+/** The element's height, kept current; a shell's bar or deck, for its bottom inset. */
+export function useHeight(ref: RefObject<HTMLElement | null>): number {
+  const [h, setH] = useState(0);
+  useLayoutEffect(() => {
+    const el = ref.current!;
+    const measure = () => setH(el.offsetHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ref]);
+  return h;
 }

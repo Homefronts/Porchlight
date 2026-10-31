@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { TopBar } from "@/components/layout/top-bar";
@@ -9,14 +9,14 @@ import { useLayoutStore } from "@/lib/store/layout";
 import { cn, noop } from "@/lib/utils";
 import { DialSlot } from "./dial-slot";
 import { escapeClosesOverlay } from "./panels/escape";
-import { useShellInsets } from "./insets";
+import { useHeight, useShellInsets } from "./insets";
+import { useCompact } from "./compact";
 import { RouteHeaderSlot } from "./route-header-slot";
 import {
   NowPlayingPanel,
   NowPlayingToggle,
   PANEL,
   PopOutButton,
-  useCompact,
 } from "./panels/parts";
 import type { ShellProps } from "./types";
 
@@ -36,15 +36,7 @@ export function PanelsShell({ page, nav, dial, hasTrack }: ShellProps) {
   // that 8px plus an 8px gap above the bar. At full width overlays also clear
   // the Now playing panel and its gap.
   const barRef = useRef<HTMLDivElement>(null);
-  const [barH, setBarH] = useState(0);
-  useLayoutEffect(() => {
-    const el = barRef.current!;
-    const measure = () => setBarH(el.offsetHeight);
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+  const barH = useHeight(barRef);
   const navOpen = !compact && outer.open;
   useShellInsets({
     // The nav cell: its width when open, the rail (3.5rem + its 1rem padding) when not.

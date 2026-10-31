@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { COVER_RADIUS } from "@/components/layout/player-chrome";
 import { Thumbnail } from "@/components/shared/thumbnail";
 import { ArtworkOutline } from "@/components/shared/artwork-outline";
 import { headlineClass, useLookFamily } from "@/components/theme/look-type";
@@ -6,8 +7,6 @@ import { useAiFilter } from "@/lib/ai/use-ai";
 import type { Shelf } from "@/lib/innertube/types";
 import { cn } from "@/lib/utils";
 import { contentsEntries } from "./contents";
-
-const COVER_RADIUS = "rounded-[var(--radius-cover,var(--radius-md))]";
 
 /** Index's Home: each shelf an entry, opening on its shelf page. */
 export function Contents({ shelves }: { shelves: Shelf[] }) {

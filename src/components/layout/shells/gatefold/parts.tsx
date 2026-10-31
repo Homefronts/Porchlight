@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { IconLoader2, IconMicrophoneFilled } from "@tabler/icons-react";
 import { useShallow } from "zustand/react/shallow";
+import { COVER_RADIUS } from "@/components/layout/player-chrome";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -38,9 +39,6 @@ import { cn } from "@/lib/utils";
 import { PopOutButton } from "../panels/parts";
 import { Wordmark } from "../index/parts";
 import { homePicks } from "./picks";
-
-// Classic leaves --radius-cover unset: today's rounded-md.
-const COVER_RADIUS = "rounded-[var(--radius-cover,var(--radius-md))]";
 const EYEBROW = "font-meta text-[11px] uppercase tracking-[0.1em]";
 // The lyric sheet sets the shared lyrics view a size up, in its own headline face.
 const SHEET = "[&_.lyrics-line]:text-[22px] [&_.app-scroll]:text-[22px]";

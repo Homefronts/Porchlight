@@ -2,7 +2,7 @@ import { TopBar } from "@/components/layout/top-bar";
 import { EntityPageHeader } from "@/components/layout/entity-page-header";
 import { useShellInsets } from "./insets";
 import { RouteHeaderSlot } from "./route-header-slot";
-import { useCompact } from "./panels/parts";
+import { useCompact } from "./compact";
 import { Appendix, IndexMasthead } from "./index/parts";
 import { IndexStrip } from "./index/strip";
 import type { ShellProps } from "./types";

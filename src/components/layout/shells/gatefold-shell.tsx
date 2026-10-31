@@ -3,7 +3,7 @@ import { EntityPageHeader } from "@/components/layout/entity-page-header";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useShellInsets } from "./insets";
 import { RouteHeaderSlot } from "./route-header-slot";
-import { useCompact } from "./panels/parts";
+import { useCompact } from "./compact";
 import { BrowseTabs, MenuButton } from "./index/parts";
 import { RecordPage } from "./gatefold/parts";
 import type { ShellProps } from "./types";

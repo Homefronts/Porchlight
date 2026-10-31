@@ -3,6 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useShallow } from "zustand/react/shallow";
 import { toast } from "sonner";
+import { COVER_RADIUS } from "@/components/layout/player-chrome";
 import { Button } from "@/components/ui/button";
 import { Thumbnail } from "@/components/shared/thumbnail";
 import { ArtworkOutline } from "@/components/shared/artwork-outline";
@@ -21,10 +22,8 @@ import type { Shelf, ShelfItem } from "@/lib/innertube/types";
 import { cn } from "@/lib/utils";
 import { useLyricsView } from "@/components/layout/lyrics-view";
 import { LyricsButton, Transport } from "../gatefold/parts";
-import { useCompact } from "../panels/parts";
+import { useCompact } from "../compact";
 import { crateStep } from "./step";
-
-const COVER_RADIUS = "rounded-[var(--radius-cover,var(--radius-md))]";
 const MONO = "font-meta text-[11px] uppercase tracking-[0.1em]";
 const CHIP = "h-8 rounded-none px-3 font-meta text-[11px] uppercase tracking-[0.1em]";
 

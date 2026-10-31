@@ -1,4 +1,5 @@
 import { useRef, type ReactNode } from "react";
+import { COVER_RADIUS } from "@/components/layout/player-chrome";
 import { AiTag } from "@/components/shared/ai-badge";
 import {
   IconArrowsMaximize,
@@ -59,11 +60,9 @@ import { useScrubStore } from "@/lib/store/scrub";
  * progress slider + flanking timecodes in a row below. The transport
  * cluster sits dead-center because the left and right wing sections
  * both use `flex-1`.
+ *
+ * `extra` lands at the end of the right wing (a layout's own buttons).
  */
-// Classic leaves --radius-cover unset: today's rounded-md.
-const COVER_RADIUS = "rounded-[var(--radius-cover,var(--radius-md))]";
-
-/** `extra` lands at the end of the right wing (a layout's own buttons). */
 export function PlayerBarBottom({ extra }: { extra?: ReactNode } = {}) {
   const { playing, status, error, position, duration, shuffle, repeat } =
     usePlaybackStore(

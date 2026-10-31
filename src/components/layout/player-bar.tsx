@@ -47,9 +47,7 @@ import { EntityLink } from "@/components/shared/entity-link";
 import { PlayerMoreMenu } from "@/components/layout/player-more-menu";
 import { PlayerCoverMenu } from "@/components/layout/player-cover-menu";
 import { MusicVideo } from "@/components/layout/music-video";
-import {
-  playerIconButton,
-} from "@/components/layout/player-chrome";
+import { COVER_RADIUS, playerIconButton } from "@/components/layout/player-chrome";
 import { cn } from "@/lib/utils";
 import { usePlayerCoverDrag } from "@/lib/player-drag";
 import { openFullscreen } from "@/lib/store/fullscreen";
@@ -396,9 +394,6 @@ export function VolumeControl({
 export type PlayerBarVariant = "right" | "floating";
 
 const COMPACT_PLAYER_CONTROLS_WIDTH = 336;
-
-// Classic leaves --radius-cover unset: today's rounded-md.
-const COVER_RADIUS = "rounded-[var(--radius-cover,var(--radius-md))]";
 
 export function PlayerBar({
   variant = "right",

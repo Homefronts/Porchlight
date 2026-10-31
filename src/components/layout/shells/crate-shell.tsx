@@ -1,10 +1,10 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { TopBar } from "@/components/layout/top-bar";
 import { EntityPageHeader } from "@/components/layout/entity-page-header";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useShellInsets } from "./insets";
+import { useHeight, useShellInsets } from "./insets";
 import { RouteHeaderSlot } from "./route-header-slot";
-import { useCompact } from "./panels/parts";
+import { useCompact } from "./compact";
 import { BrowseTabs, MenuButton, Wordmark } from "./index/parts";
 import { Turntable } from "./crate/parts";
 import type { ShellProps } from "./types";
@@ -20,15 +20,7 @@ export function CrateShell({ page, dial }: ShellProps) {
   const compact = useCompact();
   // Overlays sit 1rem above the turntable, whatever height it settles at.
   const deckRef = useRef<HTMLDivElement>(null);
-  const [deckH, setDeckH] = useState(0);
-  useLayoutEffect(() => {
-    const el = deckRef.current!;
-    const measure = () => setDeckH(el.offsetHeight);
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+  const deckH = useHeight(deckRef);
   useShellInsets({ left: "1rem", bottom: `${deckH + 16}px`, right: "1rem" });
   return (
     <div data-crate className="relative flex min-h-0 flex-1 flex-col">
