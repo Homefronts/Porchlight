@@ -6,6 +6,7 @@ import { useHomeFeed } from "@/hooks/use-home-feed";
 import { ShelfCard } from "@/components/shared/shelf-card";
 import { PageTitle } from "@/components/theme/look-type";
 import { useAiFilter } from "@/lib/ai/use-ai";
+import { useThemeStore } from "@/lib/theme/store";
 
 export const Route = createFileRoute("/shelf/$title")({
   component: ShelfPage,
@@ -15,12 +16,14 @@ export const Route = createFileRoute("/shelf/$title")({
 const MAX_EXTRA_PAGES = 2;
 
 /**
- * One Home shelf in full, opened from Index's contents. Looked up by
+ * One Home shelf in full, opened from Index's contents or Crate's See all. Looked up by
  * title, Home's shelf identity (home-sections.ts), so a reshuffled feed
  * can't swap in a different shelf. Same-titled shelves open the first.
  */
 function ShelfPage() {
   const { title } = Route.useParams();
+  // Index calls Home "Contents"; every other layout says Home.
+  const index = useThemeStore((s) => s.layout === "index");
   const { query, shelves } = useHomeFeed();
   const shelf = shelves.find((s) => s.title === title);
   const items = useAiFilter()(shelf?.items ?? []);
@@ -43,7 +46,7 @@ function ShelfPage() {
         className="flex w-fit items-center gap-1.5 font-meta text-[11px] uppercase tracking-[0.12em] text-muted-foreground hover:text-foreground"
       >
         <IconArrowLeft className="size-3.5" />
-        Contents
+        {index ? "Contents" : "Home"}
       </Link>
       {shelf ? (
         <>
