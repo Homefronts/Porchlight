@@ -164,8 +164,10 @@ export function deriveTokens(look: Look): Record<string, string> {
 
 /**
  * A layout's player area on the player colour: text, ramps, lines and
- * sliders redone from its readable text. No player colour, nothing, so the
- * area keeps the app's tokens.
+ * sliders redone from its readable text. When the accent would sink into
+ * the player colour (under 3:1), on-states (shuffle, repeat, the heart, the
+ * play disc) take the readable text instead, and text on them the player
+ * colour. No player colour, nothing, so the area keeps the app's tokens.
  */
 export function playerTokens(seeds: Seeds): Record<string, string> {
   const { player } = seeds;
@@ -189,6 +191,11 @@ export function playerTokens(seeds: Seeds): Record<string, string> {
     "--slider-thumb-glow": `0 0 3px ${rgba(on, 0.35)}, 0 0 8px ${rgba(on, 0.15)}`,
     "--slider-thumb-glow-strong": `0 0 5px ${rgba(on, 0.5)}, 0 0 12px ${rgba(on, 0.25)}`,
   };
+  if (contrastRatio(seeds.acc, player) < 3) {
+    t["--brand"] = on;
+    t["--acc1"] = on;
+    t["--brand-foreground"] = player;
+  }
   for (let i = 1; i <= 10; i++) t[`--t${i}`] = mix(on, player, ((i - 1) / 9) * 0.6);
   for (const s of W_STEPS) t[`--w${pad(s)}`] = rgba(on, s / 1000);
   return t;

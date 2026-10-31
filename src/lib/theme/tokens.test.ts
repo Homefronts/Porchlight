@@ -102,6 +102,16 @@ describe("player colour", () => {
     }
   });
 
+  it("swaps the accent for readable text only when it sinks into the player colour", () => {
+    const near = playerTokens(withPlayer("#ff4060").seeds);
+    expect(near["--brand"]).toBe(near["--foreground"]);
+    expect(near["--acc1"]).toBe(near["--foreground"]);
+    expect(near["--brand-foreground"]).toBe("#ff4060");
+    const far = playerTokens(withPlayer("#0e0d0c").seeds);
+    expect(far["--brand"]).toBeUndefined();
+    expect(far["--acc1"]).toBeUndefined();
+  });
+
   it("prefers the look's own text or ground over black and white", () => {
     expect(deriveTokens(withPlayer("#ffee00"))["--player-foreground"]).toBe("#0e0d0c");
     expect(deriveTokens(withPlayer("#3355aa"))["--player-foreground"]).toBe("#ece6da");
