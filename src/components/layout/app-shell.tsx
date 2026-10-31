@@ -56,8 +56,7 @@ import { shellFor } from "@/components/layout/shells";
 import { usePersistentPage } from "@/components/layout/shells/persistent-page";
 import { RouteHeaderSlotProvider } from "@/components/layout/shells/route-header-slot";
 import { TurntableDial } from "@/components/theme/turntable-dial";
-import { LayoutNameCard, useLayoutFlip } from "@/components/theme/layout-flip";
-import { nextLayout, shouldCycleOnKey } from "@/lib/theme/layouts";
+import { cycleOnKey, LayoutNameCard } from "@/components/theme/layout-flip";
 
 function isEditableTarget(el: EventTarget | null): boolean {
   if (!(el instanceof HTMLElement)) return false;
@@ -68,13 +67,11 @@ function isEditableTarget(el: EventTarget | null): boolean {
 }
 
 function useGlobalShortcuts() {
-  const flip = useLayoutFlip();
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
-      if (shouldCycleOnKey(e)) {
+      if (cycleOnKey(e)) {
         e.preventDefault();
-        flip(nextLayout(useThemeStore.getState().layout));
         return;
       }
       if (isEditableTarget(e.target)) return;
@@ -103,7 +100,7 @@ function useGlobalShortcuts() {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("blur", onWindowBlur);
     };
-  }, [flip]);
+  }, []);
 }
 
 export function AppShell({ children }: { children: ReactNode }) {

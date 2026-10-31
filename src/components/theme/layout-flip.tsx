@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { create } from "zustand";
-import { LAYOUT_NAMES } from "@/lib/theme/layouts";
+import { LAYOUT_NAMES, nextLayout, shouldCycleOnKey } from "@/lib/theme/layouts";
 import type { LayoutId } from "@/lib/theme/looks";
 import { useThemeStore } from "@/lib/theme/store";
 
 // `n` counts swaps so turning to the same name again still shows the card.
-const useNameCard = create<{ id: LayoutId | null; n: number }>(() => ({ id: null, n: 0 }));
+export const useNameCard = create<{ id: LayoutId | null; n: number }>(() => ({ id: null, n: 0 }));
 
 // One flip at a time: a turn during the first half retargets it, a turn
 // during the second half just swaps.
@@ -19,41 +19,58 @@ const swap = (id: LayoutId) => {
 
 const PERSPECTIVE = "perspective(1800px)";
 
+/** Where the next turn steps from: the pending layout while a flip is under way. */
+export function turnFrom(): LayoutId {
+  return phase === "out" ? target : useThemeStore.getState().layout;
+}
+
 /**
  * Turns the app over like a record: the shell container ([data-layout-flip])
  * rotates edge-on, the layout swaps while it's unseen, and it turns back.
  * Only a CSS transform, so the page and the player stay mounted. Reduced
  * motion gets a plain fade.
  */
+export function flipTo(id: LayoutId): void {
+  target = id;
+  if (phase === "out") return;
+  const el = document.querySelector<HTMLElement>("[data-layout-flip]");
+  if (phase === "in" || !el?.animate) return swap(id);
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const [out, back] = reduce
+    ? [[{ opacity: 1 }, { opacity: 0 }], [{ opacity: 0 }, { opacity: 1 }]]
+    : [
+        [{ transform: `${PERSPECTIVE} rotateY(0deg)` }, { transform: `${PERSPECTIVE} rotateY(90deg)` }],
+        [{ transform: `${PERSPECTIVE} rotateY(-90deg)` }, { transform: `${PERSPECTIVE} rotateY(0deg)` }],
+      ];
+  const duration = reduce ? 120 : 200;
+  phase = "out";
+  // Held edge-on until the second half takes over, so nothing flashes between.
+  const hold = el.animate(out, { duration, easing: "ease-in", fill: "forwards" });
+  void hold.finished
+    .then(() => {
+      phase = "in";
+      swap(target);
+      return el.animate(back, { duration, easing: "ease-out" }).finished;
+    })
+    // Cancelled before the swap: still land on the target, once.
+    .catch(() => {
+      if (phase === "out") swap(target);
+    })
+    .finally(() => {
+      hold.cancel();
+      phase = "idle";
+    });
+}
+
 export function useLayoutFlip(): (id: LayoutId) => void {
-  return useCallback((id: LayoutId) => {
-    target = id;
-    if (phase === "out") return;
-    const el = document.querySelector<HTMLElement>("[data-layout-flip]");
-    if (phase === "in" || !el?.animate) return swap(id);
-    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const [out, back] = reduce
-      ? [[{ opacity: 1 }, { opacity: 0 }], [{ opacity: 0 }, { opacity: 1 }]]
-      : [
-          [{ transform: `${PERSPECTIVE} rotateY(0deg)` }, { transform: `${PERSPECTIVE} rotateY(90deg)` }],
-          [{ transform: `${PERSPECTIVE} rotateY(-90deg)` }, { transform: `${PERSPECTIVE} rotateY(0deg)` }],
-        ];
-    const duration = reduce ? 120 : 200;
-    phase = "out";
-    // Held edge-on until the second half takes over, so nothing flashes between.
-    const hold = el.animate(out, { duration, easing: "ease-in", fill: "forwards" });
-    void hold.finished
-      .then(() => {
-        phase = "in";
-        swap(target);
-        return el.animate(back, { duration, easing: "ease-out" }).finished;
-      })
-      .catch(() => swap(target))
-      .finally(() => {
-        hold.cancel();
-        phase = "idle";
-      });
-  }, []);
+  return flipTo;
+}
+
+/** Ctrl+L: the next layout, once the first-launch picker is done. */
+export function cycleOnKey(e: Parameters<typeof shouldCycleOnKey>[0]): boolean {
+  if (!shouldCycleOnKey(e) || !useThemeStore.getState().pickerSeen) return false;
+  flipTo(nextLayout(turnFrom()));
+  return true;
 }
 
 /** The small card naming the new layout for about a second. */

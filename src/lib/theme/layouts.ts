@@ -30,6 +30,14 @@ export function shouldCycleOnKey(e: {
   return !el?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])');
 }
 
+/** The dial tip waits for the first-launch picker, and for the dial to be on screen. */
+export function dialTipOpen(
+  s: { pickerSeen: boolean; dialTipSeen: boolean },
+  dialShown: boolean,
+): boolean {
+  return s.pickerSeen && !s.dialTipSeen && dialShown;
+}
+
 export function layoutOfferText(id: LayoutId): string {
   const name = LAYOUT_NAMES[id];
   return `This look was made for ${name}. Switch to ${name}?`;

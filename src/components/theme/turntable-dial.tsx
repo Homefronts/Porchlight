@@ -1,9 +1,11 @@
 import { useEffect, useRef, type KeyboardEvent } from "react";
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
-import { LAYOUT_NAMES, LAYOUT_ORDER, nextLayout } from "@/lib/theme/layouts";
+import { useSidebar } from "@/components/ui/sidebar";
+import { dialTipOpen, LAYOUT_NAMES, LAYOUT_ORDER, nextLayout } from "@/lib/theme/layouts";
+import type { LayoutId } from "@/lib/theme/looks";
 import { useThemeStore } from "@/lib/theme/store";
 import { cn } from "@/lib/utils";
-import { useLayoutFlip } from "./layout-flip";
+import { turnFrom, useLayoutFlip } from "./layout-flip";
 
 // Notch angles across the top of the knob, like a 33/45 speed switch.
 const ANGLES = [-64, -32, 0, 32, 64];
@@ -39,18 +41,21 @@ function click() {
  */
 export function TurntableDial() {
   const layout = useThemeStore((s) => s.layout);
-  const tip = useThemeStore((s) => s.pickerSeen && !s.dialTipSeen);
+  // The collapsed rail hides the dial, so the tip waits for it to open.
+  const expanded = useSidebar().state === "expanded";
+  const tip = useThemeStore((s) => dialTipOpen(s, expanded));
   const flip = useLayoutFlip();
   const ref = useRef<HTMLDivElement>(null);
   const lastWheel = useRef(0);
   const at = LAYOUT_ORDER.indexOf(layout);
 
   const seeTip = () => useThemeStore.setState({ dialTipSeen: true });
-  const turn = (dir: 1 | -1) => {
+  const go = (id: LayoutId) => {
     if (useThemeStore.getState().dialSound) click();
     seeTip();
-    flip(nextLayout(layout, dir));
+    flip(id);
   };
+  const turn = (dir: 1 | -1) => go(nextLayout(turnFrom(), dir));
 
   // Keep keyboard focus on the lit notch as it moves.
   useEffect(() => {
@@ -92,7 +97,13 @@ export function TurntableDial() {
               aria-checked={i === at}
               aria-label={LAYOUT_NAMES[id]}
               tabIndex={i === at ? 0 : -1}
-              className="absolute inset-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              // Activating a notch (a screen reader's click) picks it; the
+              // pointer goes through to the knob, where a click turns one notch.
+              onClick={(e) => {
+                e.stopPropagation();
+                if (id !== turnFrom()) go(id);
+              }}
+              className="pointer-events-none absolute inset-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               style={{ rotate: `${ANGLES[i]}deg` }}
             >
               <i

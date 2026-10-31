@@ -13,7 +13,7 @@ vi.hoisted(() => {
 });
 
 import { parseThemeFile, toThemeFile } from "./file";
-import { applyImport, layoutOfferText, nextLayout, shouldCycleOnKey } from "./layouts";
+import { applyImport, dialTipOpen, layoutOfferText, nextLayout, shouldCycleOnKey } from "./layouts";
 import { BUILT_IN_LOOKS } from "./looks";
 import { useThemeStore } from "./store";
 
@@ -38,6 +38,14 @@ describe("layouts", () => {
     expect(key(div)).toBe(false);
     expect(key(inner)).toBe(false);
     expect(key(document.body, "l", false)).toBe(false);
+  });
+
+  it("holds the dial tip until the picker is done and the dial is on screen", () => {
+    const fresh = { pickerSeen: true, dialTipSeen: false };
+    expect(dialTipOpen(fresh, true)).toBe(true);
+    expect(dialTipOpen(fresh, false)).toBe(false);
+    expect(dialTipOpen({ ...fresh, pickerSeen: false }, true)).toBe(false);
+    expect(dialTipOpen({ ...fresh, dialTipSeen: true }, true)).toBe(false);
   });
 
   it("offers a file's layout by name", () => {
