@@ -98,7 +98,7 @@ import { useActiveLook } from "@/lib/theme/store";
 import { isLinerLook } from "@/lib/theme/looks";
 import { DialSlot } from "@/components/layout/shells/dial-slot";
 
-const NAV_ITEMS = [
+export const NAV_ITEMS = [
   { to: "/", label: "Home", icon: IconHome, iconOn: IconHomeFilled },
   {
     to: "/explore",
@@ -137,7 +137,7 @@ const NAV_ITEMS = [
 // Liked Songs is the YTM magic playlist — browseId `VLLM` (wraps
 // playlistId "LM"). Always present, always first in the playlists
 // section, not user-removable.
-const LIKED_ID = "VLLM";
+export const LIKED_ID = "VLLM";
 
 // Artwork rows carry a 20px tile where the icon rows carry a 16px
 // glyph, so the menu button's fixed height would squeeze it. `h-auto`
@@ -283,7 +283,7 @@ export function AppSidebar() {
   );
 }
 
-type PlaylistRow = {
+export type PlaylistRow = {
   id: string;
   title: string;
   thumbnailUrl?: string;
@@ -323,35 +323,16 @@ function PlaylistArt({ src }: { src?: string }) {
   );
 }
 
-/**
- * The "Playlists" section. Shows Liked Songs, then every playlist in the
- * user's library. Pinning doesn't gate visibility any more — it only
- * floats a playlist to the top of the list (right under Liked Songs).
- *
- * Shares the `["library", "playlists"]` query cache with the Library
- * page, so opening the sidebar costs no extra fetch once either has
- * loaded. Pinned rows come from local storage and paint instantly, even
- * before the library browse resolves.
- */
-function SidebarPlaylists({
-  isPlaylistOn,
-  onScrollableChange,
-}: {
-  isPlaylistOn: (id: string) => boolean;
-  onScrollableChange: (scrollable: boolean) => void;
-}) {
+/** The nav's playlist rows: pinned first, then saved, then the library. Liked songs is not among them. */
+export function usePlaylistRows(): PlaylistRow[] {
   const loggedIn = useQuery(authLoggedInQuery);
   const library = useQuery(libraryPlaylistsQuery(loggedIn.data === true));
-
   const pinned = usePinned();
   const hidden = useHidden();
   const saved = useSaved();
   const removed = useRemoved();
-  const pin = usePinnedPlaylistsStore((s) => s.pin);
-  const unpin = usePinnedPlaylistsStore((s) => s.unpin);
-  const hide = usePinnedPlaylistsStore((s) => s.hide);
 
-  const rows = useMemo<PlaylistRow[]>(() => {
+  return useMemo<PlaylistRow[]>(() => {
     const hiddenIds = new Set(hidden);
     // Liked Songs (`VLLM`) ships in the playlists shelf too; drop it —
     // it's always rendered as the hard-coded first row below. Hidden
@@ -396,6 +377,29 @@ function SidebarPlaylists({
 
     return [...pinnedRows, ...savedRows, ...restRows];
   }, [library.data, pinned, hidden, saved, removed]);
+}
+
+/**
+ * The "Playlists" section. Shows Liked Songs, then every playlist in the
+ * user's library. Pinning doesn't gate visibility any more — it only
+ * floats a playlist to the top of the list (right under Liked Songs).
+ *
+ * Shares the `["library", "playlists"]` query cache with the Library
+ * page, so opening the sidebar costs no extra fetch once either has
+ * loaded. Pinned rows come from local storage and paint instantly, even
+ * before the library browse resolves.
+ */
+function SidebarPlaylists({
+  isPlaylistOn,
+  onScrollableChange,
+}: {
+  isPlaylistOn: (id: string) => boolean;
+  onScrollableChange: (scrollable: boolean) => void;
+}) {
+  const rows = usePlaylistRows();
+  const pin = usePinnedPlaylistsStore((s) => s.pin);
+  const unpin = usePinnedPlaylistsStore((s) => s.unpin);
+  const hide = usePinnedPlaylistsStore((s) => s.hide);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 

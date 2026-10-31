@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useContext,
   useEffect,
@@ -8,7 +8,10 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { HOME_KEY, fetchHomeFeedPage } from "@/lib/innertube/home";
+import { HOME_KEY } from "@/lib/innertube/home";
+import { useHomeFeed } from "@/hooks/use-home-feed";
+import { useThemeStore } from "@/lib/theme/store";
+import { Contents } from "@/components/layout/shells/index/contents-page";
 import { ShelfCarousel } from "@/components/shared/shelf-carousel";
 import { HomeConfigureDialog } from "@/components/shared/home-configure-dialog";
 import { Button } from "@/components/ui/button";
@@ -18,7 +21,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { arrangeTitles, useHomeSectionsStore } from "@/lib/store/home-sections";
+import { useHomeSectionsStore } from "@/lib/store/home-sections";
 import { cn } from "@/lib/utils";
 import {
   AlertCircleIcon,
@@ -44,8 +47,8 @@ export const Route = createFileRoute("/")({
 });
 
 function HomePage() {
+  const { query, loadedTitles, shelves } = useHomeFeed();
   const {
-    data,
     isLoading,
     error,
     refetch,
@@ -53,40 +56,18 @@ function HomePage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useInfiniteQuery({
-    queryKey: HOME_KEY,
-    queryFn: ({ pageParam }) => fetchHomeFeedPage(pageParam),
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
-  });
+  } = query;
+  // Index reads Home as a magazine's contents page.
+  const contents = useThemeStore((s) => s.layout) === "index";
 
-  const loaded = data?.pages.flatMap((p) => p.shelves) ?? [];
-
-  // The user's arrangement: their order first, then anything new the
-  // feed sent, minus what they switched off. Title is the identity
-  // (see home-sections.ts), so two same-titled shelves keep their
-  // relative feed order under one slot.
-  const order = useHomeSectionsStore((s) => s.order);
-  const hidden = useHomeSectionsStore((s) => s.hidden);
   const noteSeen = useHomeSectionsStore((s) => s.noteSeen);
   // Keyed on the joined titles so a re-render with the same feed does
   // not re-stamp the store.
-  const loadedTitles = loaded.map((s) => s.title);
   const loadedKey = loadedTitles.join("\u0000");
   useEffect(() => {
     if (loadedTitles.length > 0) noteSeen(loadedTitles);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadedKey, noteSeen]);
-  const titles = arrangeTitles(loadedTitles, order);
-  const rank = new Map(titles.map((t, i) => [t, i]));
-  const shelves = loaded
-    .filter((s) => !hidden.includes(s.title))
-    .map((s, i) => ({ s, i }))
-    .sort(
-      (a, b) =>
-        (rank.get(a.s.title) ?? 0) - (rank.get(b.s.title) ?? 0) || a.i - b.i,
-    )
-    .map(({ s }) => s);
 
   const playing = usePlaybackStore((s) => s.queue[s.index]);
   const vinyl = vinylSpot(shelves, [playing?.videoId, playing?.albumId]);
@@ -131,7 +112,7 @@ function HomePage() {
       style={{ height: headerHeight }}
     >
       <PageTitle>
-        {family === "classic" ? "Home" : <Greeting />}
+        {contents ? "Contents" : family === "classic" ? "Home" : <Greeting />}
       </PageTitle>
       <div className="flex items-center gap-2">
         {isFetching && !isLoading && !isFetchingNextPage ? (
@@ -222,14 +203,18 @@ function HomePage() {
 
         {isLoading ? <HomeSkeleton /> : null}
 
-        {shelves.map((shelf, i) => (
-          <ShelfCarousel
-            key={shelf.id}
-            shelf={shelf}
-            index={i}
-            vinylId={vinyl?.shelf === i ? vinyl.id : undefined}
-          />
-        ))}
+        {contents ? (
+          <Contents shelves={shelves} />
+        ) : (
+          shelves.map((shelf, i) => (
+            <ShelfCarousel
+              key={shelf.id}
+              shelf={shelf}
+              index={i}
+              vinylId={vinyl?.shelf === i ? vinyl.id : undefined}
+            />
+          ))
+        )}
 
         {hasNextPage ? (
           <div

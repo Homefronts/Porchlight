@@ -20,6 +20,7 @@ import type { LayoutId } from "@/lib/theme/looks";
 import { SHELLS, shellFor } from "./index";
 import { SidebarShell } from "./sidebar-shell";
 import { PanelsShell } from "./panels-shell";
+import { IndexShell } from "./index-shell";
 import { usePersistentPage } from "./persistent-page";
 import { sidebarInsets, useShellInsets } from "./insets";
 import {
@@ -33,8 +34,9 @@ import type { ShellProps } from "./types";
 
 const LAYOUTS: LayoutId[] = ["sidebar", "gatefold", "index", "crate", "panels"];
 
-it("maps sidebar and panels to their own shells", () => {
+it("maps sidebar, index and panels to their own shells", () => {
   expect(shellFor("sidebar")).toBe(SidebarShell);
+  expect(shellFor("index")).toBe(IndexShell);
   expect(shellFor("panels")).toBe(PanelsShell);
 });
 
