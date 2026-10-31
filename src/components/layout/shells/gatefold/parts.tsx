@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { IconLoader2, IconMicrophoneFilled } from "@tabler/icons-react";
 import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Thumbnail } from "@/components/shared/thumbnail";
 import { ArtworkOutline } from "@/components/shared/artwork-outline";
@@ -79,17 +79,11 @@ export function RecordPage({
           compact ? "flex-col items-start gap-3" : "items-center justify-between gap-4",
         )}
       >
-        {compact ? (
-          <>
-            <Wordmark dial={dial} />
-            {eyebrow}
-          </>
-        ) : (
-          <>
-            {eyebrow}
-            <Wordmark dial={dial} />
-          </>
-        )}
+        {eyebrow}
+        {/* One order in the tree so the dial never remounts at the breakpoint. */}
+        <div className={cn(compact && "order-first")}>
+          <Wordmark dial={dial} />
+        </div>
       </div>
       {hasTrack ? <Playing compact={compact} /> : <EmptySleeve compact={compact} />}
       <Transport compact={compact} />
@@ -174,7 +168,7 @@ function Playing({ compact }: { compact: boolean }) {
           {artist}
           <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3.5 gap-y-[3px] font-meta text-[11px] uppercase text-muted-foreground">
             {/* Unknown until the stream resolves; no 00:00 placeholder. */}
-            {length > 0 && (
+            {length >= 1 && (
               <>
                 <dt>Time</dt>
                 <dd>{tapeTime(length)}</dd>
@@ -231,7 +225,8 @@ function EmptySleeve({ compact }: { compact: boolean }) {
             aria-hidden
             className="absolute -end-[40%] top-[12%] aspect-square w-4/5 rounded-full border border-t10 opacity-50 bg-[repeating-radial-gradient(circle,var(--k550)_0_2px,transparent_2px_4px)]"
           />
-          <span className="relative">EMPTY SLEEVE</span>
+          {/* Bottom corner, clear of the record's rings. */}
+          <span className="absolute bottom-3 start-3">EMPTY SLEEVE</span>
         </div>
         <div className="flex min-w-0 flex-col gap-1.5">
           <span
@@ -285,7 +280,14 @@ function LyricsButton({ state }: { state: LyricsViewState }) {
           </Button>
         </PopoverTrigger>
       </IconTip>
-      <PopoverContent side="right" align="end" sideOffset={12} className="flex h-[28rem] w-[24rem] flex-col gap-2 p-0">
+      {/* Opens beside the column, not over the record: anchored to the page's edge. */}
+      <PopoverAnchor className="pointer-events-none absolute inset-y-0 -end-5 w-0" />
+      <PopoverContent
+        side="right"
+        align="end"
+        sideOffset={12}
+        className="flex h-[28rem] max-h-[var(--radix-popover-content-available-height)] w-[24rem] flex-col gap-2 p-0"
+      >
         <header className="flex shrink-0 items-center justify-between border-b border-hairline px-3 py-2">
           <span className="text-sm font-medium">Lyrics</span>
           <LyricsSourceButton state={state} />
@@ -355,7 +357,7 @@ function Transport({ compact }: { compact: boolean }) {
   );
 
   return (
-    <div className={cn("mt-4 flex shrink-0 flex-col gap-3", !hasTrack && "[&>*:first-child]:opacity-40")}>
+    <div className={cn("relative mt-4 flex shrink-0 flex-col gap-3", !hasTrack && "[&>*:first-child]:opacity-40")}>
       <TapeCounter current={position} total={duration} onSeek={seek} disabled={off} className="mt-0">
         <div className="flex items-center gap-2">
           {!compact && (

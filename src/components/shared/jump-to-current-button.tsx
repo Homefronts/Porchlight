@@ -56,7 +56,8 @@ export function JumpToCurrentButton({ tracks }: Props) {
     );
     const scroller =
       row0?.closest<HTMLElement>(".app-scroll") ??
-      document.querySelector<HTMLElement>(".app-scroll");
+      // The page's own scroller; side panels (Gatefold's record page) scroll too.
+      document.querySelector<HTMLElement>("main.app-scroll");
     if (!scroller) return;
 
     const update = () => {
