@@ -16,9 +16,14 @@ it("ignores other keys and a handled Escape", () => {
   expect(escapeClosesOverlay(e)).toBe(false);
 });
 
-it("leaves Escape to an open dialog or menu", () => {
-  for (const role of ["dialog", "menu"]) {
-    document.body.innerHTML = `<div role="${role}"></div>`;
+it("leaves Escape to an open dialog, menu or listbox", () => {
+  for (const role of ["dialog", "menu", "listbox"]) {
+    document.body.innerHTML = `<div role="${role}" data-state="open"></div>`;
     expect(escapeClosesOverlay(esc())).toBe(false);
   }
+});
+
+it("ignores a listbox or menu that isn't an open popup", () => {
+  document.body.innerHTML = `<ul role="listbox"></ul><div role="menu" data-state="closed"></div>`;
+  expect(escapeClosesOverlay(esc())).toBe(true);
 });

@@ -5,5 +5,8 @@
  */
 export function escapeClosesOverlay(e: KeyboardEvent): boolean {
   if (e.key !== "Escape" || e.defaultPrevented) return false;
-  return !document.querySelector('[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]');
+  // Only open popups: a page can keep a listbox (or a closed menu) in the DOM.
+  return !document.querySelector(
+    ["dialog", "alertdialog", "menu", "listbox"].map((r) => `[role="${r}"][data-state="open"]`).join(", "),
+  );
 }
