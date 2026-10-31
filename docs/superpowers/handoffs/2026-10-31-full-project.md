@@ -263,7 +263,8 @@ All four ship together in one update (the user's call). The floating mini player
 | Crate volume slider clip fix (user found it) | done | 2b87dc2 |
 | Player colour (user request) | done, **not yet checked live** | daede91 |
 | Crate liner notes (user request, mockup approved) | done, checked live at full size | 55a826c |
-| Handoff docs | done | 4d0b6c4 (+ this file) |
+| Crate artist names link to the artist page (user request) | done, links checked live | fdfc658 |
+| Handoff docs | done | 4d0b6c4, 0950fc3 (kept current with every change) |
 | 9B Version bump + release commit | **waiting on the user's version choice** | |
 
 What the reviews and the live pass caught along the way (all fixed):
@@ -296,6 +297,16 @@ What the reviews and the live pass caught along the way (all fixed):
    - Songs show credits instead.
    - Tracks are fetched only after the crate settles for 250ms.
    - Rows by window height: 6 per side at 940px or taller, 3 at 800px or taller, hidden below that.
+4. **"In Crate you should be able to click on the artist."** Artist names now link to the artist page in three places:
+   - the liner notes rows (clicking elsewhere on a row still plays)
+   - a single's credits
+   - the front record's subtitle, when YouTube gives artist ids (playlists like "Auto playlist" stay plain)
+
+   The turntable's artist was already a link.
+
+## Running tally rule
+
+The user asked (2026-10-31) that **every change gets added to this write-up as it happens**, so it stays a running tally. When you change anything, add a row to the Progress table and a line under the user's requests (or the right section) in the same turn, and commit it with the change.
 
 ## What's left, in order
 
