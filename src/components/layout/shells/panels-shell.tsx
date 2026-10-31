@@ -8,6 +8,7 @@ import { BackgroundCover } from "@/components/layout/background-cover";
 import { useLayoutStore } from "@/lib/store/layout";
 import { cn } from "@/lib/utils";
 import { DialSlot } from "./dial-slot";
+import { escapeClosesOverlay } from "./panels/escape";
 import { useShellInsets } from "./insets";
 import { RouteHeaderSlot } from "./route-header-slot";
 import {
@@ -32,8 +33,9 @@ export function PanelsShell({ page, nav, dial, hasTrack }: ShellProps) {
   const outer = useSidebar();
   const sidebarWidth = useLayoutStore((s) => s.sidebarWidth);
 
-  // Overlays sit 8px above the bar (its wrapper already carries the 8px
-  // under it) and, at full width, clear the Now playing panel and its gap.
+  // barH misses the bar's mb-2 (it collapses through the wrapper), so +16 is
+  // that 8px plus an 8px gap above the bar. At full width overlays also clear
+  // the Now playing panel and its gap.
   const barRef = useRef<HTMLDivElement>(null);
   const [barH, setBarH] = useState(0);
   useLayoutEffect(() => {
@@ -58,7 +60,7 @@ export function PanelsShell({ page, nav, dial, hasTrack }: ShellProps) {
   useEffect(() => {
     if (!nowOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setNowOpen(false);
+      if (escapeClosesOverlay(e)) setNowOpen(false);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
