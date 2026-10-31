@@ -78,11 +78,40 @@ Porchlight ships with five looks. Switch any time in Settings > Appearance.
   </tr>
 </table>
 
+## Layouts
+
+Porchlight has five layouts. Turn the little dial next to the logo, press Ctrl+L, or pick one in Settings > Appearance. Every look works on every layout, and every screen is there in each one. Sidebar, shown at the top, is the app as you know it.
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="assets/screenshots/porchlight-layout-gatefold.jpg" alt="Porchlight in the Gatefold layout: the playing record and lyric sheet on the left page, Home on the right" /><br />
+      <b>Gatefold</b><br />
+      Two pages, like an open double LP. The left page is always the playing record, with its credits and a lyric sheet. The right page is everything else, with tabs across the top.
+    </td>
+    <td width="50%" valign="top">
+      <img src="assets/screenshots/porchlight-layout-index.jpg" alt="Porchlight in the Index layout: Home as a numbered contents page under a cassette label player" /><br />
+      <b>Index</b><br />
+      Home reads like a magazine contents page, with big numbered entries. The player is a cassette label strip across the top, and your playlists sit in an appendix on the right.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="assets/screenshots/porchlight-layout-crate.jpg" alt="Porchlight in the Crate layout: record sleeves leaning back, with a turntable along the bottom" /><br />
+      <b>Crate</b><br />
+      Flip through Home like a record crate. Dividers switch shelves, and a turntable along the bottom spins the playing record.
+    </td>
+    <td width="50%" valign="top">
+      <img src="assets/screenshots/porchlight-layout-panels.jpg" alt="Porchlight in the Panels layout: rounded panels on black with a player bar along the bottom" /><br />
+      <b>Panels</b><br />
+      Rounded panels on black, a player bar along the bottom and a soft wash of colour from the playing cover.
+    </td>
+  </tr>
+</table>
+
 ## Make it yours
 
 Pick a look on first launch, with a live preview of your own library. Then keep tweaking: change colours, fonts, corner shapes and the little record touches, and save the result as a custom look. Export a look as a theme file to share it, or import a friend's.
-
-More looks and layouts are coming in content updates before 1.1.
 
 <table>
   <tr>
@@ -214,10 +243,6 @@ Download the latest installer from the [Releases](https://github.com/Homefronts/
 ## Roadmap
 
 Ideas for future Porchlight releases. Not promises.
-
-### Coming next
-
-- [ ] **More layouts**: new layouts (Gatefold, Index, Crate, Panels) follow in later updates, on top of the looks that shipped.
 
 ### Next up
 
