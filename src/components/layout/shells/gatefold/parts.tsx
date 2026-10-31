@@ -269,8 +269,8 @@ function IconTip({ label, children }: { label: string; children: React.ReactElem
   );
 }
 
-/** Compact only: the lyric sheet folds behind a button. */
-function LyricsButton({ state }: { state: LyricsViewState }) {
+/** Compact only: the lyric sheet folds behind a button. Crate's deck opens it upward. */
+export function LyricsButton({ state, side = "right" }: { state: LyricsViewState; side?: "right" | "top" }) {
   return (
     <Popover>
       <IconTip label="Lyrics">
@@ -281,9 +281,9 @@ function LyricsButton({ state }: { state: LyricsViewState }) {
         </PopoverTrigger>
       </IconTip>
       {/* Opens beside the column, not over the record: anchored to the page's edge. */}
-      <PopoverAnchor className="pointer-events-none absolute inset-y-0 -end-5 w-0" />
+      {side === "right" && <PopoverAnchor className="pointer-events-none absolute inset-y-0 -end-5 w-0" />}
       <PopoverContent
-        side="right"
+        side={side}
         align="end"
         sideOffset={12}
         className="flex h-[28rem] max-h-[var(--radix-popover-content-available-height)] w-[24rem] flex-col gap-2 p-0"
@@ -300,8 +300,8 @@ function LyricsButton({ state }: { state: LyricsViewState }) {
   );
 }
 
-/** The counter and the controls along the foot of the page. */
-function Transport({ compact }: { compact: boolean }) {
+/** The counter and the controls along the foot of the page (and under Crate's turntable). */
+export function Transport({ compact, className }: { compact: boolean; className?: string }) {
   const { playing, status, position, duration, shuffle, repeat } = usePlaybackStore(
     useShallow((s) => ({
       playing: s.playing,
@@ -357,7 +357,7 @@ function Transport({ compact }: { compact: boolean }) {
   );
 
   return (
-    <div className={cn("relative mt-4 flex shrink-0 flex-col gap-3", !hasTrack && "[&>*:first-child]:opacity-40")}>
+    <div className={cn("relative mt-4 flex shrink-0 flex-col gap-3", !hasTrack && "[&>*:first-child]:opacity-40", className)}>
       <TapeCounter current={position} total={duration} onSeek={seek} disabled={off} className="mt-0">
         <div className="flex items-center gap-2">
           {!compact && (

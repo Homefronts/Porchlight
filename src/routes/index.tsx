@@ -12,6 +12,7 @@ import { HOME_KEY } from "@/lib/innertube/home";
 import { useHomeFeed } from "@/hooks/use-home-feed";
 import { useThemeStore } from "@/lib/theme/store";
 import { Contents } from "@/components/layout/shells/index/contents-page";
+import { Crate } from "@/components/layout/shells/crate/parts";
 import { ShelfCarousel } from "@/components/shared/shelf-carousel";
 import { HomeConfigureDialog } from "@/components/shared/home-configure-dialog";
 import { Button } from "@/components/ui/button";
@@ -58,7 +59,8 @@ function HomePage() {
     isFetchingNextPage,
   } = query;
   // Index reads Home as a magazine's contents page.
-  const contents = useThemeStore((s) => s.layout) === "index";
+  const layout = useThemeStore((s) => s.layout);
+  const contents = layout === "index";
 
   const noteSeen = useHomeSectionsStore((s) => s.noteSeen);
   // Keyed on the joined titles so a re-render with the same feed does
@@ -205,6 +207,8 @@ function HomePage() {
 
         {contents ? (
           <Contents shelves={shelves} />
+        ) : layout === "crate" ? (
+          <Crate shelves={shelves} />
         ) : (
           shelves.map((shelf, i) => (
             <ShelfCarousel
