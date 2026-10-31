@@ -9,6 +9,7 @@ import { FloatingPlayerSync } from "@/components/layout/floating-player-sync";
 import { DragSnapOverlay } from "@/components/layout/drag-snap-overlay";
 import { WindowResizeHandles } from "@/components/layout/window-resize-handles";
 import { IS_MAC } from "@/lib/platform";
+import { noop } from "@/lib/utils";
 import { useEntityHeaderStore } from "@/lib/store/entity-header";
 import { SettingsDialog } from "@/components/settings/settings-dialog";
 import { PremiumGateDialog } from "@/components/layout/premium-gate-dialog";
@@ -147,7 +148,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   // clicking X and revert the persisted floating layout preference.
   const suppressRevertRef = useRef(false);
 
-  const Shell = shellFor(useThemeStore((s) => s.layout));
+  const layout = useThemeStore((s) => s.layout);
+  const Shell = shellFor(layout);
   // The scroller travels with the page, so a shell swap keeps its scroll
   // position and the element pages cache (TrackList, Home's fade).
   const { page, portal } = usePersistentPage(
@@ -234,6 +236,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <TooltipProvider delayDuration={800} skipDelayDuration={0}>
       <SidebarProvider
+        // Sidebar's nav, which Panels' rail follows. Elsewhere it's hidden, so
+        // Ctrl+B mustn't quietly collapse it for the way back.
+        onOpenChange={layout === "sidebar" || layout === "panels" ? undefined : noop}
         style={
           {
             "--sidebar-width": `${sidebarWidth}px`,

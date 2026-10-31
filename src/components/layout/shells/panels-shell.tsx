@@ -6,7 +6,7 @@ import { PlayerBarBottom } from "@/components/layout/player-bar-bottom";
 import { EntityPageHeader } from "@/components/layout/entity-page-header";
 import { BackgroundCover } from "@/components/layout/background-cover";
 import { useLayoutStore } from "@/lib/store/layout";
-import { cn } from "@/lib/utils";
+import { cn, noop } from "@/lib/utils";
 import { DialSlot } from "./dial-slot";
 import { escapeClosesOverlay } from "./panels/escape";
 import { useShellInsets } from "./insets";
@@ -20,7 +20,6 @@ import {
 } from "./panels/parts";
 import type { ShellProps } from "./types";
 
-const noop = () => {};
 
 /**
  * Rounded panels on black: the nav, the page under a wash of the playing

@@ -14,9 +14,8 @@ import { isLinerLook } from "@/lib/theme/looks";
 import { useActiveLook } from "@/lib/theme/store";
 import { openSettings } from "@/lib/store/settings-dialog";
 import { sideLetter } from "@/components/theme/section-label";
-import { cn } from "@/lib/utils";
+import { cn, noop } from "@/lib/utils";
 
-const noop = () => {};
 const EYEBROW = "font-meta text-[11px] uppercase tracking-[0.1em] text-muted-foreground/70";
 
 /**
