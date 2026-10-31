@@ -10,7 +10,7 @@ import {
 import { TrackDownloadStatus } from "@/components/shared/download-button";
 import { rowQueue } from "@/lib/queue-track";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { flipping, listOffset } from "@/components/shared/list-offset";
+import { useListOffset } from "@/components/shared/list-offset";
 import { CheckIcon, PlayIcon, PauseIcon, Volume2Icon } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { ArtworkOutline } from "@/components/shared/artwork-outline";
@@ -252,35 +252,7 @@ export function TrackList({
   // recompute it whenever the scroller resolves or anything above the
   // list changes height (cover image loads, description expands, …).
   const listRef = useRef<HTMLDivElement>(null);
-  const [scrollMargin, setScrollMargin] = useState(0);
-  useLayoutEffect(() => {
-    if (!scrollEl) return;
-    let frame = 0;
-    let tries = 0;
-    const compute = () => {
-      cancelAnimationFrame(frame);
-      const list = listRef.current;
-      if (!list) return;
-      // A layout swap resizes mid flip; measure again once it has settled.
-      if (flipping(scrollEl) && tries++ < 120) {
-        frame = requestAnimationFrame(compute);
-        return;
-      }
-      tries = 0;
-      setScrollMargin(listOffset(list, scrollEl));
-    };
-    compute();
-    const ro = new ResizeObserver(compute);
-    ro.observe(scrollEl);
-    // Also observe the immediate parent (route content) so header
-    // expansions trigger a recompute. Falls back to scroll listener.
-    if (listRef.current?.parentElement)
-      ro.observe(listRef.current.parentElement);
-    return () => {
-      ro.disconnect();
-      cancelAnimationFrame(frame);
-    };
-  }, [scrollEl, tracks.length]);
+  const scrollMargin = useListOffset(listRef, scrollEl, tracks.length);
 
   const virtualizer = useVirtualizer({
     count: tracks.length,

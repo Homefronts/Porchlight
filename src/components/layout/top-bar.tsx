@@ -316,7 +316,7 @@ export function TopBar({ sidebarToggle = true }: { sidebarToggle?: boolean } = {
   );
 }
 
-function LayoutSubMenu() {
+export function LayoutSubMenu() {
   const mode = useLayoutStore((s) => s.mode);
   const setMode = useLayoutStore((s) => s.setMode);
   const sidebar = useThemeStore((s) => s.layout === "sidebar");

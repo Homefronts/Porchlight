@@ -216,7 +216,7 @@ function LayoutTile({
  * its own window. Each tile is the app in miniature, sidebar rail and
  * all, with the player drawn where that mode puts it.
  */
-function PlayerLayoutRow() {
+export function PlayerLayoutRow() {
   const value = useLayoutStore((s) => s.mode);
   const setValue = useLayoutStore((s) => s.setMode);
   const sidebar = useThemeStore((s) => s.layout === "sidebar");
