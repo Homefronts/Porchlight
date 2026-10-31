@@ -11,6 +11,7 @@ import { DialSlot } from "./dial-slot";
 import { escapeClosesOverlay } from "./panels/escape";
 import { useHeight, useShellInsets } from "./insets";
 import { useCompact } from "./compact";
+import { usePlayerStyle } from "./player-colour";
 import { RouteHeaderSlot } from "./route-header-slot";
 import {
   NowPlayingPanel,
@@ -31,6 +32,7 @@ export function PanelsShell({ page, nav, dial, hasTrack }: ShellProps) {
   const [nowOpen, setNowOpen] = useState(false);
   const outer = useSidebar();
   const sidebarWidth = useLayoutStore((s) => s.sidebarWidth);
+  const playerStyle = usePlayerStyle();
 
   // barH misses the bar's mb-2 (it collapses through the wrapper), so +16 is
   // that 8px plus an 8px gap above the bar. At full width overlays also clear
@@ -105,7 +107,8 @@ export function PanelsShell({ page, nav, dial, hasTrack }: ShellProps) {
           )
         )}
       </div>
-      <div ref={barRef} className="ps-2 [&>aside]:border-w110">
+      {/* The player colour reaches the bar through --surface, its ground. */}
+      <div ref={barRef} className="ps-2 [&>aside]:border-w110" style={playerStyle}>
         <PlayerBarBottom
           extra={
             <>

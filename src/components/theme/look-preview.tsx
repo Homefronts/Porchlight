@@ -7,7 +7,7 @@ import {
   type Look,
 } from "@/lib/theme/looks";
 import { LAYOUT_NAMES } from "@/lib/theme/layouts";
-import { deriveTokens } from "@/lib/theme/tokens";
+import { deriveTokens, playerTokens } from "@/lib/theme/tokens";
 import { CrateMini } from "./miniatures/crate";
 import { GatefoldMini } from "./miniatures/gatefold";
 import { IndexMini } from "./miniatures/index";
@@ -37,7 +37,15 @@ const displayWeight = (f: FontId) => (f === "archivo" ? 900 : f === "instrument-
  */
 function previewVars(look: Look): Record<string, string> {
   const { seeds, fonts, radius, touches } = look;
+  // The player area's colours; without a player colour, what it shows today.
+  const p = playerTokens(seeds);
   return {
+    "--pv-player": seeds.player ?? "transparent",
+    "--pv-p-fg": p["--foreground"] ?? seeds.fg,
+    "--pv-p-dim": p["--muted-foreground"] ?? seeds.dim,
+    "--pv-p-faint": p["--t10"] ?? seeds.faint,
+    "--pv-strip": seeds.player ?? seeds.fg,
+    "--pv-on-strip": p["--foreground"] ?? seeds.bg,
     "--pv-bg": seeds.bg,
     "--pv-fg": seeds.fg,
     "--pv-acc": seeds.acc,

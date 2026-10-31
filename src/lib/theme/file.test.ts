@@ -92,3 +92,27 @@ describe("theme file", () => {
     expect(r.look.name).toBe("Sleeve copy");
   });
 });
+
+describe("theme file player colour", () => {
+  it("leaves it out when the look has none", () => {
+    const r = parseThemeFile(toThemeFile(sleeve, "index"));
+    if (!r.ok) throw new Error(r.error);
+    expect("player" in r.look.seeds).toBe(false);
+  });
+
+  it("round trips a player colour", () => {
+    const look = { ...sleeve, id: "custom-x", seeds: { ...sleeve.seeds, player: "#3355aa" } };
+    expect(JSON.parse(toThemeFile(look, "index")).look.seeds.player).toBe("#3355aa");
+    const r = parseThemeFile(toThemeFile(look, "index"));
+    if (!r.ok) throw new Error(r.error);
+    expect(r.look.seeds.player).toBe("#3355aa");
+    expect(r.notes).toEqual([]);
+  });
+
+  it("ignores a bad player colour", () => {
+    const r = parseThemeFile(make((f) => (f.look.seeds.player = "url(x)")));
+    if (!r.ok) throw new Error(r.error);
+    expect("player" in r.look.seeds).toBe(false);
+    expect(r.notes).toEqual(["Ignored a bad player colour."]);
+  });
+});

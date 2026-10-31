@@ -388,6 +388,9 @@
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  /* Index's cassette label: the look's player colour, else the inverted ink. */
+  --color-strip: var(--player, var(--foreground));
+  --color-on-strip: var(--player-foreground, var(--background));
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);

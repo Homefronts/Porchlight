@@ -40,6 +40,15 @@ export const subtitle = (px: number): CSSProperties =>
   hd(px, { fontStyle: "italic", color: "var(--pv-dim)" });
 export const acc: CSSProperties = { color: "var(--pv-acc)" };
 
+/** A mini's player area: the look's player colour and its text, if it has one (see previewVars). */
+export const playerArea = {
+  background: "var(--pv-player)",
+  color: "var(--pv-p-fg)",
+  "--pv-fg": "var(--pv-p-fg)",
+  "--pv-dim": "var(--pv-p-dim)",
+  "--pv-faint": "var(--pv-p-faint)",
+} as CSSProperties;
+
 export const TILES = [
   "Sunday Morning Coffee",
   "Golden Hour",

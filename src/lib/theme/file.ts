@@ -124,6 +124,12 @@ export function parseThemeFile(text: string): ParseResult {
     if (typeof v === "string" && HEX.test(v)) seeds[k] = expandHex(v);
     else notes.push(`Ignored a bad ${k} colour.`);
   }
+  // Optional: absent is fine, a bad one is dropped.
+  if (seedsIn.player !== undefined) {
+    const v = seedsIn.player;
+    if (typeof v === "string" && HEX.test(v)) seeds.player = expandHex(v);
+    else notes.push("Ignored a bad player colour.");
+  }
 
   const fontsIn = isObj(src.fonts) ? src.fonts : {};
   const fonts = { ...b.fonts };

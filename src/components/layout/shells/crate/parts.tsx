@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { useLyricsView } from "@/components/layout/lyrics-view";
 import { LyricsButton, Transport } from "../gatefold/parts";
 import { useCompact } from "../compact";
+import { usePlayerStyle } from "../player-colour";
 import { crateStep } from "./step";
 const MONO = "font-meta text-[11px] uppercase tracking-[0.1em]";
 const CHIP = "h-8 rounded-none px-3 font-meta text-[11px] uppercase tracking-[0.1em]";
@@ -325,11 +326,14 @@ export const Turntable = forwardRef<HTMLDivElement, { compact: boolean }>(functi
   const family = useLookFamily();
   const lyrics = useLyricsView(track);
   const deck = compact ? 120 : 150;
+  const playerStyle = usePlayerStyle();
   return (
     <footer
       ref={ref}
       aria-label="Turntable"
-      className={cn("relative flex shrink-0 items-center border-t border-w110", compact ? "gap-4 px-5" : "gap-[22px] px-7")}
+      style={playerStyle}
+      // No player colour: --player is unset, so no ground, as before.
+      className={cn("relative flex shrink-0 items-center border-t border-w110 bg-(--player)", compact ? "gap-4 px-5" : "gap-[22px] px-7")}
     >
       <button
         type="button"

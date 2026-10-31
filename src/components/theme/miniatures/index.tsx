@@ -71,8 +71,8 @@ export function IndexMini({ sample }: MiniProps) {
           alignItems: "center",
           gap: u(10),
           padding: `${u(8)} ${u(16)}`,
-          background: "var(--pv-fg)",
-          color: "var(--pv-bg)",
+          background: "var(--pv-strip)",
+          color: "var(--pv-on-strip)",
         }}
       >
         <Cv src={np.cover} size={26} />
@@ -81,7 +81,7 @@ export function IndexMini({ sample }: MiniProps) {
           <div style={hd(10, { fontStyle: "italic" })}>{np.artist}</div>
         </div>
         <Counter
-          style={{ flex: 1, color: "var(--pv-bg)" }}
+          style={{ flex: 1, color: "var(--pv-on-strip)" }}
           trackBg="rgb(128 128 128 / .3)"
         />
         <div style={{ ...m(8), letterSpacing: ".1em", display: "flex", gap: u(10) }}>

@@ -12,6 +12,7 @@ import {
   hd,
   m,
   subtitle,
+  playerArea,
   u,
   type MiniProps,
 } from "./parts";
@@ -117,6 +118,7 @@ export function CrateMini({ sample, liner }: MiniProps) {
       </div>
       <footer
         style={{
+          ...playerArea,
           ...border.top,
           height: u(74),
           display: "flex",

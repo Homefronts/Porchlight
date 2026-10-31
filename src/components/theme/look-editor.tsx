@@ -35,7 +35,7 @@ const DESCRIPTIONS: Record<string, string> = {
   classic: "The original YTubic look",
 };
 
-const COLOURS: [keyof Seeds, string][] = [
+const COLOURS: [Exclude<keyof Seeds, "player">, string][] = [
   ["bg", "Background"],
   ["fg", "Text"],
   ["acc", "Accent"],
@@ -217,6 +217,18 @@ export function LookEditor({
             onChange={(hex) => edit({ seeds: { ...look.seeds, [k]: hex } })}
           />
         ))}
+        {/* Optional: unset, each layout keeps its own player colours. */}
+        <ColourRow
+          label="Player"
+          value={look.seeds.player}
+          fallback={value.layout === "index" ? look.seeds.fg : look.seeds.bg}
+          defaultNote="layout default"
+          onChange={(hex) => edit({ seeds: { ...look.seeds, player: hex } })}
+          onReset={() => {
+            const { player: _player, ...seeds } = look.seeds;
+            edit({ seeds });
+          }}
+        />
       </div>
       {/* Always mounted so screen readers announce the text when it appears. */}
       <p role="status" className="mt-2 text-xs font-medium text-t2">

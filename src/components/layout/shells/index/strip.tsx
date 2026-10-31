@@ -28,20 +28,20 @@ import { PopOutButton } from "../panels/parts";
 
 // Every button on the label inverts with it instead of the ghost grey hover.
 const ON_LABEL =
-  "[&_button]:text-background [&_button:hover]:bg-background/15 [&_button:hover]:text-background [&_button[aria-pressed=true]]:text-brand";
+  "[&_button]:text-on-strip [&_button:hover]:bg-on-strip/15 [&_button:hover]:text-on-strip [&_button[aria-pressed=true]]:text-brand";
 const WORD = "h-8 px-2 font-meta text-[11px] tracking-[0.12em]";
 
 /** Two reels in a box; they turn while the tape plays. */
 function Cassette({ on, playing }: { on: boolean; playing: boolean }) {
   const reel = cn(
-    "size-3 rounded-full border-2 border-dashed border-background",
+    "size-3 rounded-full border-2 border-dashed border-on-strip",
     playing && "motion-safe:animate-[spin_2.4s_linear_infinite]",
   );
   return (
     <div
       aria-hidden
       className={cn(
-        "flex h-9 w-14 shrink-0 items-center justify-around rounded-[4px] border-2 border-background",
+        "flex h-9 w-14 shrink-0 items-center justify-around rounded-[4px] border-2 border-on-strip",
         !on && "opacity-40",
       )}
     >
@@ -76,14 +76,14 @@ function Counter({ thin }: { thin: boolean }) {
         }}
         className="relative flex h-4 flex-1 cursor-pointer touch-none items-center select-none data-[disabled]:cursor-default"
       >
-        <SliderPrimitive.Track className="relative h-0.5 grow bg-background/25">
-          <SliderPrimitive.Range className="absolute h-full bg-background" />
+        <SliderPrimitive.Track className="relative h-0.5 grow bg-on-strip/25">
+          <SliderPrimitive.Range className="absolute h-full bg-on-strip" />
         </SliderPrimitive.Track>
         <SliderPrimitive.Thumb
           aria-label="Seek"
           aria-valuetext={`${tapeTime(shown)} of ${tapeTime(duration)}`}
           className={cn(
-            "block size-2 rounded-full bg-background outline-none focus-visible:ring-2 focus-visible:ring-background",
+            "block size-2 rounded-full bg-on-strip outline-none focus-visible:ring-2 focus-visible:ring-on-strip",
             disabled && "invisible",
           )}
         />
@@ -140,7 +140,7 @@ export function IndexStrip({ hasTrack, compact }: { hasTrack: boolean; compact: 
       <section
         aria-label="Player"
         className={cn(
-          "relative z-10 flex shrink-0 items-center gap-[18px] bg-foreground py-3 text-background",
+          "relative z-10 flex shrink-0 items-center gap-[18px] bg-strip py-3 text-on-strip",
           compact ? "px-4" : "px-[26px]",
           ON_LABEL,
         )}
@@ -165,7 +165,7 @@ export function IndexStrip({ hasTrack, compact }: { hasTrack: boolean; compact: 
             </button>
           </PlayerCoverMenu>
         ) : (
-          <div className="size-10 shrink-0 border-2 border-dashed border-background/30" />
+          <div className="size-10 shrink-0 border-2 border-dashed border-on-strip/30" />
         )}
         <div className={cn("flex min-w-0 flex-col gap-0.5", compact ? "w-56" : "w-60")}>
           <span

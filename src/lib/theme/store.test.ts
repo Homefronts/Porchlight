@@ -100,3 +100,20 @@ it("any long-lived 0.8.x key means a previous install", async () => {
   expect(await run("ytm-playback")).toBe("classic");
   expect(await run()).toBe("sleeve");
 });
+
+it("loads a stored custom look saved before the player colour", async () => {
+  const { player: _p, ...seeds } = BUILT_IN_LOOKS.sleeve.seeds;
+  const old = { ...BUILT_IN_LOOKS.sleeve, id: "custom-old", name: "Old", seeds };
+  localStorage.setItem(
+    "ytm-looks",
+    JSON.stringify({ state: { activeId: "custom-old", custom: [old] }, version: 0 }),
+  );
+  await useThemeStore.persist.rehydrate();
+  const look = activeLook(useThemeStore.getState());
+  expect(look.id).toBe("custom-old");
+  expect(look.seeds.player).toBeUndefined();
+  const el = document.createElement("div");
+  applyLook(look, el);
+  expect(el.style.getPropertyValue("--player")).toBe("");
+  expect(el.style.getPropertyValue("--foreground")).toBe("#ece6da");
+});

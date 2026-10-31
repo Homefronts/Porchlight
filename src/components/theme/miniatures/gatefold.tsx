@@ -13,6 +13,7 @@ import {
   hd,
   m,
   subtitle,
+  playerArea,
   u,
   type MiniProps,
 } from "./parts";
@@ -25,6 +26,7 @@ export function GatefoldMini({ sample }: MiniProps) {
     >
       <div
         style={{
+          ...playerArea,
           ...border.right,
           padding: `${u(18)} ${u(20)}`,
           display: "flex",

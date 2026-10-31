@@ -9,6 +9,8 @@ export type Seeds = {
   dim: string;
   faint: string;
   line: string;
+  /** Optional: paints the player area of Index, Panels, Gatefold and Crate. */
+  player?: string;
 };
 export type Touches = {
   vinyl: boolean;

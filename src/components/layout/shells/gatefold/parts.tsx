@@ -38,6 +38,7 @@ import { useScrubStore } from "@/lib/store/scrub";
 import { cn } from "@/lib/utils";
 import { PopOutButton } from "../panels/parts";
 import { Wordmark } from "../index/parts";
+import { usePlayerStyle } from "../player-colour";
 import { homePicks } from "./picks";
 const EYEBROW = "font-meta text-[11px] uppercase tracking-[0.1em]";
 // The lyric sheet sets the shared lyrics view a size up, in its own headline face.
@@ -57,6 +58,7 @@ export function RecordPage({
   compact: boolean;
   dial: ReactNode;
 }) {
+  const playerStyle = usePlayerStyle();
   const eyebrow = hasTrack ? (
     <span className={cn(EYEBROW, "text-acc1")}>● Now playing</span>
   ) : (
@@ -65,8 +67,10 @@ export function RecordPage({
   return (
     <section
       aria-label="Now playing"
+      style={playerStyle}
       className={cn(
-        "relative flex min-h-0 shrink-0 flex-col border-e border-w110",
+        // No player colour: --player is unset, so no ground, as before.
+        "relative flex min-h-0 shrink-0 flex-col border-e border-w110 bg-(--player)",
         compact ? "w-[210px] px-5 pb-4 pt-3" : "w-1/2 px-[34px] pb-6 pt-5",
       )}
     >

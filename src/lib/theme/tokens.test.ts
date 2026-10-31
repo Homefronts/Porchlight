@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { BUILT_IN_LOOKS, isLinerLook, type BuiltInId } from "./looks";
-import { contrastRatio, deriveTokens } from "./tokens";
+import { contrastRatio, deriveTokens, playerTokens } from "./tokens";
 
 const nonClassic = (Object.keys(BUILT_IN_LOOKS) as BuiltInId[]).filter(
   (id) => id !== "classic",
@@ -75,5 +75,35 @@ describe("isLinerLook", () => {
       "paper",
       "ink-liner",
     ]);
+  });
+});
+
+describe("player colour", () => {
+  const withPlayer = (player: string) => ({
+    ...BUILT_IN_LOOKS.sleeve,
+    id: "custom-p",
+    seeds: { ...BUILT_IN_LOOKS.sleeve.seeds, player },
+  });
+
+  it("emits nothing without one", () => {
+    for (const id of nonClassic) {
+      const t = deriveTokens(BUILT_IN_LOOKS[id]);
+      expect(Object.keys(t).filter((k) => k.startsWith("--player"))).toEqual([]);
+      expect(playerTokens(BUILT_IN_LOOKS[id].seeds)).toEqual({});
+    }
+  });
+
+  it("emits a readable foreground for any colour", () => {
+    for (const player of ["#ffffff", "#000000", "#777777", "#ff3b5c", "#ece6da", "#0e0d0c", "#3355aa", "#ffee00"]) {
+      const t = deriveTokens(withPlayer(player));
+      expect(t["--player"]).toBe(player);
+      expect(contrastRatio(t["--player-foreground"], player), player).toBeGreaterThanOrEqual(4.5);
+      expect(playerTokens(withPlayer(player).seeds)["--foreground"]).toBe(t["--player-foreground"]);
+    }
+  });
+
+  it("prefers the look's own text or ground over black and white", () => {
+    expect(deriveTokens(withPlayer("#ffee00"))["--player-foreground"]).toBe("#0e0d0c");
+    expect(deriveTokens(withPlayer("#3355aa"))["--player-foreground"]).toBe("#ece6da");
   });
 });

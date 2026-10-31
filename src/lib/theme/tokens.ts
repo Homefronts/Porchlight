@@ -1,4 +1,4 @@
-import { CLASSIC_ID, FONT_STACKS, type Look } from "./looks";
+import { CLASSIC_ID, FONT_STACKS, type Look, type Seeds } from "./looks";
 
 type RGB = [number, number, number];
 
@@ -29,6 +29,13 @@ const luminance = (hex: string) => {
 export function contrastRatio(a: string, b: string): number {
   const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
   return (hi + 0.05) / (lo + 0.05);
+}
+
+/** Text on the player colour: bg or fg, whichever contrasts more; black or white if neither reaches 4.5:1. */
+function onPlayer(player: string, { bg, fg }: Seeds): string {
+  const best = contrastRatio(bg, player) > contrastRatio(fg, player) ? bg : fg;
+  if (contrastRatio(best, player) >= 4.5) return best;
+  return contrastRatio("#000000", player) > contrastRatio("#ffffff", player) ? "#000000" : "#ffffff";
 }
 
 // Alpha steps (thousandths) of the --wNNN and --kNNN ramps in index.css.
@@ -147,5 +154,42 @@ export function deriveTokens(look: Look): Record<string, string> {
   for (const s of W_STEPS) t[`--w${pad(s)}`] = rgba(fg, s / 1000);
   for (const s of K_STEPS) t[`--k${pad(s)}`] = rgba("#000000", s / 1000);
 
+  if (look.seeds.player) {
+    t["--player"] = look.seeds.player;
+    t["--player-foreground"] = onPlayer(look.seeds.player, look.seeds);
+  }
+
+  return t;
+}
+
+/**
+ * A layout's player area on the player colour: text, ramps, lines and
+ * sliders redone from its readable text. No player colour, nothing, so the
+ * area keeps the app's tokens.
+ */
+export function playerTokens(seeds: Seeds): Record<string, string> {
+  const { player } = seeds;
+  if (!player) return {};
+  const on = onPlayer(player, seeds);
+  const t: Record<string, string> = {
+    color: on,
+    "--foreground": on,
+    "--muted-foreground": mix(on, player, 0.3),
+    "--muted": mix(player, on, 0.1),
+    "--accent": rgba(on, 0.1),
+    "--accent-foreground": on,
+    "--border": rgba(on, 0.15),
+    "--hairline": rgba(on, 0.15),
+    "--sidebar-border": rgba(on, 0.15),
+    "--surface": player,
+    "--surface-hover": mix(player, on, 0.06),
+    "--surface-active": player,
+    "--slider-track": rgba(on, 0.2),
+    "--slider-thumb": on,
+    "--slider-thumb-glow": `0 0 3px ${rgba(on, 0.35)}, 0 0 8px ${rgba(on, 0.15)}`,
+    "--slider-thumb-glow-strong": `0 0 5px ${rgba(on, 0.5)}, 0 0 12px ${rgba(on, 0.25)}`,
+  };
+  for (let i = 1; i <= 10; i++) t[`--t${i}`] = mix(on, player, ((i - 1) / 9) * 0.6);
+  for (const s of W_STEPS) t[`--w${pad(s)}`] = rgba(on, s / 1000);
   return t;
 }

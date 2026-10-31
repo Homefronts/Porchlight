@@ -9,6 +9,7 @@ import {
   hd,
   m,
   subtitle,
+  playerArea,
   u,
   type MiniProps,
 } from "./parts";
@@ -142,6 +143,7 @@ export function PanelsMini({ sample }: MiniProps) {
       </Panel>
       <footer
         style={{
+          ...playerArea,
           gridColumn: "1 / -1",
           display: "flex",
           alignItems: "center",
