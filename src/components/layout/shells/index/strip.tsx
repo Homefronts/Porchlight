@@ -26,9 +26,9 @@ import { useScrubStore } from "@/lib/store/scrub";
 import { cn } from "@/lib/utils";
 import { PopOutButton } from "../panels/parts";
 
-// Every button on the label inverts with it instead of the ghost grey hover.
+// Every button on the label inverts with it instead of the ghost grey hover; links keep the label ink on hover.
 const ON_LABEL =
-  "[&_button]:text-on-strip [&_button:hover]:bg-on-strip/15 [&_button:hover]:text-on-strip [&_button[aria-pressed=true]]:text-brand";
+  "[&_button]:text-on-strip [&_button:hover]:bg-on-strip/15 [&_button:hover]:text-on-strip [&_button[aria-pressed=true]]:text-brand [&_a:hover]:text-on-strip";
 const WORD = "h-8 px-2 font-meta text-[11px] tracking-[0.12em]";
 
 /** Two reels in a box; they turn while the tape plays. */
