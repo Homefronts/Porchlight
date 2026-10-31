@@ -209,6 +209,8 @@ Pick a look on first launch, with a live preview of your own library. Then keep 
 
 Download the latest installer from the [Releases](https://github.com/Homefronts/Porchlight/releases) page and run it.
 
+> **Already on YTubic Plus?** Update from inside the app (Settings > General > Check now) so your library and settings move over. Installing Porchlight from this page skips that step.
+
 - **Windows 10/11:** run the `.exe` NSIS installer. Pick the `x64` build, or
   the `arm64` one on a Windows on ARM device.
 - **macOS 10.15+ (beta):** open the universal `.dmg`; the same build supports
