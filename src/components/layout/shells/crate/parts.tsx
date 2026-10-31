@@ -1,4 +1,4 @@
-import { forwardRef, useRef, useState, type KeyboardEvent } from "react";
+import { forwardRef, Fragment, useRef, useState, type KeyboardEvent } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useShallow } from "zustand/react/shallow";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Thumbnail } from "@/components/shared/thumbnail";
 import { ArtworkOutline } from "@/components/shared/artwork-outline";
 import { ArtistLinks } from "@/components/shared/artist-links";
+import { EntityLink } from "@/components/shared/entity-link";
 import { LikeDislikeButtons } from "@/components/shared/like-buttons";
 import { useAlbumMenuController } from "@/components/shared/album-menu";
 import { formatTime, useITunesCover } from "@/components/layout/player-bar";
@@ -25,6 +26,7 @@ import { LyricsButton, Transport } from "../gatefold/parts";
 import { useCompact } from "../compact";
 import { usePlayerStyle } from "../player-colour";
 import { crateStep } from "./step";
+import { subtitleRuns } from "./subtitle";
 import { LinerNotes } from "./liner-notes";
 const MONO = "font-meta text-[11px] uppercase tracking-[0.1em]";
 const CHIP = "h-8 rounded-none px-3 font-meta text-[11px] uppercase tracking-[0.1em]";
@@ -277,7 +279,17 @@ export function Crate({ shelves: all }: { shelves: Shelf[] }) {
             </OpenLink>
           )}
           {item.artists?.some((a) => a.id) ? (
-            <ArtistLinks artists={item.artists} className="truncate font-headline text-xl italic text-muted-foreground" />
+            <span className="truncate font-headline text-xl italic text-muted-foreground">
+              {subtitleRuns(item.subtitle, item.artists).map((r, i) =>
+                typeof r === "string" || !r.id ? (
+                  <Fragment key={i}>{typeof r === "string" ? r : r.name}</Fragment>
+                ) : (
+                  <EntityLink key={i} to="/artist/$id" id={r.id} event="nav:artist">
+                    {r.name}
+                  </EntityLink>
+                ),
+              )}
+            </span>
           ) : (
             <span className="truncate font-headline text-xl italic text-muted-foreground">{subtitleOf(item)}</span>
           )}
