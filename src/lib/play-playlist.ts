@@ -9,7 +9,8 @@ import { usePlaybackStore } from "@/lib/store/playback";
 const MAX_TAIL_PAGES = 20;
 
 /**
- * Start a playlist from its first track without opening its page. The
+ * Start a playlist from its first track (or `start`, within the first
+ * page) without opening its page. The
  * first page plays at once; the rest streams into the queue behind it,
  * page by page, for as long as that playlist is still what is queued.
  * Starting anything else in the meantime stops the stream, so a stale
@@ -21,6 +22,7 @@ const MAX_TAIL_PAGES = 20;
 export async function playPlaylistNow(
   id: string,
   qc: QueryClient,
+  start = 0,
 ): Promise<boolean> {
   const first = await qc.fetchQuery({
     queryKey: ["playlist-first", id],
@@ -30,7 +32,7 @@ export async function playPlaylistNow(
   if (first.tracks.length === 0) return false;
 
   const store = usePlaybackStore.getState();
-  store.playShelfItems(first.tracks, 0);
+  store.playShelfItems(first.tracks, start);
   store.setShuffle(false);
   const head = usePlaybackStore.getState().queue[0]?.videoId;
 

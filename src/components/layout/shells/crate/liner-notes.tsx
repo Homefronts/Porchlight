@@ -1,0 +1,221 @@
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { Link } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
+import { withCover } from "@/components/shared/album-menu";
+import { formatTime } from "@/components/layout/player-bar";
+import { fetchAlbum } from "@/lib/innertube/album";
+import { fetchPlaylistFirstPage } from "@/lib/innertube/playlist";
+import type { AlbumPage, ShelfItem } from "@/lib/innertube/types";
+import { playPlaylistNow } from "@/lib/play-playlist";
+import { currentTrack, usePlaybackStore } from "@/lib/store/playback";
+import { cn } from "@/lib/utils";
+
+const MONO = "font-meta text-[11px] uppercase tracking-[0.14em] text-muted-foreground";
+
+/** The first `perSide * 2` tracks as two sides, A1.. and B1.., each row with its index in `tracks`. */
+export function linerSides<T>(tracks: T[], perSide: number) {
+  const side = (letter: string, from: number) =>
+    tracks.slice(from, from + perSide).map((track, i) => ({ track, no: `${letter}${i + 1}`, at: from + i }));
+  return { a: side("A", 0), b: side("B", perSide) };
+}
+
+/** Rows per side the window's height leaves room for; 0 hides the notes, so Home never scrolls for them. */
+export function linerRows(height: number): number {
+  return height >= 940 ? 6 : height >= 800 ? 3 : 0;
+}
+const onResize = (cb: () => void) => {
+  addEventListener("resize", cb);
+  return () => removeEventListener("resize", cb);
+};
+
+const plural = (n: number) => `${n} track${n === 1 ? "" : "s"}`;
+
+/**
+ * Crate's liner notes: under the front record, its first tracks as Side A
+ * and Side B (a click plays the record from there), or a single's credits.
+ * Artists and moods have none. Fetched only once the front record has sat
+ * still for 250ms, so flipping through the crate doesn't fetch each one.
+ */
+export function LinerNotes({ item, song }: { item: ShelfItem; song: ShelfItem | null }) {
+  const perSide = useSyncExternalStore(onResize, () => linerRows(innerHeight));
+  const key = `${item.kind}:${item.id}`;
+  const [settled, setSettled] = useState(key);
+  useEffect(() => {
+    const t = setTimeout(() => setSettled(key), 250);
+    return () => clearTimeout(t);
+  }, [key]);
+  const kind = song ? null : item.kind === "album" || item.kind === "playlist" ? item.kind : null;
+  // The same cache entries as playPlaylistNow and the album menu, so a click plays from it.
+  const q = useQuery({
+    queryKey: kind === "album" ? ["album", item.id] : ["playlist-first", item.id],
+    queryFn: () => (kind === "album" ? fetchAlbum(item.id) : fetchPlaylistFirstPage(item.id)),
+    staleTime: 5 * 60_000,
+    enabled: !!kind && perSide > 0 && settled === key,
+  });
+  const qc = useQueryClient();
+  const playingId = usePlaybackStore((s) => currentTrack(s)?.videoId);
+
+  if (perSide === 0 || (!song && !kind)) return null;
+
+  const play = (at: number) => {
+    if (kind === "album") {
+      const s = usePlaybackStore.getState();
+      s.playShelfItems(withCover(q.data as AlbumPage), at);
+      s.setShuffle(false);
+    } else
+      void playPlaylistNow(item.id, qc, at)
+        .then((ok) => !ok && toast.error("This playlist is empty"))
+        .catch((e) => toast.error(`Couldn't load playlist: ${String(e)}`));
+  };
+  return (
+    <TrackNotes
+      title={item.title}
+      song={song}
+      tracks={q.data?.tracks}
+      count={q.data && (q.data.trackCount ?? ("continuationToken" in q.data && q.data.continuationToken ? undefined : q.data.tracks.length))}
+      failed={q.isError}
+      perSide={perSide}
+      playingId={playingId}
+      onPlay={play}
+      open={
+        kind === "album" ? (
+          <Link to="/album/$id" params={{ id: item.id }} className="text-foreground hover:underline">
+            Open the full record ›
+          </Link>
+        ) : (
+          <Link to="/playlist/$id" params={{ id: item.id }} className="text-foreground hover:underline">
+            Open the full record ›
+          </Link>
+        )
+      }
+    />
+  );
+}
+
+/** The panel itself, from whatever has loaded. */
+export function TrackNotes({
+  title,
+  song,
+  tracks,
+  count,
+  failed,
+  perSide,
+  playingId,
+  onPlay,
+  open,
+}: {
+  title: string;
+  song: ShelfItem | null;
+  tracks?: ShelfItem[];
+  count?: number;
+  failed: boolean;
+  perSide: number;
+  playingId?: string;
+  onPlay: (at: number) => void;
+  open: React.ReactNode;
+}) {
+  const header = (
+    <div className={cn(MONO, "flex justify-between gap-4 border-b border-w110 pb-2.5")}>
+      <span className="truncate">
+        <b className="font-semibold text-brand">Liner notes</b> · {title}
+      </span>
+      {!song && count !== undefined && <span className="shrink-0">{plural(count)}</span>}
+    </div>
+  );
+
+  if (song) {
+    const artist = song.artists?.map((a) => a.name).join(", ") || song.subtitle;
+    return (
+      <section aria-label="Liner notes" className="max-w-[1100px]">
+        {header}
+        <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-[15px]">
+          {(
+            [
+              ["Title", song.title],
+              ["Artist", artist],
+              ["From", song.album],
+              ["Time", song.duration ? formatTime(song.duration) : undefined],
+            ] as const
+          ).map(([k, v]) =>
+            v ? (
+              <div key={k} className="contents">
+                <dt className={MONO}>{k}</dt>
+                <dd className="truncate">{v}</dd>
+              </div>
+            ) : null,
+          )}
+        </dl>
+      </section>
+    );
+  }
+
+  const shown = Math.min(tracks?.length ?? 0, perSide * 2);
+  const { a, b } = linerSides(tracks ?? [], perSide);
+  const row = "grid h-[39px] grid-cols-[34px_1fr_auto] items-baseline gap-2 border-b border-w110/60 py-[9px]";
+  const column = (rows: typeof a) => (
+    <div>
+      {rows.map(({ track: t, no, at }) => {
+        const now = t.id === playingId;
+        return (
+          <button
+            key={no}
+            type="button"
+            aria-current={now || undefined}
+            aria-label={`Play ${t.title} from here`}
+            onClick={() => onPlay(at)}
+            className={cn(row, "w-full text-start outline-none hover:bg-w110/40 focus-visible:ring-2 focus-visible:ring-ring")}
+          >
+            <span className={cn(MONO, "font-semibold tracking-normal")}>{no}</span>
+            <span className={cn("truncate text-[15px]", now && "text-brand")}>
+              {t.title}
+              <i className="ms-2 font-headline text-sm text-muted-foreground">
+                {t.artists?.map((x) => x.name).join(", ") || t.subtitle}
+              </i>
+            </span>
+            <span className="font-meta text-xs tabular-nums text-muted-foreground">{t.duration ? formatTime(t.duration) : ""}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  return (
+    <section aria-label="Liner notes" className="max-w-[1100px]">
+      {header}
+      {tracks ? (
+        tracks.length === 0 ? (
+          <p className="mt-3 text-sm text-muted-foreground">No tracks on this record</p>
+        ) : (
+          <>
+            <div className="mt-1.5 grid grid-cols-2 gap-x-12">
+              {column(a)}
+              {column(b)}
+            </div>
+            <div className={cn(MONO, "mt-3.5 flex justify-between gap-4 font-semibold")}>
+              <span>{count !== undefined && count <= shown ? plural(count) : `First ${shown}${count !== undefined ? ` of ${count}` : ""}`}</span>
+              {open}
+            </div>
+          </>
+        )
+      ) : failed ? (
+        <p className="mt-3 text-sm text-muted-foreground">Couldn't load the tracks</p>
+      ) : (
+        <div aria-hidden className="mt-1.5 grid grid-cols-2 gap-x-12">
+          {[0, 1].map((c) => (
+            <div key={c}>
+              {Array.from({ length: perSide }, (_, i) => (
+                <div key={i} className={row}>
+                  <Skeleton className="h-3 w-5 rounded-sm" />
+                  <Skeleton className="h-3.5 w-2/3 rounded-sm" />
+                  <span />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}

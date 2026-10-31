@@ -25,6 +25,7 @@ import { LyricsButton, Transport } from "../gatefold/parts";
 import { useCompact } from "../compact";
 import { usePlayerStyle } from "../player-colour";
 import { crateStep } from "./step";
+import { LinerNotes } from "./liner-notes";
 const MONO = "font-meta text-[11px] uppercase tracking-[0.1em]";
 const CHIP = "h-8 rounded-none px-3 font-meta text-[11px] uppercase tracking-[0.1em]";
 
@@ -307,6 +308,7 @@ export function Crate({ shelves: all }: { shelves: Shelf[] }) {
           </div>
         </div>
       </div>
+      <LinerNotes item={item} song={playable(item)} />
     </section>
   );
 }

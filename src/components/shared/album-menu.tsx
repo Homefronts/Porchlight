@@ -41,7 +41,7 @@ import { isUnwanted } from "@/lib/ai/use-ai";
 // Album rows carry no per-track thumbnail (the cover lives at the album
 // level), so backfill it before queuing — otherwise the player card and
 // background cover render empty. Same treatment the album page applies.
-function withCover(album: AlbumPage): ShelfItem[] {
+export function withCover(album: AlbumPage): ShelfItem[] {
   return album.tracks.map((t) =>
     t.thumbnails.length > 0 ? t : { ...t, thumbnails: album.thumbnails },
   );
