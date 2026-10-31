@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, type ReactNode } from "react";
 import { AiTag } from "@/components/shared/ai-badge";
 import {
   IconArrowsMaximize,
@@ -63,7 +63,8 @@ import { useScrubStore } from "@/lib/store/scrub";
 // Classic leaves --radius-cover unset: today's rounded-md.
 const COVER_RADIUS = "rounded-[var(--radius-cover,var(--radius-md))]";
 
-export function PlayerBarBottom() {
+/** `extra` lands at the end of the right wing (a layout's own buttons). */
+export function PlayerBarBottom({ extra }: { extra?: ReactNode } = {}) {
   const { playing, status, error, position, duration, shuffle, repeat } =
     usePlaybackStore(
       useShallow((s) => ({
@@ -280,6 +281,7 @@ export function PlayerBarBottom() {
           <RadioToggleButton />
           <VolumeControl direction="vertical" />
           <PlayerMoreMenu track={track} />
+          {extra}
         </div>
       </div>
 

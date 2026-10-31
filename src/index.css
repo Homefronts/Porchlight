@@ -550,6 +550,25 @@
     height: calc(100svh - var(--titlebar-h)) !important;
   }
 
+  /* Panels: the nav sits in its own cell rather than fixed to the window,
+     and trades the glass for a solid panel on the dark ground (keeping its hairline). More
+     specific than the rule above, so it wins inside [data-panels] only. */
+  [data-panels] [data-slot="sidebar"] {
+    position: relative;
+  }
+  [data-panels] [data-slot="sidebar-container"] {
+    position: absolute !important;
+    inset: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    padding-bottom: 0 !important;
+  }
+  [data-panels] [data-slot="sidebar-inner"] {
+    background: var(--background) !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
   /* Width follows the pointer directly while resizing. The regular
      transitions remain enabled for expand/collapse button actions. */
   body.layout-resizing [data-slot="sidebar-gap"],

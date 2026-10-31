@@ -19,6 +19,7 @@ import { useThemeStore } from "@/lib/theme/store";
 import type { LayoutId } from "@/lib/theme/looks";
 import { SHELLS, shellFor } from "./index";
 import { SidebarShell } from "./sidebar-shell";
+import { PanelsShell } from "./panels-shell";
 import { usePersistentPage } from "./persistent-page";
 import {
   RouteHeaderSlot,
@@ -33,6 +34,7 @@ const LAYOUTS: LayoutId[] = ["sidebar", "gatefold", "index", "crate", "panels"];
 
 it("maps sidebar to SidebarShell", () => {
   expect(shellFor("sidebar")).toBe(SidebarShell);
+  expect(shellFor("panels")).toBe(PanelsShell);
 });
 
 it("has a shell for every layout", () => {
