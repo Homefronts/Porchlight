@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -9,6 +9,7 @@ import { FloatingPlayerSync } from "@/components/layout/floating-player-sync";
 import { DragSnapOverlay } from "@/components/layout/drag-snap-overlay";
 import { WindowResizeHandles } from "@/components/layout/window-resize-handles";
 import { IS_MAC } from "@/lib/platform";
+import { useEntityHeaderStore } from "@/lib/store/entity-header";
 import { SettingsDialog } from "@/components/settings/settings-dialog";
 import { PremiumGateDialog } from "@/components/layout/premium-gate-dialog";
 import { ChannelPickerDialog } from "@/components/layout/channel-picker-dialog";
@@ -53,6 +54,7 @@ import { MakeItYours } from "@/components/theme/make-it-yours";
 import { useSessionStatusListener } from "@/lib/store/session-status";
 import { shellFor } from "@/components/layout/shells";
 import { usePersistentPage } from "@/components/layout/shells/persistent-page";
+import { RouteHeaderSlotProvider } from "@/components/layout/shells/route-header-slot";
 
 function isEditableTarget(el: EventTarget | null): boolean {
   if (!(el instanceof HTMLElement)) return false;
@@ -140,7 +142,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const suppressRevertRef = useRef(false);
 
   const Shell = shellFor(useThemeStore((s) => s.layout));
-  const { page, portal } = usePersistentPage(children);
+  // The scroller travels with the page, so a shell swap keeps its scroll
+  // position and the element pages cache (TrackList, Home's fade).
+  const { page, portal } = usePersistentPage(
+    <EntityScroller>{children}</EntityScroller>,
+  );
 
   // Open / close the floating player window. We only spawn it when
   // there's actually something to show — at first launch with mode
@@ -234,14 +240,16 @@ export function AppShell({ children }: { children: ReactNode }) {
           {background === "ambient" && look.id === CLASSIC_ID && (
             <BackgroundCover />
           )}
-          <Shell
-            page={page}
-            nav={<AppSidebar />}
-            dial={null}
-            hasTrack={hasTrack}
-          />
-          {/* After the shell, so the page node is in place first. */}
-          {portal}
+          <RouteHeaderSlotProvider>
+            <Shell
+              page={page}
+              nav={<AppSidebar />}
+              dial={null}
+              hasTrack={hasTrack}
+            />
+            {/* After the shell, so the page node is in place first. */}
+            {portal}
+          </RouteHeaderSlotProvider>
           {mode === "floating" && hasTrack && <FloatingPlayerSync />}
           <DragSnapOverlay />
           <FullscreenPlayer />
@@ -256,6 +264,62 @@ export function AppShell({ children }: { children: ReactNode }) {
       <MoveNotice ready={pickerSeen} />
       <Toaster />
     </TooltipProvider>
+  );
+}
+
+/**
+ * The shared app scroller. Reserves the entity header's expanded
+ * height as padding-top whenever a route publishes a header config —
+ * the header itself is an absolute overlay (see EntityPageHeader), so
+ * this padding is the only thing keeping content below it. Isolated
+ * in its own component so the padding-top updates don't re-render the
+ * whole AppShell.
+ */
+function EntityScroller({ children }: { children: ReactNode }) {
+  const mainRef = useRef<HTMLElement>(null);
+  const headerPad = useEntityHeaderStore((s) =>
+    s.config ? s.headerHeight : 0,
+  );
+
+  // Single shared scroller for the whole app — reset to top whenever the
+  // route changes so opening a playlist (or any other page) doesn't land
+  // on whatever scrollTop the previous page happened to leave behind.
+  const pathname = useLocation({ select: (loc) => loc.pathname });
+  useEffect(() => {
+    if (mainRef.current) mainRef.current.scrollTop = 0;
+  }, [pathname]);
+
+  // Width of the scrollbar track `scrollbar-gutter: stable` reserves (see
+  // index.css). It's whatever the platform draws — 0 on overlay-scrollbar
+  // systems — so it is measured rather than assumed, and published as a
+  // custom property for the content's compensating negative margin.
+  const [gutter, setGutter] = useState(0);
+  useLayoutEffect(() => {
+    const el = mainRef.current;
+    if (!el) return;
+    // The gutter is constant once reserved; the observer only exists to
+    // catch a zoom or display change swapping the scrollbar metrics.
+    const measure = () => setGutter(el.offsetWidth - el.clientWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Plain scroller — NOT Radix ScrollArea. Radix wraps the content in
+  // `display: table; min-width: 100%` which grows to intrinsic width and
+  // defeats any nested `overflow-x` (our horizontal carousels would never
+  // clip).
+  return (
+    <main
+      ref={mainRef}
+      className="app-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden"
+      style={{ "--scroller-gutter": `${gutter}px` } as React.CSSProperties}
+    >
+      <div className="app-scroll-content" style={{ paddingTop: headerPad }}>
+        {children}
+      </div>
+    </main>
   );
 }
 

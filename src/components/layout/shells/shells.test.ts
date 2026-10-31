@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { act, createElement, useState, type ComponentType } from "react";
+import { act, createElement, useContext, useState, type ComponentType } from "react";
+import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 vi.hoisted(() => {
@@ -19,6 +20,11 @@ import type { LayoutId } from "@/lib/theme/looks";
 import { SHELLS, shellFor } from "./index";
 import { SidebarShell } from "./sidebar-shell";
 import { usePersistentPage } from "./persistent-page";
+import {
+  RouteHeaderSlot,
+  RouteHeaderSlotContext,
+  RouteHeaderSlotProvider,
+} from "./route-header-slot";
 import type { ShellProps } from "./types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -33,12 +39,13 @@ it("has a shell for every layout", () => {
   for (const id of LAYOUTS) expect(SHELLS[id]).toBeTypeOf("function");
 });
 
-it("keeps the page mounted when the layout swaps the shell", () => {
+it("keeps the page, its scroller, scroll, focus and header slot across a shell swap", () => {
   // Two distinct shells with different trees, so a swap remounts everything
   // that isn't held by usePersistentPage.
-  const A = (p: ShellProps) => createElement("section", { id: "a" }, p.page);
+  const slot = createElement(RouteHeaderSlot);
+  const A = (p: ShellProps) => createElement("section", { id: "a" }, slot, p.page);
   const B = (p: ShellProps) =>
-    createElement("div", { id: "b" }, createElement("aside", null, p.page));
+    createElement("div", { id: "b" }, createElement("aside", null, p.page), slot);
   const shells: Partial<Record<LayoutId, ComponentType<ShellProps>>> = {
     sidebar: A,
     gatefold: B,
@@ -48,14 +55,24 @@ it("keeps the page mounted when the layout swaps the shell", () => {
     const [n, setN] = useState(0);
     return createElement("button", { id: "count", onClick: () => setN(n + 1) }, String(n));
   }
-  const pageEl = createElement(Counter);
+  function Header() {
+    const target = useContext(RouteHeaderSlotContext);
+    return target ? createPortal(createElement("h1", { id: "title" }), target) : null;
+  }
+  const pageEl = createElement(
+    "main",
+    { id: "scroller" },
+    createElement(Counter),
+    createElement("input", { id: "search" }),
+    createElement(Header),
+  );
 
   function Host() {
     const layout = useThemeStore((s) => s.layout);
     const { page, portal } = usePersistentPage(pageEl);
     const Shell = shells[layout]!;
     return createElement(
-      "div",
+      RouteHeaderSlotProvider,
       null,
       createElement(Shell, { page, nav: null, dial: null, hasTrack: false }),
       portal,
@@ -66,16 +83,45 @@ it("keeps the page mounted when the layout swaps the shell", () => {
   document.body.appendChild(container);
   const root = createRoot(container);
   act(() => root.render(createElement(Host)));
-  const count = () => container.querySelector<HTMLButtonElement>("#count")!;
-  act(() => count().click());
-  act(() => count().click());
-  expect(container.querySelector("#a #count")?.textContent).toBe("2");
+  const $ = <T extends HTMLElement>(sel: string) => container.querySelector<T>(sel);
+  act(() => $("#count")!.click());
+  act(() => $("#count")!.click());
+  expect($("#a #count")?.textContent).toBe("2");
+  expect($("#a > [data-route-header-slot] #title")).not.toBeNull();
+
+  const scroller = $("#scroller")!;
+  // Model WebView2: taking the scroller out of the document resets scrollTop.
+  let top = 0;
+  Object.defineProperty(scroller, "scrollTop", {
+    get: () => top,
+    set: (v: number) => void (top = v),
+  });
+  const removeChild = Node.prototype.removeChild;
+  const spy = vi.spyOn(Node.prototype, "removeChild").mockImplementation(function (
+    this: Node,
+    child,
+  ) {
+    const out = removeChild.call(this, child);
+    if (child.contains(scroller)) top = 0;
+    return out as never;
+  });
+  scroller.scrollTop = 480;
+  const search = $<HTMLInputElement>("#search")!;
+  search.focus();
+  expect(document.activeElement).toBe(search);
 
   act(() => useThemeStore.setState({ layout: "gatefold" }));
-  expect(container.querySelector("#a")).toBeNull();
-  expect(container.querySelector("#b aside #count")?.textContent).toBe("2");
+  spy.mockRestore();
+  expect($("#a")).toBeNull();
+  expect($("#b aside #count")?.textContent).toBe("2");
+  expect($("#b aside #scroller")).toBe(scroller);
+  expect(scroller.scrollTop).toBe(480);
+  expect(document.activeElement).toBe(search);
+  expect($("#b > [data-route-header-slot] #title")).not.toBeNull();
 
   act(() => useThemeStore.setState({ layout: "sidebar" }));
-  expect(container.querySelector("#a #count")?.textContent).toBe("2");
+  expect($("#a #count")?.textContent).toBe("2");
+  expect($("#a #scroller")).toBe(scroller);
+  expect($("#a > [data-route-header-slot] #title")).not.toBeNull();
   act(() => root.unmount());
 });

@@ -1,6 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import { HOME_KEY, fetchHomeFeedPage } from "@/lib/innertube/home";
 import { ShelfCarousel } from "@/components/shared/shelf-carousel";
@@ -21,6 +27,7 @@ import {
   SlidersHorizontalIcon,
 } from "lucide-react";
 import { RewindHomeCard } from "@/components/rewind/open-rewind";
+import { RouteHeaderSlotContext } from "@/components/layout/shells/route-header-slot";
 import { PageTitle, useLookFamily } from "@/components/theme/look-type";
 import { useAccounts } from "@/lib/store/accounts";
 import { firstName, greeting } from "@/lib/greeting";
@@ -105,17 +112,11 @@ function HomePage() {
   // begins right where it ends, so nothing is faded at rest.
   const fadeEdge = headerHeight + 20;
   const pageRef = useRef<HTMLDivElement>(null);
-  const [slot, setSlot] = useState<HTMLElement | null>(null);
-  // Layout effect: the slot is found before first paint, so the header
-  // never renders in flow, not even for a frame.
+  // From context, so a layout swap re-portals the header into the new slot.
+  const slot = useContext(RouteHeaderSlotContext);
   useLayoutEffect(() => {
     const scroller = pageRef.current?.closest("main");
     if (!scroller) return;
-    setSlot(
-      scroller.parentElement?.querySelector<HTMLElement>(
-        "[data-route-header-slot]",
-      ) ?? null,
-    );
     scroller.classList.add("route-header-fade");
     scroller.style.setProperty("--route-header-fade", `${fadeEdge}px`);
     return () => {
