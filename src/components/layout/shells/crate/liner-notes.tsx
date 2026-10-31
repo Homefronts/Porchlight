@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { withCover } from "@/components/shared/album-menu";
 import { formatTime } from "@/components/layout/player-bar";
+import { ArtistLinks } from "@/components/shared/artist-links";
 import { fetchAlbum } from "@/lib/innertube/album";
 import { fetchPlaylistFirstPage } from "@/lib/innertube/playlist";
 import type { AlbumPage, ShelfItem } from "@/lib/innertube/types";
@@ -126,7 +127,9 @@ export function TrackNotes({
   );
 
   if (song) {
-    const artist = song.artists?.map((a) => a.name).join(", ") || song.subtitle;
+    const artist = song.artists?.length || song.subtitle ? (
+      <ArtistLinks artists={song.artists} fallback={song.subtitle} />
+    ) : undefined;
     return (
       <section aria-label="Liner notes" className="max-w-[1100px]">
         {header}
@@ -159,23 +162,37 @@ export function TrackNotes({
       {rows.map(({ track: t, no, at }) => {
         const now = t.id === playingId;
         return (
-          <button
+          // The whole row plays; the title is the keyboard button, and artist links open the artist instead.
+          <div
             key={no}
-            type="button"
+            data-liner-row
             aria-current={now || undefined}
-            aria-label={`Play ${t.title} from here`}
             onClick={() => onPlay(at)}
-            className={cn(row, "w-full text-start outline-none hover:bg-w110/40 focus-visible:ring-2 focus-visible:ring-ring")}
+            className={cn(row, "w-full cursor-pointer text-start hover:bg-w110/40")}
           >
             <span className={cn(MONO, "font-semibold tracking-normal")}>{no}</span>
             <span className={cn("truncate text-[15px]", now && "text-brand")}>
-              {t.title}
-              <i className="ms-2 font-headline text-sm text-muted-foreground">
-                {t.artists?.map((x) => x.name).join(", ") || t.subtitle}
-              </i>
+              <button
+                type="button"
+                aria-label={`Play ${t.title} from here`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPlay(at);
+                }}
+                className="text-start outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {t.title}
+              </button>
+              <span onClick={(e) => e.stopPropagation()}>
+                <ArtistLinks
+                  artists={t.artists}
+                  fallback={t.subtitle}
+                  className="ms-2 font-headline text-sm italic text-muted-foreground"
+                />
+              </span>
             </span>
             <span className="font-meta text-xs tabular-nums text-muted-foreground">{t.duration ? formatTime(t.duration) : ""}</span>
-          </button>
+          </div>
         );
       })}
     </div>

@@ -60,14 +60,17 @@ it("lists twelve tracks, lights the playing one and plays from a row", () => {
       }),
     ),
   );
-  const rows = [...container.querySelectorAll("button")];
+  const rows = [...container.querySelectorAll<HTMLElement>("[data-liner-row]")];
   expect(rows).toHaveLength(12);
   expect(rows.filter((b) => b.getAttribute("aria-current"))).toEqual([rows[3]]);
   expect(rows[3].textContent).toContain("Track 3");
   expect(rows[7].textContent).toMatch(/^B2Track 7Artist 72:05$/);
   expect(container.textContent).toContain("177 tracks");
   expect(container.textContent).toContain("First 12 of 177");
-  act(() => rows[7].click());
+  act(() => rows[7].querySelector("button")!.click());
+  expect(onPlay).toHaveBeenCalledTimes(1);
   expect(onPlay).toHaveBeenCalledWith(7);
+  act(() => rows[2].click());
+  expect(onPlay).toHaveBeenLastCalledWith(2);
   act(() => root.unmount());
 });

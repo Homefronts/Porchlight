@@ -276,7 +276,11 @@ export function Crate({ shelves: all }: { shelves: Shelf[] }) {
               {title}
             </OpenLink>
           )}
-          <span className="truncate font-headline text-xl italic text-muted-foreground">{subtitleOf(item)}</span>
+          {item.artists?.some((a) => a.id) ? (
+            <ArtistLinks artists={item.artists} className="truncate font-headline text-xl italic text-muted-foreground" />
+          ) : (
+            <span className="truncate font-headline text-xl italic text-muted-foreground">{subtitleOf(item)}</span>
+          )}
           <div className="mt-3.5 flex flex-wrap items-center gap-2.5">
             <Button
               variant="outline"
