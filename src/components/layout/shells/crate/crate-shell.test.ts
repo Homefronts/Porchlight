@@ -159,5 +159,6 @@ it("puts the playing record on the turntable with what's up next", async () => {
   expect(deck.textContent).toContain("Paper Lanterns");
   expect(deck.textContent).toContain("3:20");
   expect(deck.querySelector('button[aria-label="Next"]')).not.toBeNull();
+  expect(deck.querySelector('button[aria-label="Start radio"]')).not.toBeNull();
   unmount();
 });

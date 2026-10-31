@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
+import { useRef } from "react";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 import type { ShelfItem } from "@/lib/innertube/types";
-import { linerRows, linerSides, ownClick, TrackNotes } from "./liner-notes";
+import { linerRows, linerSides, ownClick, TrackNotes, useFreeBelow } from "./liner-notes";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -87,4 +88,33 @@ it("lists twelve tracks, lights the playing one and plays from a row", () => {
   act(() => [...rows[4].querySelectorAll("span")].find((s) => s.textContent === "Artist 4")!.click());
   expect(onPlay).toHaveBeenLastCalledWith(4);
   act(() => root.unmount());
+});
+
+it("measures the liner space on mount, without waiting for a resize", async () => {
+  vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
+  vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+    cb(0);
+    return 1;
+  });
+  vi.stubGlobal("cancelAnimationFrame", () => {});
+  const rect = HTMLElement.prototype.getBoundingClientRect;
+  HTMLElement.prototype.getBoundingClientRect = () =>
+    ({ top: 0, bottom: 800, left: 0, right: 0, width: 0, height: 800, x: 0, y: 0, toJSON() {} }) as DOMRect;
+  const height = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "clientHeight");
+  Object.defineProperty(HTMLElement.prototype, "clientHeight", { configurable: true, get: () => 800 });
+  function Probe() {
+    const ref = useRef<HTMLDivElement>(null);
+    return createElement("main", null, createElement("div", null, createElement("div", { ref }, useFreeBelow(ref))));
+  }
+  const host = document.body.appendChild(document.createElement("div"));
+  const root = createRoot(host);
+  await act(async () => {
+    root.render(createElement(Probe));
+  });
+  expect(host.textContent).toBe("800");
+  act(() => root.unmount());
+  host.remove();
+  HTMLElement.prototype.getBoundingClientRect = rect;
+  if (height) Object.defineProperty(HTMLElement.prototype, "clientHeight", height);
+  vi.unstubAllGlobals();
 });

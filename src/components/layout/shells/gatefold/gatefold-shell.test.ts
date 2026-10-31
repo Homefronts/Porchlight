@@ -118,6 +118,7 @@ it("compact: Like and More sit under the transport while playing, not when empty
   let left = container.querySelector('section[aria-label="Now playing"]')!;
   expect(left.className).toContain("w-[210px]"); // really the compact column
   expect(left.querySelector('button[aria-label="More"]')).not.toBeNull();
+  expect(left.querySelector('button[aria-label="Start radio"]')).not.toBeNull();
   expect(left.querySelector('button[aria-label="Add to liked"]')).not.toBeNull();
   unmount();
   usePlaybackStore.setState({ queue: [], index: -1 });

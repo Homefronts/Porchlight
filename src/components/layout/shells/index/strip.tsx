@@ -11,7 +11,8 @@ import { useITunesCover, VolumeControl } from "@/components/layout/player-bar";
 import { PlayerCoverMenu } from "@/components/layout/player-cover-menu";
 import { PlayerMoreMenu } from "@/components/layout/player-more-menu";
 import { LikeDislikeButtons } from "@/components/shared/like-buttons";
-import { QueueBody } from "@/components/layout/queue-panel";
+import { MusicVideo } from "@/components/layout/music-video";
+import { QueueBody, RadioToggleButton } from "@/components/layout/queue-panel";
 import {
   LyricsBody,
   LyricsSourceButton,
@@ -152,7 +153,7 @@ export function IndexStrip({ hasTrack, compact }: { hasTrack: boolean; compact: 
               type="button"
               aria-label="Open full screen"
               onClick={openFullscreen}
-              className="size-10 shrink-0"
+              className="relative size-10 shrink-0"
             >
               <Thumbnail
                 thumbnails={track.thumbnails}
@@ -162,6 +163,7 @@ export function IndexStrip({ hasTrack, compact }: { hasTrack: boolean; compact: 
                 highRes
                 overrideHighRes={iTunesCover}
               />
+              <MusicVideo track={track} where="card" />
             </button>
           </PlayerCoverMenu>
         ) : (
@@ -225,6 +227,7 @@ export function IndexStrip({ hasTrack, compact }: { hasTrack: boolean; compact: 
           <WordPopover label="Queue" className="flex h-[28rem] w-[28rem] flex-col p-0">
             <QueueBody />
           </WordPopover>
+          <RadioToggleButton />
           <VolumeControl direction="vertical" />
           {track ? (
             <>

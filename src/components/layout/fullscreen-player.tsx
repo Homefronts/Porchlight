@@ -33,7 +33,7 @@ import {
 } from "@/components/layout/player-bar";
 import { MusicVideo, stageSwitch, useMusicVideoId, vlog } from "@/components/layout/music-video";
 import { PlayerMoreMenu } from "@/components/layout/player-more-menu";
-import { QueuePopover } from "@/components/layout/queue-panel";
+import { QueuePopover, RadioToggleButton } from "@/components/layout/queue-panel";
 import { LyricsSourceButton } from "@/components/layout/lyrics-view";
 import { useLookFamily, type LookFamily } from "@/components/theme/look-type";
 import { TapeCounter } from "@/components/theme/tape-counter";
@@ -368,6 +368,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
                 <VolumeControl className={chip} />
               </div>
               <div className="absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-2">
+                <RadioToggleButton className={chip} />
                 <SourceToggle track={track} />
                 <LyricsSourceButton state={lyricsState} className={chip} />
                 <QueuePopover className={chip} />

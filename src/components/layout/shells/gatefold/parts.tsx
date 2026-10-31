@@ -20,7 +20,8 @@ import {
 } from "@/components/layout/player-bar";
 import { PlayerCoverMenu } from "@/components/layout/player-cover-menu";
 import { PlayerMoreMenu } from "@/components/layout/player-more-menu";
-import { QueuePopover } from "@/components/layout/queue-panel";
+import { MusicVideo } from "@/components/layout/music-video";
+import { QueuePopover, RadioToggleButton } from "@/components/layout/queue-panel";
 import {
   LyricsBody,
   LyricsSourceButton,
@@ -124,6 +125,7 @@ function Playing({ compact }: { compact: boolean }) {
           highRes
           overrideHighRes={iTunesCover}
         />
+        <MusicVideo track={track} where="card" />
         <ArtworkOutline className={COVER_RADIUS} />
       </button>
     </PlayerCoverMenu>
@@ -394,6 +396,7 @@ export function Transport({ compact, className }: { compact: boolean; className?
           <div className="flex items-center justify-between">
             <LyricsButton state={lyrics} />
             <QueuePopover />
+            <RadioToggleButton />
             <VolumeControl direction="vertical" />
             <PopOutButton hasTrack={hasTrack} />
           </div>
@@ -435,6 +438,7 @@ export function Transport({ compact, className }: { compact: boolean; className?
           <div className="ms-auto flex items-center gap-0.5">
             {track ? <LikeDislikeButtons videoId={track.videoId} track={track} /> : null}
             <QueuePopover />
+            <RadioToggleButton />
             <VolumeControl direction="vertical" />
             <PlayerMoreMenu track={track} />
             <PopOutButton hasTrack={hasTrack} />

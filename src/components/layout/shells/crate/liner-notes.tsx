@@ -38,29 +38,43 @@ export function ownClick(target: EventTarget): boolean {
   return !!(target as Element).closest?.("a,button");
 }
 
-/**
- * The height left under `el` in its page scroller: the scroller's height,
- * less everything above `el` and everything the page puts below it. One
- * ResizeObserver on the scroller (window, compact tabs row) and its content
- * (wrapped shelf chips, the feed's loader); `el`'s own height never counts,
- * so the panel growing into the space doesn't change it.
- */
-function useFreeBelow(ref: React.RefObject<HTMLElement | null>): number {
+/** Space under `el` that the notes can grow into. `el`'s own height is not part of it. */
+export function readFreeBelow(el: HTMLElement): number | null {
+  const main = el.closest("main");
+  const content = main?.firstElementChild;
+  if (!main || !content) return null;
+  const m = main.getBoundingClientRect();
+  const r = el.getBoundingClientRect();
+  const below = content.getBoundingClientRect().bottom - r.bottom;
+  return Math.floor(main.clientHeight - (r.top - m.top + main.scrollTop) - below);
+}
+
+export function useFreeBelow(ref: React.RefObject<HTMLElement | null>): number {
   const [free, setFree] = useState(0);
   useLayoutEffect(() => {
     const el = ref.current;
-    const main = el?.closest("main");
-    const content = main?.firstElementChild;
-    if (!el || !main || !content) return;
-    const ro = new ResizeObserver(() => {
-      const m = main.getBoundingClientRect();
-      const r = el.getBoundingClientRect();
-      const below = content.getBoundingClientRect().bottom - r.bottom;
-      setFree(Math.floor(main.clientHeight - (r.top - m.top + main.scrollTop) - below));
-    });
+    if (!el || readFreeBelow(el) === null) return;
+    let frame = 0;
+    // After paint, not inside the observer. A measure that shows or hides the
+    // notes resizes the page, and a follow-up notification from that resize is
+    // dropped, which left the panel stuck hidden.
+    const measure = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const next = readFreeBelow(el);
+        if (next === null) return;
+        setFree((prev) => (prev === next ? prev : next));
+      });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    const main = el.closest("main")!;
     ro.observe(main);
-    ro.observe(content);
-    return () => ro.disconnect();
+    ro.observe(main.firstElementChild!);
+    return () => {
+      cancelAnimationFrame(frame);
+      ro.disconnect();
+    };
   }, [ref]);
   return free;
 }

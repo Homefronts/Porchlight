@@ -59,6 +59,7 @@ it("the strip has Like and More while playing, and neither when empty", async ()
   usePlaybackStore.setState({ queue: [{ videoId: "v1", title: "Night Signals", thumbnails: [] }], index: 0 });
   let { container, unmount } = await render(true);
   expect(container.querySelector('button[aria-label="More"]')).not.toBeNull();
+  expect(container.querySelector('button[aria-label="Start radio"]')).not.toBeNull();
   expect(container.querySelector('button[aria-label="Add to liked"]')).not.toBeNull();
   unmount();
   usePlaybackStore.setState({ queue: [], index: -1 });

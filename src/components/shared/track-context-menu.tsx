@@ -65,6 +65,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getLikedIdsSet } from "@/components/shared/like-buttons";
 import { fetchRadio } from "@/lib/innertube/radio";
+import { toggleRadioMix } from "@/lib/radio-mix";
 import {
   SINGLE_REF,
   downloadTrack,
@@ -82,7 +83,7 @@ import {
 } from "@/lib/innertube/mutations";
 import { toggleDisliked, toggleLiked } from "@/lib/like-actions";
 import { useSettingsStore } from "@/lib/store/settings";
-import { usePlaybackStore } from "@/lib/store/playback";
+import { currentTrack, usePlaybackStore } from "@/lib/store/playback";
 import type { ShelfItem } from "@/lib/innertube/types";
 import { isUnwanted, useAiBlocked, useAiClass } from "@/lib/ai/use-ai";
 import { useAiOverridesStore } from "@/lib/ai/overrides";
@@ -279,6 +280,11 @@ export function TrackMenuItems({
   removal?: PlaylistRemovalContext;
 }) {
   const store = usePlaybackStore.getState;
+  // The player's own mix. On the track that's playing, this row stops it
+  // instead of starting a second one.
+  const radioHere = usePlaybackStore(
+    (s) => !!s.radio && currentTrack(s)?.videoId === item.id,
+  );
   const { Item, Separator, Sub, SubTrigger, SubContent } = primitives;
   // Collection-only downloads are removed from the collection's toggle.
   const dlTrack = useDownloadsStore(
@@ -343,18 +349,26 @@ export function TrackMenuItems({
         Add to queue
       </Item>
       <Item
-        onSelect={async () => {
-          try {
-            const radio = await fetchRadio(item.id);
-            const rest = radio.filter((t) => t.id !== item.id && !isUnwanted(t));
-            store().playShelfItems([item, ...rest], 0);
-          } catch {
-            store().playNow(item);
+        onSelect={() => {
+          // Stop only a mix that is already running on this track. Starting
+          // still goes through playShelfItems, which the floating window delivers.
+          if (store().radio && currentTrack(store())?.videoId === item.id) {
+            void toggleRadioMix();
+            return;
           }
+          void (async () => {
+            try {
+              const radio = await fetchRadio(item.id);
+              const rest = radio.filter((t) => t.id !== item.id && !isUnwanted(t));
+              store().playShelfItems([item, ...rest], 0);
+            } catch {
+              store().playNow(item);
+            }
+          })();
         }}
       >
         <IconRadioFilled />
-        Start radio
+        {radioHere ? "Stop radio" : "Start radio"}
       </Item>
       {dlState === "none" ? (
         <Item

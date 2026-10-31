@@ -1,4 +1,4 @@
-import { useEffect, useRef, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 import { useSidebar } from "@/components/ui/sidebar";
 import { dialTipOpen, LAYOUT_NAMES, LAYOUT_ORDER, nextLayout } from "@/lib/theme/layouts";
@@ -36,6 +36,59 @@ function click() {
 }
 
 /**
+ * True while a dialog (not a popover, which Radix also marks role=dialog)
+ * is still in the page. A closing dialog stays mounted with data-state
+ * "closed" until its exit animation ends, and that is still in the way.
+ */
+export function anyDialogOpen(doc: Document = document): boolean {
+  return [...doc.querySelectorAll('[role="dialog"],[role="alertdialog"]')].some(
+    (el) => !el.closest("[data-radix-popper-content-wrapper]"),
+  );
+}
+
+function useDialogOpen(): { open: boolean; holding: () => boolean } {
+  const [open, setOpen] = useState(() => anyDialogOpen());
+  const was = useRef(false);
+  const hold = useRef(false);
+  useEffect(() => {
+    let timer = 0;
+    // Captured here: a mutation callback can run where `window` is missing.
+    const cancel = clearTimeout;
+    const schedule = setTimeout;
+    const check = () => {
+      cancel(timer);
+      if (anyDialogOpen()) {
+        was.current = true;
+        hold.current = true;
+        setOpen(true);
+        return;
+      }
+      if (!was.current) {
+        hold.current = false;
+        setOpen(false);
+        return;
+      }
+      // Focus leaves the dialog as it unmounts. Opening the tip in that
+      // same turn lets the focus move dismiss it, and seeTip would run.
+      was.current = false;
+      hold.current = true;
+      timer = schedule(() => {
+        hold.current = false;
+        setOpen(anyDialogOpen());
+      }, 0);
+    };
+    const mo = new MutationObserver(check);
+    mo.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-state", "role"] });
+    check();
+    return () => {
+      clearTimeout(timer);
+      mo.disconnect();
+    };
+  }, []);
+  return { open, holding: () => hold.current };
+}
+
+/**
  * The layout switch by the logo. A click turns it one notch, the wheel and
  * the arrow keys turn it either way. Screen readers hear a radio group.
  */
@@ -43,7 +96,10 @@ export function TurntableDial() {
   const layout = useThemeStore((s) => s.layout);
   // The collapsed rail hides the dial, so the tip waits for it to open.
   const expanded = useSidebar().state === "expanded";
-  const tip = useThemeStore((s) => dialTipOpen(s, expanded));
+  // What's New opens on the same first launch; showing the tip under it lets
+  // the dialog's focus dismiss the tip unseen, so it waits for dialogs to close.
+  const dialog = useDialogOpen();
+  const tip = useThemeStore((s) => dialTipOpen(s, expanded)) && !dialog.open;
   const ref = useRef<HTMLDivElement>(null);
   const lastWheel = useRef(0);
   const at = LAYOUT_ORDER.indexOf(layout);
@@ -72,7 +128,10 @@ export function TurntableDial() {
   };
 
   return (
-    <Popover open={tip} onOpenChange={(open) => !open && seeTip()}>
+    <Popover
+      open={tip}
+      onOpenChange={(open) => !open && !anyDialogOpen() && !dialog.holding() && seeTip()}
+    >
       <PopoverAnchor asChild>
         <div
           ref={ref}

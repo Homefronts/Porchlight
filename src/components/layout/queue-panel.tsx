@@ -417,7 +417,7 @@ function RadioChips({ labels, active }: { labels: string[]; active: number }) {
  * comes back. Hidden in the floating window, whose store mirror doesn't
  * carry the mix state.
  */
-export function RadioToggleButton() {
+export function RadioToggleButton({ className }: { className?: string } = {}) {
   const on = usePlaybackStore((s) => !!s.radio);
   const hasTrack = usePlaybackStore((s) => s.index >= 0);
   const [busy, setBusy] = useState(false);
@@ -435,7 +435,7 @@ export function RadioToggleButton() {
             setBusy(true);
             void toggleRadioMix().finally(() => setBusy(false));
           }}
-          className={cn(playerIconButton, on && playerIconButtonOn)}
+          className={cn(playerIconButton, className, on && playerIconButtonOn)}
         >
           <IconRadio />
         </Button>

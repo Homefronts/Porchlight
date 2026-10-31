@@ -11,6 +11,7 @@ import { ArtistLinks } from "@/components/shared/artist-links";
 import { EntityLink } from "@/components/shared/entity-link";
 import { LikeDislikeButtons } from "@/components/shared/like-buttons";
 import { useAlbumMenuController } from "@/components/shared/album-menu";
+import { MusicVideo } from "@/components/layout/music-video";
 import { formatTime, useITunesCover } from "@/components/layout/player-bar";
 import { recordTitleClass, useLookFamily } from "@/components/theme/look-type";
 import { sideLetter } from "@/components/theme/section-label";
@@ -378,6 +379,16 @@ export const Turntable = forwardRef<HTMLDivElement, { compact: boolean }>(functi
             )}
           </div>
         </Vinyl>
+        {track ? (
+          <div
+            className={cn(
+              "pointer-events-none absolute start-0 top-2.5 overflow-hidden rounded-full",
+              compact ? "size-[120px]" : "size-[150px]",
+            )}
+          >
+            <MusicVideo track={track} where="card" className="object-cover" />
+          </div>
+        ) : null}
         {/* Tone arm: on the record while there is one, parked when empty. */}
         <span
           aria-hidden

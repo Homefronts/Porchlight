@@ -40,6 +40,7 @@ import {
   repeatLabel,
   useITunesCover,
 } from "@/components/layout/player-bar";
+import { MusicVideo } from "@/components/layout/music-video";
 import { PlayerMoreMenu } from "@/components/layout/player-more-menu";
 import { PlayerCoverMenu } from "@/components/layout/player-cover-menu";
 import { recordTitleClass, useLookFamily } from "@/components/theme/look-type";
@@ -164,6 +165,7 @@ export function PlayerBarBottom({ extra }: { extra?: ReactNode } = {}) {
                     highRes
                     overrideHighRes={iTunesCover}
                   />
+                  <MusicVideo track={track} where="card" />
                   <ArtworkOutline className={COVER_RADIUS} />
                   {/* Hover hint for the click-to-open above: the same
                       pad as the side card's, at a size where only the
