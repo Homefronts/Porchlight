@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLocation } from "@tanstack/react-router";
 import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { TopBar } from "@/components/layout/top-bar";
 import { PlayerBarBottom } from "@/components/layout/player-bar-bottom";
@@ -7,6 +8,7 @@ import { BackgroundCover } from "@/components/layout/background-cover";
 import { useLayoutStore } from "@/lib/store/layout";
 import { cn } from "@/lib/utils";
 import { DialSlot } from "./dial-slot";
+import { useShellInsets } from "./insets";
 import { RouteHeaderSlot } from "./route-header-slot";
 import {
   NowPlayingPanel,
@@ -29,6 +31,36 @@ export function PanelsShell({ page, nav, dial, hasTrack }: ShellProps) {
   const [nowOpen, setNowOpen] = useState(false);
   const outer = useSidebar();
   const sidebarWidth = useLayoutStore((s) => s.sidebarWidth);
+
+  // Overlays sit 8px above the bar (its wrapper already carries the 8px
+  // under it) and, at full width, clear the Now playing panel and its gap.
+  const barRef = useRef<HTMLDivElement>(null);
+  const [barH, setBarH] = useState(0);
+  useLayoutEffect(() => {
+    const el = barRef.current!;
+    const measure = () => setBarH(el.offsetHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  useShellInsets({
+    bottom: `${barH + 16}px`,
+    right: compact ? "1rem" : "calc(270px + 1.5rem)",
+  });
+
+  // The compact overlay folds away on Escape and when the page changes.
+  const pathname = useLocation({ select: (l) => l.pathname });
+  useEffect(() => setNowOpen(false), [pathname]);
+  useEffect(() => {
+    if (!nowOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setNowOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [nowOpen]);
+
   return (
     <div
       data-panels
@@ -77,7 +109,7 @@ export function PanelsShell({ page, nav, dial, hasTrack }: ShellProps) {
           )
         )}
       </div>
-      <div className="ps-2">
+      <div ref={barRef} className="ps-2 [&>aside]:border-w110">
         <PlayerBarBottom
           extra={
             <>

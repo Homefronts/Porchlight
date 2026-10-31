@@ -62,7 +62,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
       // Top right has to start below the title bar, otherwise the first
       // card sits under the window controls.
       offset={
-        bottomBar ? { top: "calc(var(--titlebar-h) + 12px)", right: 20 } : 20
+        bottomBar
+          ? { top: "calc(var(--titlebar-h) + 12px)", right: 20 }
+          : // Above a shell's own bottom bar (Panels); 20px otherwise.
+            { top: 20, right: 20, left: 20, bottom: "max(20px, var(--shell-bottom-inset, 0px))" }
       }
       className="toaster group"
       icons={{

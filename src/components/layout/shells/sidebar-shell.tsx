@@ -8,12 +8,14 @@ import {
 } from "@/components/layout/layout-resize-handle";
 import { useLayoutStore } from "@/lib/store/layout";
 import { DialSlot } from "./dial-slot";
+import { sidebarInsets, useShellInsets } from "./insets";
 import { RouteHeaderSlot } from "./route-header-slot";
 import type { ShellProps } from "./types";
 
 /** Today's arrangement: title bar, nav column, page, and the player by mode. */
 export function SidebarShell({ page, nav, dial, hasTrack }: ShellProps) {
   const mode = useLayoutStore((s) => s.mode);
+  useShellInsets(sidebarInsets(mode));
   return (
     <>
       {/* Custom title bar spans the full window width so the

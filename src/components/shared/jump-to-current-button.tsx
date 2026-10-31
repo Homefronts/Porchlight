@@ -4,7 +4,6 @@ import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
 import { usePlaybackStore, currentTrack } from "@/lib/store/playback";
-import { useLayoutStore } from "@/lib/store/layout";
 import { useSelectionStore } from "@/lib/store/selection";
 import type { ShelfItem } from "@/lib/innertube/types";
 
@@ -31,7 +30,6 @@ type Props = {
 export function JumpToCurrentButton({ tracks }: Props) {
   const active = usePlaybackStore(currentTrack);
   const { state } = useSidebar();
-  const mode = useLayoutStore((s) => s.mode);
   // The selection toolbar takes the same spot; step aside while it is up.
   const selecting = useSelectionStore((s) => s.active);
   const [activeOnScreen, setActiveOnScreen] = useState(false);
@@ -94,13 +92,12 @@ export function JumpToCurrentButton({ tracks }: Props) {
 
   // Match the sidebar's own width values from SidebarProvider (app-shell)
   // so the pill stays horizontally centered in the visible content area.
-  // The right edge moves with the player layout: tucked next to the
-  // 22rem side card in `right` mode, hugging the window edge in
-  // `bottom`/`floating` modes. The bottom offset lifts above the
-  // bottom-bar when it's present.
+  // The right and bottom edges clear whatever player chrome the shell
+  // has (Sidebar: the 22rem side card in `right`, the bar in `bottom`).
   const left = state === "collapsed" ? "3.5rem" : "13rem";
-  const right = mode === "right" ? "23rem" : "1rem";
-  const bottom = mode === "bottom" ? "6rem" : "1rem";
+  // The shell publishes what its player chrome takes (shells/types.ts).
+  const right = "var(--shell-right-inset, 1rem)";
+  const bottom = "var(--shell-bottom-inset, 1rem)";
   const Icon = activeAbove ? ArrowUpIcon : ArrowDownIcon;
 
   return createPortal(

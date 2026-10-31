@@ -21,6 +21,7 @@ import { SHELLS, shellFor } from "./index";
 import { SidebarShell } from "./sidebar-shell";
 import { PanelsShell } from "./panels-shell";
 import { usePersistentPage } from "./persistent-page";
+import { sidebarInsets, useShellInsets } from "./insets";
 import {
   RouteHeaderSlot,
   RouteHeaderSlotContext,
@@ -32,7 +33,7 @@ import type { ShellProps } from "./types";
 
 const LAYOUTS: LayoutId[] = ["sidebar", "gatefold", "index", "crate", "panels"];
 
-it("maps sidebar to SidebarShell", () => {
+it("maps sidebar and panels to their own shells", () => {
   expect(shellFor("sidebar")).toBe(SidebarShell);
   expect(shellFor("panels")).toBe(PanelsShell);
 });
@@ -126,4 +127,24 @@ it("keeps the page, its scroller, scroll, focus and header slot across a shell s
   expect($("#a #scroller")).toBe(scroller);
   expect($("#a > [data-route-header-slot] #title")).not.toBeNull();
   act(() => root.unmount());
+});
+
+it("keeps Sidebar's overlay insets for each player mode", () => {
+  expect(sidebarInsets("right")).toEqual({ bottom: "1rem", right: "23rem" });
+  expect(sidebarInsets("bottom")).toEqual({ bottom: "6rem", right: "1rem" });
+  expect(sidebarInsets("floating")).toEqual({ bottom: "1rem", right: "1rem" });
+});
+
+it("publishes the insets on <html> and clears them on unmount", () => {
+  const root = createRoot(document.createElement("div"));
+  function Probe() {
+    useShellInsets({ bottom: "120px", right: "1rem" });
+    return null;
+  }
+  const html = document.documentElement.style;
+  act(() => root.render(createElement(Probe)));
+  expect(html.getPropertyValue("--shell-bottom-inset")).toBe("120px");
+  expect(html.getPropertyValue("--shell-right-inset")).toBe("1rem");
+  act(() => root.unmount());
+  expect(html.getPropertyValue("--shell-bottom-inset")).toBe("");
 });

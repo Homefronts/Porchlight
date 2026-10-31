@@ -31,7 +31,6 @@ import {
   fetchUserPlaylists,
   type UserPlaylist,
 } from "@/lib/innertube/mutations";
-import { useLayoutStore } from "@/lib/store/layout";
 import { usePlaybackStore } from "@/lib/store/playback";
 import type { ShelfItem } from "@/lib/innertube/types";
 
@@ -50,7 +49,6 @@ type Props = {
  */
 export function SelectionToolbar({ tracks, onClear }: Props) {
   const { state } = useSidebar();
-  const mode = useLayoutStore((s) => s.mode);
   const qc = useQueryClient();
   const [newPlaylistOpen, setNewPlaylistOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
@@ -137,8 +135,9 @@ export function SelectionToolbar({ tracks, onClear }: Props) {
   };
 
   const left = state === "collapsed" ? "3.5rem" : "13rem";
-  const right = mode === "right" ? "23rem" : "1rem";
-  const bottom = mode === "bottom" ? "6rem" : "1rem";
+  // The shell publishes what its player chrome takes (shells/types.ts).
+  const right = "var(--shell-right-inset, 1rem)";
+  const bottom = "var(--shell-bottom-inset, 1rem)";
 
   // In compact mode every action is a round icon with its label in a
   // tooltip; otherwise a labelled ghost button.
