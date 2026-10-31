@@ -20,10 +20,66 @@ const noop = () => {};
 const EYEBROW = "font-meta text-[11px] uppercase tracking-[0.1em] text-muted-foreground/70";
 
 /**
- * Logo, dial and the tabs. The dial reads "expanded" from the nearest
- * sidebar state to time its tip; here it is always on screen, so it gets
- * its own state that is always open.
+ * The logo with the dial beside it. The dial reads "expanded" from the
+ * nearest sidebar state to time its tip; here it is always on screen, so
+ * it gets its own state that is always open.
  */
+export function Wordmark({ dial }: { dial: ReactNode }) {
+  const liner = isLinerLook(useActiveLook());
+  return (
+    <div className="flex items-center gap-[9px]">
+      <img src="/ytubic-icon.svg" alt="Porchlight" className="size-7 shrink-0 rounded-full" />
+      {liner ? (
+        <span className="font-display text-[15px] font-black uppercase leading-[0.92] tracking-[-0.01em] text-t1">
+          Porch
+          <br />
+          Light<i className="not-italic text-acc1">.</i>
+        </span>
+      ) : (
+        <span className="font-headline text-[17px] font-semibold leading-none tracking-[-0.015em] text-t1">
+          Porchlight
+        </span>
+      )}
+      <SidebarProvider open onOpenChange={noop} className="ms-1 min-h-0 w-auto">
+        {dial}
+      </SidebarProvider>
+    </div>
+  );
+}
+
+/** Every top-level screen as mono tabs, Downloads included. */
+export function BrowseTabs({ className }: { className?: string }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  return (
+    <nav
+      aria-label="Browse"
+      className={cn(
+        "flex flex-wrap gap-x-4 gap-y-1 font-meta text-[11px] uppercase tracking-[0.12em]",
+        className,
+      )}
+    >
+      {NAV_ITEMS.map(({ to, label }) => {
+        // A shelf page is part of Home's contents.
+        const on = pathname === to || (to === "/" && pathname.startsWith("/shelf/"));
+        return (
+          <Link
+            key={to}
+            to={to}
+            aria-current={on ? "page" : undefined}
+            className={cn(
+              "border-b-2 py-1 transition-colors hover:text-foreground",
+              on ? "border-acc1 text-foreground" : "border-transparent text-muted-foreground",
+            )}
+          >
+            {label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+/** Logo, dial and the tabs. */
 export function IndexMasthead({
   dial,
   compact,
@@ -31,54 +87,12 @@ export function IndexMasthead({
   dial: ReactNode;
   compact: boolean;
 }) {
-  const liner = isLinerLook(useActiveLook());
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
     <div
       className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-2 border-b border-w110 px-6 pb-2.5 pt-3"
     >
-      <div className="flex items-center gap-[9px]">
-        <img src="/ytubic-icon.svg" alt="Porchlight" className="size-7 shrink-0 rounded-full" />
-        {liner ? (
-          <span className="font-display text-[15px] font-black uppercase leading-[0.92] tracking-[-0.01em] text-t1">
-            Porch
-            <br />
-            Light<i className="not-italic text-acc1">.</i>
-          </span>
-        ) : (
-          <span className="font-headline text-[17px] font-semibold leading-none tracking-[-0.015em] text-t1">
-            Porchlight
-          </span>
-        )}
-        <SidebarProvider open onOpenChange={noop} className="ms-1 min-h-0 w-auto">
-          {dial}
-        </SidebarProvider>
-      </div>
-      <nav
-        aria-label="Browse"
-        className={cn(
-          "flex flex-wrap gap-x-4 gap-y-1 font-meta text-[11px] uppercase tracking-[0.12em]",
-          compact ? "order-last basis-full" : "ms-auto",
-        )}
-      >
-        {NAV_ITEMS.map(({ to, label }) => {
-          // A shelf page is part of Home's contents.
-          const on = pathname === to || (to === "/" && pathname.startsWith("/shelf/"));
-          return (
-            <Link
-              key={to}
-              to={to}
-              aria-current={on ? "page" : undefined}
-              className={cn(
-                "border-b-2 py-1 transition-colors hover:text-foreground",
-                on ? "border-acc1 text-foreground" : "border-transparent text-muted-foreground",
-              )}
-            >
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
+      <Wordmark dial={dial} />
+      <BrowseTabs className={compact ? "order-last basis-full" : "ms-auto"} />
       {compact && <MenuButton />}
     </div>
   );
@@ -159,8 +173,8 @@ export function Appendix() {
   );
 }
 
-/** Compact: the appendix folds into a MENU button. */
-function MenuButton() {
+/** Compact: the appendix folds into a MENU button. Gatefold keeps it at every width. */
+export function MenuButton() {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
   return (

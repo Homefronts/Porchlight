@@ -1,14 +1,15 @@
 import type { ComponentType } from "react";
 import type { LayoutId } from "@/lib/theme/looks";
+import { GatefoldShell } from "./gatefold-shell";
 import { IndexShell } from "./index-shell";
 import { PanelsShell } from "./panels-shell";
 import { SidebarShell } from "./sidebar-shell";
 import type { ShellProps } from "./types";
 
-// The other two borrow Sidebar until their own shell lands.
+// Crate borrows Sidebar until its own shell lands.
 export const SHELLS: Record<LayoutId, ComponentType<ShellProps>> = {
   sidebar: SidebarShell,
-  gatefold: SidebarShell,
+  gatefold: GatefoldShell,
   index: IndexShell,
   crate: SidebarShell,
   panels: PanelsShell,
