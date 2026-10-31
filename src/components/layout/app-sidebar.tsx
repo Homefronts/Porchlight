@@ -570,7 +570,7 @@ function SidebarSignInButton({ relinkId }: { relinkId: string | null }) {
               : invoke("start_login");
             call.catch((e) => toast.error(`Sign-in failed: ${String(e)}`));
           }}
-          className="grid h-9 w-full grid-cols-[32px_minmax(0,1fr)] items-center gap-0.5 overflow-hidden py-0 ps-0.5 pe-2.5 [&>svg]:justify-self-center"
+          className="on-brand grid h-9 w-full grid-cols-[32px_minmax(0,1fr)] items-center gap-0.5 overflow-hidden py-0 ps-0.5 pe-2.5 [&>svg]:justify-self-center"
         >
           <IconLogin stroke={2.3} />
           <span data-sidebar-label className="truncate text-start">
