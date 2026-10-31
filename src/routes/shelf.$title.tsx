@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { IconArrowLeft } from "@tabler/icons-react";
 import { Loader2Icon } from "lucide-react";
@@ -7,22 +7,34 @@ import { ShelfCard } from "@/components/shared/shelf-card";
 import { PageTitle } from "@/components/theme/look-type";
 import { useAiFilter } from "@/lib/ai/use-ai";
 
-export const Route = createFileRoute("/shelf/$index")({
+export const Route = createFileRoute("/shelf/$title")({
   component: ShelfPage,
 });
 
-/** One Home shelf in full, opened from Index's contents. */
+// A missing shelf may sit a page or two further down; past that it's gone.
+const MAX_EXTRA_PAGES = 2;
+
+/**
+ * One Home shelf in full, opened from Index's contents. Looked up by
+ * title, Home's shelf identity (home-sections.ts), so a reshuffled feed
+ * can't swap in a different shelf. Same-titled shelves open the first.
+ */
 function ShelfPage() {
-  const { index } = Route.useParams();
+  const { title } = Route.useParams();
   const { query, shelves } = useHomeFeed();
-  const shelf = shelves[Number(index)];
+  const shelf = shelves.find((s) => s.title === title);
   const items = useAiFilter()(shelf?.items ?? []);
-  const { hasNextPage, isFetchingNextPage, fetchNextPage, isLoading } = query;
-  // A shelf further down than the loaded pages: keep loading until it's there.
-  const waiting = !shelf && (isLoading || !!hasNextPage);
+  const { hasNextPage, isFetchingNextPage, fetchNextPage, isLoading, error } = query;
+  // Pages fetched for this title; a new title starts its own count.
+  const [extra, setExtra] = useState({ title, n: 0 });
+  const fetched = extra.title === title ? extra.n : 0;
+  const canPage = !error && !!hasNextPage && fetched < MAX_EXTRA_PAGES;
   useEffect(() => {
-    if (!shelf && hasNextPage && !isFetchingNextPage) void fetchNextPage();
-  }, [shelf, hasNextPage, isFetchingNextPage, fetchNextPage]);
+    if (shelf || isLoading || isFetchingNextPage || !canPage) return;
+    setExtra({ title, n: fetched + 1 });
+    void fetchNextPage();
+  }, [shelf, isLoading, isFetchingNextPage, canPage, fetchNextPage, title, fetched]);
+  const waiting = !shelf && (isLoading || isFetchingNextPage || canPage);
 
   return (
     <div className="flex flex-col gap-5 px-6 pb-6 pt-4">

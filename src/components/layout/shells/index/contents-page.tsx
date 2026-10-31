@@ -21,8 +21,8 @@ export function Contents({ shelves }: { shelves: Shelf[] }) {
       {entries.map((e) => (
         <li key={e.index}>
           <Link
-            to="/shelf/$index"
-            params={{ index: String(e.index) }}
+            to="/shelf/$title"
+            params={{ title: e.title }}
             className="group grid grid-cols-[46px_1fr_auto] items-baseline gap-3.5 border-t border-w110 pb-3.5 pt-3 outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <span className="font-meta text-[13px] text-acc1">{e.no}</span>

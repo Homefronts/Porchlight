@@ -4,7 +4,7 @@ import { arrangeTitles, useHomeSectionsStore } from "@/lib/store/home-sections";
 
 /**
  * The Home feed as Home shows it. Home and Index's shelf page both read
- * it, so `/shelf/$index` points at the same shelf the contents numbered.
+ * it, so `/shelf/$title` finds the shelf the contents listed.
  */
 export function useHomeFeed() {
   const query = useInfiniteQuery({

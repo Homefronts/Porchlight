@@ -89,7 +89,8 @@ const IS_TAURI =
  * the Settings page. The "Quit" item in the More menu always
  * terminates the process regardless of that setting.
  */
-export function TopBar() {
+/** `sidebarToggle`: off in layouts with no nav for the toggle to open (Index). */
+export function TopBar({ sidebarToggle = true }: { sidebarToggle?: boolean } = {}) {
   const router = useRouter();
   const fullscreen = useFullscreenStore((s) => s.open);
   const [maximized, setMaximized] = useState(false);
@@ -192,7 +193,7 @@ export function TopBar() {
               player is up, so the three go with it. */}
           {fullscreen ? null : (
             <>
-              <SidebarTrigger className={NAV_BTN_CLS} />
+              {sidebarToggle && <SidebarTrigger className={NAV_BTN_CLS} />}
               <Button
                 variant="ghost"
                 size="icon"

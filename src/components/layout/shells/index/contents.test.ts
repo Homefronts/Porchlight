@@ -32,7 +32,7 @@ it("numbers the shelves with three covers and a record count each", () => {
   ]);
 });
 
-it("skips empty shelves but keeps each entry's link to its own shelf", () => {
+it("skips empty shelves but keeps each entry's place in the feed", () => {
   const out = contentsEntries([shelf("A", 0), shelf("B", 4)]);
   expect(out.map((e) => [e.index, e.no])).toEqual([[1, "01"]]);
 });

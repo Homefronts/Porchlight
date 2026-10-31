@@ -582,7 +582,7 @@ function SidebarSignInButton({ relinkId }: { relinkId: string | null }) {
   );
 }
 
-function UserProfile() {
+export function UserProfile() {
   const loggedIn = useQuery(authLoggedInQuery);
   const account = useQuery(accountInfoQuery(loggedIn.data === true));
   const accounts = useAccounts();

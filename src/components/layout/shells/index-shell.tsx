@@ -23,7 +23,7 @@ export function IndexShell({ page, dial, hasTrack }: ShellProps) {
   });
   return (
     <div data-index-layout className="relative flex min-h-0 flex-1 flex-col">
-      <TopBar />
+      <TopBar sidebarToggle={false} />
       <IndexStrip hasTrack={hasTrack} compact={compact} />
       <div className="relative flex min-h-0 flex-1">
         <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">

@@ -170,7 +170,7 @@ export function IndexStrip({ hasTrack, compact }: { hasTrack: boolean; compact: 
             className={cn(
               "truncate font-bold",
               compact ? "text-base/none" : "text-lg/none",
-              recordTitleClass(family),
+              track && recordTitleClass(family),
             )}
           >
             {track?.title ?? "Nothing on the tape"}

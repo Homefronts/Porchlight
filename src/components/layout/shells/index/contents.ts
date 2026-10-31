@@ -1,7 +1,7 @@
 import type { Shelf, ShelfItem } from "@/lib/innertube/types";
 
 export type ContentsEntry = {
-  /** The shelf's place in Home's arranged list: `/shelf/$index`. */
+  /** The shelf's place in Home's arranged list (a stable key; titles can repeat). */
   index: number;
   /** Printed entry number, "01". */
   no: string;

@@ -4,7 +4,12 @@ import { IconMenu2 } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { LIKED_ID, NAV_ITEMS, usePlaylistRows } from "@/components/layout/app-sidebar";
+import {
+  LIKED_ID,
+  NAV_ITEMS,
+  usePlaylistRows,
+  UserProfile,
+} from "@/components/layout/app-sidebar";
 import { isLinerLook } from "@/lib/theme/looks";
 import { useActiveLook } from "@/lib/theme/store";
 import { openSettings } from "@/lib/store/settings-dialog";
@@ -30,10 +35,7 @@ export function IndexMasthead({
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
     <div
-      className={cn(
-        "flex shrink-0 flex-wrap items-center gap-x-6 gap-y-2 border-b border-w110 pb-2.5 pt-3",
-        "px-6",
-      )}
+      className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-2 border-b border-w110 px-6 pb-2.5 pt-3"
     >
       <div className="flex items-center gap-[9px]">
         <img src="/ytubic-icon.svg" alt="Porchlight" className="size-7 shrink-0 rounded-full" />
@@ -60,7 +62,8 @@ export function IndexMasthead({
         )}
       >
         {NAV_ITEMS.map(({ to, label }) => {
-          const on = pathname === to;
+          // A shelf page is part of Home's contents.
+          const on = pathname === to || (to === "/" && pathname.startsWith("/shelf/"));
           return (
             <Link
               key={to}
@@ -124,17 +127,34 @@ function SettingsLink({ onPick }: { onPick?: () => void }) {
   );
 }
 
-/** The right column: playlists, then Settings. */
+/**
+ * The account button (sign in, switch, sign out) from the sidebar's foot.
+ * Its menu button reads sidebar state, so it gets an always-open one.
+ */
+function Account() {
+  return (
+    <SidebarProvider open onOpenChange={noop} className="min-h-0">
+      <UserProfile />
+    </SidebarProvider>
+  );
+}
+
+/** The right column: playlists, Settings, then the account. */
 export function Appendix() {
   return (
     <aside
       aria-label="Appendix"
-      className="app-scroll flex w-[260px] shrink-0 flex-col overflow-y-auto border-s border-w110 px-[22px] py-6 font-meta text-xs"
+      className="app-scroll flex w-[260px] shrink-0 flex-col overflow-y-auto border-s border-w110 px-[22px] py-6"
     >
-      <div className={cn(EYEBROW, "mb-2")}>Appendix · Playlists</div>
-      <Playlists />
-      <div className={cn(EYEBROW, "mb-2 mt-[22px]")}>Porchlight</div>
-      <SettingsLink />
+      <div className="font-meta text-xs">
+        <div className={cn(EYEBROW, "mb-2")}>Appendix · Playlists</div>
+        <Playlists />
+        <div className={cn(EYEBROW, "mb-2 mt-[22px]")}>Porchlight</div>
+        <SettingsLink />
+      </div>
+      <div className="mt-auto pt-6">
+        <Account />
+      </div>
     </aside>
   );
 }
@@ -151,11 +171,16 @@ function MenuButton() {
           MENU
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="app-scroll max-h-[70vh] w-[240px] overflow-y-auto font-meta text-xs">
-        <div className={cn(EYEBROW, "mb-2")}>Playlists</div>
-        <Playlists onPick={close} />
-        <div className={cn(EYEBROW, "mb-2 mt-4")}>Porchlight</div>
-        <SettingsLink onPick={close} />
+      <PopoverContent align="end" className="app-scroll max-h-[70vh] w-[240px] overflow-y-auto">
+        <div className="font-meta text-xs">
+          <div className={cn(EYEBROW, "mb-2")}>Playlists</div>
+          <Playlists onPick={close} />
+          <div className={cn(EYEBROW, "mb-2 mt-4")}>Porchlight</div>
+          <SettingsLink onPick={close} />
+        </div>
+        <div className="mt-4">
+          <Account />
+        </div>
       </PopoverContent>
     </Popover>
   );
