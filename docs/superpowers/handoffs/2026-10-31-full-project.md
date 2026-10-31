@@ -264,6 +264,7 @@ All four ship together in one update (the user's call). The floating mini player
 | Player colour (user request) | done, **not yet checked live** | daede91 |
 | Crate liner notes (user request, mockup approved) | done, checked live at full size | 55a826c |
 | Crate artist names link to the artist page (user request) | done, links checked live | fdfc658 |
+| Bug hunt on the post-release-prep changes (user asked "check for bugs again"): 3 Important + 5 Minor, all fixed | done; liner notes rechecked live (12 rows, Home doesn't scroll) | c8b0efc, 6aff92c, 5225e01, 937eb42, 96dfffe, 91a793b, 160c26e |
 | Handoff docs | done | 4d0b6c4, 0950fc3 (kept current with every change) |
 | 9B Version bump + release commit | **waiting on the user's version choice** | |
 
@@ -303,6 +304,25 @@ What the reviews and the live pass caught along the way (all fixed):
    - the front record's subtitle, when YouTube gives artist ids (playlists like "Auto playlist" stay plain)
 
    The turntable's artist was already a link.
+
+5. **"Let's check for bugs again"** (2026-10-31). An opus bug hunter read every change since release prep; the findings are in `.superpowers/sdd/2026-10-30-layouts/bug-hunt.md` and the fixes in `bug-fix-report.md`.
+   - First, I painted a test Player colour onto `<html>` in the running app.
+     - Index's strip, Gatefold's left page and Crate's turntable paint correctly and stay readable.
+     - Sidebar was untouched.
+     - Panels takes the colour through an inline `--surface` instead, so that trick can't show it. **Panels still needs a real check with a custom look that has a Player colour.**
+   - Fixes:
+     1. An older playlist load kept adding pages after a newer play started. Now a generation counter means only the latest play streams.
+     2. "On" states (shuffle, repeat, Like, the brand play disc, "Now playing") vanished on a Player colour close to the accent. `playerTokens` now swaps `--brand`/`--acc1` to the readable colour when contrast is under 3:1.
+     3. An artist link in Index's strip vanished on hover. This bug was older than today.
+     4. Crate's front record lost its type and year after the artist-link change. Now it keeps them.
+     5. A damaged saved look could crash the player areas. `usePlayerStyle` now falls back.
+     6. Clicking an unlinked artist name in a liner row didn't play. Now it does.
+     7. Liner notes now measure the real free space (3 to 6 rows) instead of using window-height guesses.
+     8. A liner row click now plays the tracks shown, so a reordered mix can't play a different song.
+   - Known shortcuts:
+     - The liner header and footer height (72px) is an estimate.
+     - A linked artist whose name isn't in the subtitle text gets dropped from the front record's subtitle. It's marked with a `shortcut:` comment.
+   - Tests: 600 passing, tsc clean.
 
 ## Running tally rule
 
@@ -365,4 +385,4 @@ The user asked (2026-10-31) that **every change gets added to this write-up as i
   1. Stop the dev task, the debug `porchlight.exe`, and the Vite process on port 1420.
   2. `reg import` the two `.reg` files from the backup.
   3. Don't restore the data folders unless the user asks. They used the dev build as their real app, so their changes there are intentional.
-- **Tests:** 594 passing, tsc clean.
+- **Tests:** 600 passing, tsc clean.
