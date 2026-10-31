@@ -10,6 +10,7 @@ import {
 import { TrackDownloadStatus } from "@/components/shared/download-button";
 import { rowQueue } from "@/lib/queue-track";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { flipping, listOffset } from "@/components/shared/list-offset";
 import { CheckIcon, PlayIcon, PauseIcon, Volume2Icon } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { ArtworkOutline } from "@/components/shared/artwork-outline";
@@ -254,12 +255,19 @@ export function TrackList({
   const [scrollMargin, setScrollMargin] = useState(0);
   useLayoutEffect(() => {
     if (!scrollEl) return;
+    let frame = 0;
+    let tries = 0;
     const compute = () => {
+      cancelAnimationFrame(frame);
       const list = listRef.current;
       if (!list) return;
-      const listTop = list.getBoundingClientRect().top;
-      const scrollerTop = scrollEl.getBoundingClientRect().top;
-      setScrollMargin(listTop - scrollerTop + scrollEl.scrollTop);
+      // A layout swap resizes mid flip; measure again once it has settled.
+      if (flipping(scrollEl) && tries++ < 120) {
+        frame = requestAnimationFrame(compute);
+        return;
+      }
+      tries = 0;
+      setScrollMargin(listOffset(list, scrollEl));
     };
     compute();
     const ro = new ResizeObserver(compute);
@@ -268,7 +276,10 @@ export function TrackList({
     // expansions trigger a recompute. Falls back to scroll listener.
     if (listRef.current?.parentElement)
       ro.observe(listRef.current.parentElement);
-    return () => ro.disconnect();
+    return () => {
+      ro.disconnect();
+      cancelAnimationFrame(frame);
+    };
   }, [scrollEl, tracks.length]);
 
   const virtualizer = useVirtualizer({
