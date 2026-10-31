@@ -309,7 +309,7 @@ What the reviews and the live pass caught along the way (all fixed):
    - First, I painted a test Player colour onto `<html>` in the running app.
      - Index's strip, Gatefold's left page and Crate's turntable paint correctly and stay readable.
      - Sidebar was untouched.
-     - Panels takes the colour through an inline `--surface` instead, so that trick can't show it. **Panels still needs a real check with a custom look that has a Player colour.**
+     - Panels takes the colour through an inline `--surface`; checked by applying the same tokens to its bar wrapper: the bar paints green and stays readable. All four layouts verified.
    - Fixes:
      1. An older playlist load kept adding pages after a newer play started. Now a generation counter means only the latest play streams.
      2. "On" states (shuffle, repeat, Like, the brand play disc, "Now playing") vanished on a Player colour close to the accent. `playerTokens` now swaps `--brand`/`--acc1` to the readable colour when contrast is under 3:1.
