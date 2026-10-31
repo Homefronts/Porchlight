@@ -42,7 +42,7 @@ export function BackgroundCover() {
   const baseClass =
     "pointer-events-none absolute inset-0 h-full w-full scale-125 object-cover blur-3xl " +
     "saturate-[0.9] brightness-[1.4] dark:saturate-150 dark:brightness-100 " +
-    "transition-opacity duration-700 ease-out";
+    "transition-opacity duration-700 ease-out motion-reduce:transition-none";
 
   // Held on the element rather than inline, so the visible slot can carry
   // a different value per theme. On a light page the wash reads much
