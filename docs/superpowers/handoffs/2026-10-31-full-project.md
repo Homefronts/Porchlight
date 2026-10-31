@@ -48,7 +48,7 @@ Newest first. The full user-facing changelog is in `README.md` → Changelog.
 
 | Version | Date | What it was |
 |---|---|---|
-| 1.1.0 | release commit done, not tagged | **Layouts**: Gatefold, Index, Crate, Panels, the turntable dial, Ctrl+L, the flip, Player colour, Crate liner notes. On branch `layouts`, unpushed. |
+| 1.1.0 | tagging `v1.1.0` on `main` | **Layouts**: Gatefold, Index, Crate, Panels, the turntable dial, Ctrl+L, the flip, Player colour, Crate liner notes, plus the install-test fixes (dial tip, liner measure, Source video, Start radio). |
 | 1.0.0 | 2026-10-29/30 | **Porchlight**: rename from YTubic Plus, new app ID, sits beside the original YTubic, porchlight:// links (old ytubic-plus:// still work). |
 | 0.9.1 | 2026-10-29 | The bridge: saves a handoff copy of settings and library so Porchlight can import them on first launch. |
 | 0.9.0 | 2026-10-29 | **Looks**: five looks (Sleeve, Paper, Ink liner, Ink, Classic), the "Make it yours" picker, custom looks with a live editor, look files to share. |
@@ -268,13 +268,13 @@ All four ship together in one update (the user's call). The floating mini player
 | Handoff docs | done | 4d0b6c4, 0950fc3 (kept current with every change) |
 | Ink Sign in button readable (on-brand) | done | 93513d9 |
 | README: update YTubic Plus from inside the app | done | 7f2f4e8 |
-| 9B Version bump + release commit | 1.1.0 chosen by the user; release commit done; next: installed update test, then user tags | see `git log -1 --grep "release: 1.1.0"` |
-| Install test of 1.1.0 over 1.0.0 | installer built and installed; data check not finished. Bug: What's New swallows the dial tip | uncommitted, `turntable-dial.tsx` |
-| Crate liner notes stuck hidden | the free-space measure ran inside ResizeObserver and the follow-up was dropped, so the panel stayed at a negative value | uncommitted, `liner-notes.tsx` |
-| Source menu shows the video | Song/Video in the ⋯ menu did switch, but Gatefold, Index, Crate and the bottom bar never drew the video | uncommitted, those players |
-| Start radio on every player | the button was only on the sidebar card and the bottom bar | uncommitted, Transport, Index strip, fullscreen |
-| Source menu radio label | "Start radio" stayed put while a mix was already running on that track. Checked live on Crate. A review then caught that every click on the playing track called toggleRadioMix, which the floating window cannot deliver. Stop now only runs when a mix is already going | uncommitted, `track-context-menu.tsx` |
-| Review follow-ups | layout tip still marked seen when What's New finishes closing; fullscreen radio lost its on tint; stale liner comment | uncommitted, `turntable-dial.tsx`, `queue-panel.tsx`, `liner-notes.tsx` |
+| 9B Version bump + release commit | 1.1.0 chosen by the user; release commit done | d96fa7b |
+| Install test of 1.1.0 over 1.0.0 | installer built and installed; settings/looks/layout/library check not finished. Dial tip bug fixed after that install | ced52c2 |
+| Crate liner notes stuck hidden | the free-space measure ran inside ResizeObserver and the follow-up was dropped, so the panel stayed at a negative value | ced52c2 |
+| Source menu shows the video | Song/Video in the ⋯ menu did switch, but Gatefold, Index, Crate and the bottom bar never drew the video | ced52c2 |
+| Start radio on every player | the button was only on the sidebar card and the bottom bar | ced52c2 |
+| Source menu radio label | "Start radio" stayed put while a mix was already running. Stop runs only when a mix is already going, so the floating window can still start one | ced52c2 |
+| Review follow-ups | layout tip held through What's New's close; fullscreen radio keeps its on tint | ced52c2 |
 
 What the reviews and the live pass caught along the way (all fixed):
 - The scroller remounting on a swap.
@@ -345,7 +345,7 @@ The user asked (2026-10-31) that **every change gets added to this write-up as i
 1. **Check the Player colour** in the dev build:
    - Set one in Settings → Appearance → the look editor, then dial through Index, Panels, Gatefold and Crate.
    - Also check liner notes at about 940px and 800px window heights.
-2. **Task 9B, the release commit.** Done: 1.1.0 chosen by the user, release commit made on `layouts`. The installer was built and installed over 1.0.0 (backup `C:\Users\sdand\PorchlightDataBackup-20261031-1226-pre-1.1.0`). The settings, looks, layout and library check was not finished. The dial-tip fix is in the working tree only, so the installed 1.1.0 still has the bug. Next: finish that check, then the user tags.
+2. **Task 9B, the release commit.** Done: 1.1.0 chosen by the user, release commit `d96fa7b`, install-test fixes in `ced52c2`. The installer that was installed over 1.0.0 was built before those fixes (backup `C:\Users\sdand\PorchlightDataBackup-20261031-1226-pre-1.1.0`). The settings, looks, layout and library check was not finished. The user asked to publish anyway. The tag is `v1.1.0` on the tip that includes the fixes.
    - The user picks the version. My recommendation is **1.1.0**, since this is a feature release; the plan said "before 1.1", so they may want 1.0.x.
    - Bump `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` and `Cargo.lock`, as the 1.0.0 release commit did.
    - **What's New:** `LAYOUTS_RELEASE` in `src/lib/whats-new.ts` sits outside `WHATS_NEW` on purpose. At release:
@@ -357,10 +357,7 @@ The user asked (2026-10-31) that **every change gets added to this write-up as i
      - Update "Make it yours", which still only says "Pick a look".
    - Run `npx vitest run`, `npx tsc --noEmit` and `cargo check`, then commit `release: <version>`.
    - **Stop there.**
-3. **Release (user-run):**
-   - Merge `layouts` → `main`.
-   - Push main, then push tag `v<version>`; the tag push starts the build.
-   - The user publishes the release.
+3. **Release.** Merging `layouts` into `main`, pushing `main`, then pushing tag `v1.1.0`. The tag push starts the build and opens a draft release. The user publishes that draft when the build is green.
 4. **1.0.1-type fixes, still queued** (they could ride along in the release):
    - Done in 1.1.0: Ink look's sidebar "Sign in" button now uses `on-brand`.
    - The dev build writes the installed app's real data folders instead of `.dev` ones. Fixing this would make testing safe.
