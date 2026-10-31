@@ -111,7 +111,7 @@ Porchlight has five layouts. Turn the little dial next to the logo, press Ctrl+L
 
 ## Make it yours
 
-Pick a look on first launch, with a live preview of your own library. Then keep tweaking: change colours, fonts, corner shapes and the little record touches, and save the result as a custom look. Export a look as a theme file to share it, or import a friend's.
+Pick a look and a layout on first launch, with a live preview of your own library. Switch layouts any time with the turntable dial next to the logo or Ctrl+L. Then keep tweaking: change colours, fonts, corner shapes and the little record touches, give the player its own colour in the layouts that have one, and save the result as a custom look. Export a look as a theme file to share it, or import a friend's. A look file can suggest a layout too, and Porchlight asks before switching.
 
 <table>
   <tr>
@@ -124,6 +124,11 @@ Pick a look on first launch, with a live preview of your own library. Then keep 
 
 ### Home and layout
 
+- **Five layouts**: Sidebar, Gatefold, Index, Crate and Panels. Every look works on every layout, and the floating player works in all of them.
+- **Turntable dial**: click, scroll or use the arrow keys on the dial next to the logo to switch layouts, or press Ctrl+L.
+- **Player colour**: give the player area of Index, Panels, Gatefold and Crate its own colour in the look editor. Text on it stays readable.
+- **Crate liner notes**: the front record's tracks as Side A and Side B. Click a song to play from there, or an artist name to open their page.
+- **Index shelf pages**: every numbered entry on Index's contents page opens the whole shelf on its own page.
 - **Like and dislike buttons**: swap the heart for a like and dislike pair, like on YouTube Music.
 - **Liked songs cover**: choose the cover for your Liked songs playlist.
 - **Resizable layout**: drag to resize the sidebar and the player panel.
@@ -233,6 +238,7 @@ Download the latest installer from the [Releases](https://github.com/Homefronts/
 
 ## What's new in Porchlight
 
+- **Layouts**: four new ways to lay out the app (Gatefold, Index, Crate and Panels) next to the classic Sidebar. Turn the dial by the logo or press Ctrl+L to switch.
 - **Radio button** — start a mix from whatever is playing, right next to the queue button. Click it again to stop and resume your album or playlist where you left off.
 - **Mood chips** — while a mix plays, the queue shows YouTube Music's chips (All, Familiar, Discover, Chill, …) to reshape what's coming up.
 - **Offline downloads** — a Spotify-style download toggle on every playlist, album and Liked Songs, plus "Download" on single songs. Downloaded playlists stay in sync with new songs automatically.
@@ -290,6 +296,37 @@ Complicated changes, some needing new servers or apps.
 
 Every release of Porchlight, and of YTubic Plus before it, newest first.
 
+#### 1.1.0 (October 31, 2026): Layouts
+
+**New**
+
+- **Gatefold layout**: opens like a double LP. The left page is the playing record with its credits and a lyric sheet, the right page is everything else.
+- **Index layout**: Home reads like a magazine contents page, with a cassette label player across the top and your playlists in an appendix.
+- **Crate layout**: flip through Home like a record crate, with a turntable spinning the playing record along the bottom.
+- **Panels layout**: rounded panels on black, a player bar along the bottom and a soft wash of colour from the cover.
+- **Turntable dial**: the knob next to the logo switches layouts. Click it, scroll over it or use the arrow keys.
+- **Ctrl+L**: flips to the next layout, with a record flip as it turns over.
+- **Pick a layout**: in Settings > Appearance or in the first-launch picker. Porchlight remembers the last one you used.
+- **Looks can suggest a layout**: a look file can carry a layout, and importing it asks before switching ("Switch to Crate?").
+- **Player colour**: give the player area of Index, Panels, Gatefold and Crate its own colour in the look editor. Text on it stays readable.
+- **Crate liner notes**: the front record's tracks as Side A and Side B. Click a song to play from there.
+- **Artist links in Crate**: artist names in the crate open the artist page.
+- **Index shelf pages**: each numbered entry on Index's contents page opens the whole shelf on its own page.
+- **Floating player in every layout**: pop the player out from any layout.
+
+**Improved**
+
+- **Pop-out button everywhere**: every layout has a button to pop the player out into the floating window.
+- **Overlays stay clear**: toasts, the jump button and the selection bar sit clear of each layout's player.
+- **Narrow windows**: each layout has a compact form for small windows.
+- **Reduced motion**: with reduced motion on, the flip becomes a fade and the cover wash snaps instead of sliding.
+- **Like and More in Index**: the cassette strip has Like and More buttons, like the other players.
+
+**Fixed**
+
+- **Sign in button in Ink**: the button's label no longer disappears into the button in the Ink look.
+- **Playlists queued twice**: clicking Play on a playlist twice in a row no longer fills the queue with its songs twice.
+
 #### 1.0.0 (October 29, 2026): Porchlight
 
 **New**
@@ -323,6 +360,9 @@ Every release of Porchlight, and of YTubic Plus before it, newest first.
 - **Back to Classic**: Classic is unchanged. Pick it in Settings > Appearance to go back.
 - **Remembers where you were**: keeps your song, queue and position across restarts and updates.
 
+<details>
+<summary>Older versions</summary>
+
 #### 0.8.1 (October 27, 2026): Your requests
 
 **New**
@@ -339,9 +379,6 @@ Every release of Porchlight, and of YTubic Plus before it, newest first.
 **Fixed**
 
 - **Copy lyrics and errors**: lyrics, playback errors and notifications can be selected and copied again.
-
-<details>
-<summary>Older versions</summary>
 
 #### 0.8.0 (October 23, 2026): Rewind
 

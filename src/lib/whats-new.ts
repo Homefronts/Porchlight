@@ -49,39 +49,59 @@ export type WhatsNewEntry = {
 };
 
 /**
- * Notes for the layouts release, waiting on its version number. At release:
- * add `{ version, date, ...LAYOUTS_RELEASE }` to the top of WHATS_NEW and
- * delete this constant. It sits outside the list until then, since the
- * first entry must match package.json.
- */
-export const LAYOUTS_RELEASE: Omit<WhatsNewEntry, "version" | "date"> = {
-  summary: "Layouts",
-  changes: [
-    {
-      type: "new",
-      title: "Four new layouts",
-      text: "Gatefold opens like a double LP, with the playing record on the left page. Index turns Home into a magazine contents page with a cassette label player. Crate lets you flip through your records, with a turntable spinning along the bottom. Panels puts rounded panels on black with a soft wash from the cover. Sidebar is still the app you know.",
-    },
-    {
-      type: "new",
-      title: "Turn the dial",
-      text: "The little knob next to the logo switches layouts, like the speed switch on a record player. Click it or scroll over it. Every look works with every layout, and Porchlight remembers the last one you used.",
-    },
-    {
-      type: "new",
-      title: "Ctrl+L",
-      text: "Press Ctrl+L to flip to the next layout. You can also pick one in Settings > Appearance.",
-    },
-  ],
-};
-
-/**
  * Curated release notes for the What's New dialog, newest first. The
  * dialog renders the whole list as a timeline with the relevant entry
  * expanded. Add an entry here for every user-facing release; keep the
  * copy free of em/en dashes.
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
+  {
+    version: "1.1.0",
+    date: "October 31, 2026",
+    summary: "Layouts",
+    changes: [
+      {
+        type: "new",
+        title: "Four new layouts",
+        text: "Gatefold opens like a double LP, with the playing record on the left page. Index turns Home into a magazine contents page with a cassette label player. Crate lets you flip through your records, with a turntable spinning along the bottom. Panels puts rounded panels on black with a soft wash from the cover. Sidebar is still the app you know.",
+      },
+      {
+        type: "new",
+        title: "Turn the dial",
+        text: "The little knob next to the logo switches layouts, like the speed switch on a record player. Click it, scroll over it or use the arrow keys. Every look works with every layout, and Porchlight remembers the last one you used.",
+      },
+      {
+        type: "new",
+        title: "Ctrl+L",
+        text: "Press Ctrl+L to flip to the next layout. You can also pick one in Settings > Appearance or in the first-launch picker.",
+      },
+      {
+        type: "new",
+        title: "Player colour",
+        text: "Give the player its own colour in the look editor. It paints Index's strip, Panels' bar, Gatefold's left page and Crate's turntable, and the text on it stays readable.",
+      },
+      {
+        type: "new",
+        title: "Liner notes in Crate",
+        text: "The front record shows its tracks as Side A and Side B. Click a song to play from there, or an artist name to open their page.",
+      },
+      {
+        type: "improved",
+        title: "Floating player everywhere",
+        text: "Pop the player out into the floating window from any layout.",
+      },
+      {
+        type: "fixed",
+        title: "Sign in button in Ink",
+        text: "The Sign in button's label no longer disappears into the button in the Ink look.",
+      },
+      {
+        type: "fixed",
+        title: "Playlists queued twice",
+        text: "Clicking Play on a playlist twice in a row no longer fills the queue with its songs twice.",
+      },
+    ],
+  },
   {
     version: "1.0.0",
     date: "October 29, 2026",

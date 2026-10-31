@@ -48,7 +48,7 @@ Newest first. The full user-facing changelog is in `README.md` → Changelog.
 
 | Version | Date | What it was |
 |---|---|---|
-| (next: 1.1.0 or 1.0.1) | not released | **Layouts**: Gatefold, Index, Crate, Panels, the turntable dial, Ctrl+L, the flip, Player colour, Crate liner notes. On branch `layouts`, unpushed. |
+| 1.1.0 | release commit done, not tagged | **Layouts**: Gatefold, Index, Crate, Panels, the turntable dial, Ctrl+L, the flip, Player colour, Crate liner notes. On branch `layouts`, unpushed. |
 | 1.0.0 | 2026-10-29/30 | **Porchlight**: rename from YTubic Plus, new app ID, sits beside the original YTubic, porchlight:// links (old ytubic-plus:// still work). |
 | 0.9.1 | 2026-10-29 | The bridge: saves a handoff copy of settings and library so Porchlight can import them on first launch. |
 | 0.9.0 | 2026-10-29 | **Looks**: five looks (Sleeve, Paper, Ink liner, Ink, Classic), the "Make it yours" picker, custom looks with a live editor, look files to share. |
@@ -266,7 +266,9 @@ All four ship together in one update (the user's call). The floating mini player
 | Crate artist names link to the artist page (user request) | done, links checked live | fdfc658 |
 | Bug hunt on the post-release-prep changes (user asked "check for bugs again"): 3 Important + 5 Minor, all fixed | done; liner notes rechecked live (12 rows, Home doesn't scroll) | c8b0efc, 6aff92c, 5225e01, 937eb42, 96dfffe, 91a793b, 160c26e |
 | Handoff docs | done | 4d0b6c4, 0950fc3 (kept current with every change) |
-| 9B Version bump + release commit | **waiting on the user's version choice** | |
+| Ink Sign in button readable (on-brand) | done | 93513d9 |
+| README: update YTubic Plus from inside the app | done | 7f2f4e8 |
+| 9B Version bump + release commit | 1.1.0 chosen by the user; release commit done; next: installed update test, then user tags | see `git log -1 --grep "release: 1.1.0"` |
 
 What the reviews and the live pass caught along the way (all fixed):
 - The scroller remounting on a swap.
@@ -333,7 +335,7 @@ The user asked (2026-10-31) that **every change gets added to this write-up as i
 1. **Check the Player colour** in the dev build:
    - Set one in Settings → Appearance → the look editor, then dial through Index, Panels, Gatefold and Crate.
    - Also check liner notes at about 940px and 800px window heights.
-2. **Task 9B, the release commit.**
+2. **Task 9B, the release commit.** Done: 1.1.0 chosen by the user, release commit made on `layouts`. Next: the installed update test, then the user tags.
    - The user picks the version. My recommendation is **1.1.0**, since this is a feature release; the plan said "before 1.1", so they may want 1.0.x.
    - Bump `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` and `Cargo.lock`, as the 1.0.0 release commit did.
    - **What's New:** `LAYOUTS_RELEASE` in `src/lib/whats-new.ts` sits outside `WHATS_NEW` on purpose. At release:
@@ -350,9 +352,9 @@ The user asked (2026-10-31) that **every change gets added to this write-up as i
    - Push main, then push tag `v<version>`; the tag push starts the build.
    - The user publishes the release.
 4. **1.0.1-type fixes, still queued** (they could ride along in the release):
-   - Ink look: the sidebar "Sign in" button is white on white (needs `on-brand`).
+   - Done in 1.1.0: Ink look's sidebar "Sign in" button now uses `on-brand`.
    - The dev build writes the installed app's real data folders instead of `.dev` ones. Fixing this would make testing safe.
-   - The website installer skips the bridge (see Part 1).
+   - The website installer skips the bridge (see Part 1). The README note shipped in 1.1.0; detecting an un-updated Plus install is still open.
 5. **Fork detach:** verify once GitHub Support finishes (see Part 1).
 6. **Next projects:**
    - **A new logo**, its own brainstorm. The user asked for it.
