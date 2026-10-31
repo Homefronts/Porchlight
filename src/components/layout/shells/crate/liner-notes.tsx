@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -22,14 +22,48 @@ export function linerSides<T>(tracks: T[], perSide: number) {
   return { a: side("A", 0), b: side("B", perSide) };
 }
 
-/** Rows per side the window's height leaves room for; 0 hides the notes, so Home never scrolls for them. */
-export function linerRows(height: number): number {
-  return height >= 940 ? 6 : height >= 800 ? 3 : 0;
+/** The panel's header, the gap and the footer line around its rows. */
+const LINER_CHROME = 72;
+/** A row's height (`h-[39px]` below). */
+const LINER_ROW = 39;
+
+/** Rows per side that fit in `free` px, 3 to 6; 0 hides the notes, so Home never scrolls for them. */
+export function linerRows(free: number): number {
+  const rows = Math.min(Math.floor((free - LINER_CHROME) / LINER_ROW), 6);
+  return rows >= 3 ? rows : 0;
 }
-const onResize = (cb: () => void) => {
-  addEventListener("resize", cb);
-  return () => removeEventListener("resize", cb);
-};
+
+/** Whether a click inside a row belongs to a link or button there rather than to the row. */
+export function ownClick(target: EventTarget): boolean {
+  return !!(target as Element).closest?.("a,button");
+}
+
+/**
+ * The height left under `el` in its page scroller: the scroller's height,
+ * less everything above `el` and everything the page puts below it. One
+ * ResizeObserver on the scroller (window, compact tabs row) and its content
+ * (wrapped shelf chips, the feed's loader); `el`'s own height never counts,
+ * so the panel growing into the space doesn't change it.
+ */
+function useFreeBelow(ref: React.RefObject<HTMLElement | null>): number {
+  const [free, setFree] = useState(0);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const main = el?.closest("main");
+    const content = main?.firstElementChild;
+    if (!el || !main || !content) return;
+    const ro = new ResizeObserver(() => {
+      const m = main.getBoundingClientRect();
+      const r = el.getBoundingClientRect();
+      const below = content.getBoundingClientRect().bottom - r.bottom;
+      setFree(Math.floor(main.clientHeight - (r.top - m.top + main.scrollTop) - below));
+    });
+    ro.observe(main);
+    ro.observe(content);
+    return () => ro.disconnect();
+  }, [ref]);
+  return free;
+}
 
 const plural = (n: number) => `${n} track${n === 1 ? "" : "s"}`;
 
@@ -40,7 +74,17 @@ const plural = (n: number) => `${n} track${n === 1 ? "" : "s"}`;
  * still for 250ms, so flipping through the crate doesn't fetch each one.
  */
 export function LinerNotes({ item, song }: { item: ShelfItem; song: ShelfItem | null }) {
-  const perSide = useSyncExternalStore(onResize, () => linerRows(innerHeight));
+  // Always there, empty or not, so it can be measured.
+  const ref = useRef<HTMLDivElement>(null);
+  const perSide = linerRows(useFreeBelow(ref));
+  return (
+    <div ref={ref}>
+      {perSide > 0 && <Notes item={item} song={song} perSide={perSide} />}
+    </div>
+  );
+}
+
+function Notes({ item, song, perSide }: { item: ShelfItem; song: ShelfItem | null; perSide: number }) {
   const key = `${item.kind}:${item.id}`;
   const [settled, setSettled] = useState(key);
   useEffect(() => {
@@ -53,12 +97,12 @@ export function LinerNotes({ item, song }: { item: ShelfItem; song: ShelfItem | 
     queryKey: kind === "album" ? ["album", item.id] : ["playlist-first", item.id],
     queryFn: () => (kind === "album" ? fetchAlbum(item.id) : fetchPlaylistFirstPage(item.id)),
     staleTime: 5 * 60_000,
-    enabled: !!kind && perSide > 0 && settled === key,
+    enabled: !!kind && settled === key,
   });
   const qc = useQueryClient();
   const playingId = usePlaybackStore((s) => currentTrack(s)?.videoId);
 
-  if (perSide === 0 || (!song && !kind)) return null;
+  if (!song && !kind) return null;
 
   const play = (at: number) => {
     if (kind === "album") {
@@ -183,7 +227,7 @@ export function TrackNotes({
               >
                 {t.title}
               </button>
-              <span onClick={(e) => e.stopPropagation()}>
+              <span onClick={(e) => ownClick(e.target) && e.stopPropagation()}>
                 <ArtistLinks
                   artists={t.artists}
                   fallback={t.subtitle}

@@ -3,7 +3,7 @@ import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 import type { ShelfItem } from "@/lib/innertube/types";
-import { linerRows, linerSides, TrackNotes } from "./liner-notes";
+import { linerRows, linerSides, ownClick, TrackNotes } from "./liner-notes";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -27,10 +27,21 @@ it("splits the first tracks into side A and side B", () => {
   expect(linerSides(n(177), 3).b.map((r) => r.no)).toEqual(["B1", "B2", "B3"]);
 });
 
-it("fits fewer rows in shorter windows", () => {
-  expect(linerRows(1032)).toBe(6);
-  expect(linerRows(860)).toBe(3);
-  expect(linerRows(700)).toBe(0);
+it("fits as many rows as the free space holds, 3 to 6", () => {
+  expect(linerRows(900)).toBe(6);
+  expect(linerRows(72 + 39 * 6)).toBe(6);
+  expect(linerRows(72 + 39 * 5 - 1)).toBe(4);
+  expect(linerRows(72 + 39 * 3)).toBe(3);
+  expect(linerRows(72 + 39 * 3 - 1)).toBe(0);
+  expect(linerRows(-50)).toBe(0);
+});
+
+it("leaves clicks on links and buttons to them, and the rest to the row", () => {
+  const row = document.createElement("div");
+  row.innerHTML = '<span><a href="#"><b>Linked</b></a><button>x</button><i>Unlinked</i></span>';
+  expect(ownClick(row.querySelector("b")!)).toBe(true);
+  expect(ownClick(row.querySelector("button")!)).toBe(true);
+  expect(ownClick(row.querySelector("i")!)).toBe(false);
 });
 
 it("lists twelve tracks, lights the playing one and plays from a row", () => {
@@ -72,5 +83,8 @@ it("lists twelve tracks, lights the playing one and plays from a row", () => {
   expect(onPlay).toHaveBeenCalledWith(7);
   act(() => rows[2].click());
   expect(onPlay).toHaveBeenLastCalledWith(2);
+  // An artist name with no link is part of the row, so it plays too.
+  act(() => [...rows[4].querySelectorAll("span")].find((s) => s.textContent === "Artist 4")!.click());
+  expect(onPlay).toHaveBeenLastCalledWith(4);
   act(() => root.unmount());
 });
