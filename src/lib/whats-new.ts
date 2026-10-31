@@ -49,6 +49,33 @@ export type WhatsNewEntry = {
 };
 
 /**
+ * Notes for the layouts release, waiting on its version number. At release:
+ * add `{ version, date, ...LAYOUTS_RELEASE }` to the top of WHATS_NEW and
+ * delete this constant. It sits outside the list until then, since the
+ * first entry must match package.json.
+ */
+export const LAYOUTS_RELEASE: Omit<WhatsNewEntry, "version" | "date"> = {
+  summary: "Layouts",
+  changes: [
+    {
+      type: "new",
+      title: "Four new layouts",
+      text: "Gatefold opens like a double LP, with the playing record on the left page. Index turns Home into a magazine contents page with a cassette label player. Crate lets you flip through your records, with a turntable spinning along the bottom. Panels puts rounded panels on black with a soft wash from the cover. Sidebar is still the app you know.",
+    },
+    {
+      type: "new",
+      title: "Turn the dial",
+      text: "The little knob next to the logo switches layouts, like the speed switch on a record player. Click it or scroll over it. Every look works with every layout, and Porchlight remembers the last one you used.",
+    },
+    {
+      type: "new",
+      title: "Ctrl+L",
+      text: "Press Ctrl+L to flip to the next layout. You can also pick one in Settings > Appearance.",
+    },
+  ],
+};
+
+/**
  * Curated release notes for the What's New dialog, newest first. The
  * dialog renders the whole list as a timeline with the relevant entry
  * expanded. Add an entry here for every user-facing release; keep the
