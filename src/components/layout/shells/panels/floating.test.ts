@@ -21,3 +21,10 @@ it("pops out and back in to the mode it replaced", () => {
   toggleFloating();
   expect(useLayoutStore.getState().mode).toBe("bottom");
 });
+
+it("pops back in to a mode picked elsewhere before floating", () => {
+  useLayoutStore.getState().setMode("bottom");
+  useLayoutStore.getState().setMode("floating"); // e.g. Sidebar's More menu
+  toggleFloating();
+  expect(useLayoutStore.getState().mode).toBe("bottom");
+});

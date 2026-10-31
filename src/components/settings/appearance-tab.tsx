@@ -28,6 +28,7 @@ import { useThemeStore } from "@/lib/theme/store";
 import { INTERFACE_FONTS, interfaceFontStack } from "@/lib/interface-font";
 import { cn } from "@/lib/utils";
 import { useLayoutStore, type LayoutMode } from "@/lib/store/layout";
+import { toggleFloating } from "@/components/layout/shells/panels/floating";
 import {
   useSettingsStore,
   type FullscreenLayout,
@@ -218,6 +219,24 @@ function LayoutTile({
 function PlayerLayoutRow() {
   const value = useLayoutStore((s) => s.mode);
   const setValue = useLayoutStore((s) => s.setMode);
+  const sidebar = useThemeStore((s) => s.layout === "sidebar");
+  // Side card and Bottom bar are Sidebar's; other layouts keep their own player.
+  if (!sidebar) {
+    return (
+      <SettingRow
+        icon={IconLayoutFilled}
+        title="Floating Player"
+        description="Also show the player in its own small window."
+        control={
+          <Switch
+            checked={value === "floating"}
+            onCheckedChange={toggleFloating}
+            aria-label="Floating Player"
+          />
+        }
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col">

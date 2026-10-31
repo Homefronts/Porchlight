@@ -33,6 +33,7 @@ import {
 import { useFullscreenStore } from "@/lib/store/fullscreen";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuRadioGroup,
@@ -59,6 +60,8 @@ import { IconX } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { useLayoutStore, type LayoutMode } from "@/lib/store/layout";
+import { useThemeStore } from "@/lib/theme/store";
+import { toggleFloating } from "@/components/layout/shells/panels/floating";
 import { flushPlaybackSave } from "@/lib/store/playback";
 import { IS_MAC } from "@/lib/platform";
 import { openSettings } from "@/lib/store/settings-dialog";
@@ -316,6 +319,19 @@ export function TopBar({ sidebarToggle = true }: { sidebarToggle?: boolean } = {
 function LayoutSubMenu() {
   const mode = useLayoutStore((s) => s.mode);
   const setMode = useLayoutStore((s) => s.setMode);
+  const sidebar = useThemeStore((s) => s.layout === "sidebar");
+  // Side card and Bottom bar are Sidebar's; other layouts keep their own player.
+  if (!sidebar) {
+    return (
+      <DropdownMenuCheckboxItem
+        checked={mode === "floating"}
+        onCheckedChange={toggleFloating}
+      >
+        <IconExternalLink />
+        Floating window
+      </DropdownMenuCheckboxItem>
+    );
+  }
   return (
     <DropdownMenuSub>
       <DropdownMenuSubTrigger>
