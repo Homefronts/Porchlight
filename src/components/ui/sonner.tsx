@@ -9,6 +9,7 @@ import {
 import { useTheme } from "next-themes";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 import { useLayoutStore } from "@/lib/store/layout";
+import { useThemeStore } from "@/lib/theme/store";
 
 /**
  * Toasts, per the design handoff.
@@ -52,17 +53,20 @@ const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system", forcedTheme } = useTheme();
   // The stack has to dodge the player: with the bottom bar it would land
   // right on top of it, so it moves to the opposite corner. Side card and
-  // floating both leave the bottom of the page free.
+  // floating both leave the bottom of the page free. The bar is Sidebar's;
+  // other layouts publish their own --shell-bottom-inset.
   const bottomBar = useLayoutStore((s) => s.mode === "bottom");
+  const sidebar = useThemeStore((s) => s.layout === "sidebar");
+  const topRight = bottomBar && sidebar;
 
   return (
     <Sonner
       theme={(forcedTheme ?? theme) as ToasterProps["theme"]}
-      position={bottomBar ? "top-right" : "bottom-center"}
+      position={topRight ? "top-right" : "bottom-center"}
       // Top right has to start below the title bar, otherwise the first
       // card sits under the window controls.
       offset={
-        bottomBar
+        topRight
           ? { top: "calc(var(--titlebar-h) + 12px)", right: 20 }
           : // Above a shell's own bottom bar (Panels); 20px otherwise.
             { top: 20, right: 20, left: 20, bottom: "max(20px, var(--shell-bottom-inset, 0px))" }
