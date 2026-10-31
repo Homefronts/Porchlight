@@ -19,7 +19,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSidebar } from "@/components/ui/sidebar";
 import {
   Tooltip,
   TooltipContent,
@@ -48,7 +47,6 @@ type Props = {
  * the bottom player bar when there is one.
  */
 export function SelectionToolbar({ tracks, onClear }: Props) {
-  const { state } = useSidebar();
   const qc = useQueryClient();
   const [newPlaylistOpen, setNewPlaylistOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
@@ -134,7 +132,7 @@ export function SelectionToolbar({ tracks, onClear }: Props) {
     onClear();
   };
 
-  const left = state === "collapsed" ? "3.5rem" : "13rem";
+  const left = "var(--shell-left-inset, 13rem)";
   // The shell publishes what its player chrome takes (shells/types.ts).
   const right = "var(--shell-right-inset, 1rem)";
   const bottom = "var(--shell-bottom-inset, 1rem)";

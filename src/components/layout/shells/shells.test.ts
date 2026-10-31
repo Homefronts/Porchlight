@@ -130,21 +130,23 @@ it("keeps the page, its scroller, scroll, focus and header slot across a shell s
 });
 
 it("keeps Sidebar's overlay insets for each player mode", () => {
-  expect(sidebarInsets("right")).toEqual({ bottom: "1rem", right: "23rem" });
-  expect(sidebarInsets("bottom")).toEqual({ bottom: "6rem", right: "1rem" });
-  expect(sidebarInsets("floating")).toEqual({ bottom: "1rem", right: "1rem" });
+  expect(sidebarInsets("right", false)).toEqual({ left: "13rem", bottom: "1rem", right: "23rem" });
+  expect(sidebarInsets("bottom", false)).toEqual({ left: "13rem", bottom: "6rem", right: "1rem" });
+  expect(sidebarInsets("floating", true)).toEqual({ left: "3.5rem", bottom: "1rem", right: "1rem" });
 });
 
 it("publishes the insets on <html> and clears them on unmount", () => {
   const root = createRoot(document.createElement("div"));
   function Probe() {
-    useShellInsets({ bottom: "120px", right: "1rem" });
+    useShellInsets({ left: "4.5rem", bottom: "120px", right: "1rem" });
     return null;
   }
   const html = document.documentElement.style;
   act(() => root.render(createElement(Probe)));
   expect(html.getPropertyValue("--shell-bottom-inset")).toBe("120px");
   expect(html.getPropertyValue("--shell-right-inset")).toBe("1rem");
+  expect(html.getPropertyValue("--shell-left-inset")).toBe("4.5rem");
   act(() => root.unmount());
   expect(html.getPropertyValue("--shell-bottom-inset")).toBe("");
+  expect(html.getPropertyValue("--shell-left-inset")).toBe("");
 });

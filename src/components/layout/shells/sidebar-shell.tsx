@@ -6,6 +6,7 @@ import {
   PlayerResizeHandle,
   SidebarResizeHandle,
 } from "@/components/layout/layout-resize-handle";
+import { useSidebar } from "@/components/ui/sidebar";
 import { useLayoutStore } from "@/lib/store/layout";
 import { DialSlot } from "./dial-slot";
 import { sidebarInsets, useShellInsets } from "./insets";
@@ -15,7 +16,7 @@ import type { ShellProps } from "./types";
 /** Today's arrangement: title bar, nav column, page, and the player by mode. */
 export function SidebarShell({ page, nav, dial, hasTrack }: ShellProps) {
   const mode = useLayoutStore((s) => s.mode);
-  useShellInsets(sidebarInsets(mode));
+  useShellInsets(sidebarInsets(mode, useSidebar().state === "collapsed"));
   return (
     <>
       {/* Custom title bar spans the full window width so the

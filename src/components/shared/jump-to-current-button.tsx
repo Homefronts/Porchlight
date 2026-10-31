@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowDownIcon, ArrowUpIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useSidebar } from "@/components/ui/sidebar";
 import { usePlaybackStore, currentTrack } from "@/lib/store/playback";
 import { useSelectionStore } from "@/lib/store/selection";
 import type { ShelfItem } from "@/lib/innertube/types";
@@ -29,7 +28,6 @@ type Props = {
  */
 export function JumpToCurrentButton({ tracks }: Props) {
   const active = usePlaybackStore(currentTrack);
-  const { state } = useSidebar();
   // The selection toolbar takes the same spot; step aside while it is up.
   const selecting = useSelectionStore((s) => s.active);
   const [activeOnScreen, setActiveOnScreen] = useState(false);
@@ -90,11 +88,10 @@ export function JumpToCurrentButton({ tracks }: Props) {
 
   if (!active || !inList || activeOnScreen || selecting) return null;
 
-  // Match the sidebar's own width values from SidebarProvider (app-shell)
-  // so the pill stays horizontally centered in the visible content area.
-  // The right and bottom edges clear whatever player chrome the shell
-  // has (Sidebar: the 22rem side card in `right`, the bar in `bottom`).
-  const left = state === "collapsed" ? "3.5rem" : "13rem";
+  // The shell publishes its nav and player chrome (shells/types.ts), so
+  // the pill stays centred in the visible content area (Sidebar: the nav
+  // or rail, the 22rem side card in `right`, the bar in `bottom`).
+  const left = "var(--shell-left-inset, 13rem)";
   // The shell publishes what its player chrome takes (shells/types.ts).
   const right = "var(--shell-right-inset, 1rem)";
   const bottom = "var(--shell-bottom-inset, 1rem)";

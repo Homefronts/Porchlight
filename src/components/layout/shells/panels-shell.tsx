@@ -44,7 +44,10 @@ export function PanelsShell({ page, nav, dial, hasTrack }: ShellProps) {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+  const navOpen = !compact && outer.open;
   useShellInsets({
+    // The nav cell: its width when open, the rail (3.5rem + its 1rem padding) when not.
+    left: navOpen ? `${sidebarWidth}px` : "4.5rem",
     bottom: `${barH + 16}px`,
     right: compact ? "1rem" : "calc(270px + 1.5rem)",
   });
@@ -73,7 +76,7 @@ export function PanelsShell({ page, nav, dial, hasTrack }: ShellProps) {
             there is room; the no-op keeps Ctrl+B from toggling twice.
             The dial reads this state, so its tip waits while it's hidden. */}
         <SidebarProvider
-          open={!compact && outer.open}
+          open={navOpen}
           onOpenChange={noop}
           className="min-h-0 w-auto shrink-0"
           style={
