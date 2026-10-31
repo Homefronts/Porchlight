@@ -7,7 +7,7 @@ import { withCover } from "@/components/shared/album-menu";
 import { formatTime } from "@/components/layout/player-bar";
 import { ArtistLinks } from "@/components/shared/artist-links";
 import { fetchAlbum } from "@/lib/innertube/album";
-import { fetchPlaylistFirstPage } from "@/lib/innertube/playlist";
+import { fetchPlaylistFirstPage, type PlaylistFirstPage } from "@/lib/innertube/playlist";
 import type { AlbumPage, ShelfItem } from "@/lib/innertube/types";
 import { playPlaylistNow } from "@/lib/play-playlist";
 import { currentTrack, usePlaybackStore } from "@/lib/store/playback";
@@ -110,7 +110,8 @@ function Notes({ item, song, perSide }: { item: ShelfItem; song: ShelfItem | nul
       s.playShelfItems(withCover(q.data as AlbumPage), at);
       s.setShuffle(false);
     } else
-      void playPlaylistNow(item.id, qc, at)
+      // The page on screen, so the click plays the row it hit even if a refetch would reorder a mix.
+      void playPlaylistNow(item.id, qc, at, q.data as PlaylistFirstPage)
         .then((ok) => !ok && toast.error("This playlist is empty"))
         .catch((e) => toast.error(`Couldn't load playlist: ${String(e)}`));
   };

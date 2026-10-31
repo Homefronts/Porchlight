@@ -35,7 +35,7 @@ export async function playPlaylistNow(
   const gen = ++current;
   const first =
     shown ??
-    (await qc.fetchQuery({
+    (await qc.fetchQuery<PlaylistFirstPage>({
       queryKey: ["playlist-first", id],
       queryFn: () => fetchPlaylistFirstPage(id),
       staleTime: 5 * 60_000,

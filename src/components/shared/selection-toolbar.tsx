@@ -108,6 +108,8 @@ export function SelectionToolbar({ tracks, onClear }: Props) {
         tracks.map((t) => t.id),
       );
       await qc.invalidateQueries({ queryKey: ["playlist-pages"] });
+      // Crate's liner notes show the first page from here.
+      void qc.invalidateQueries({ queryKey: ["playlist-first"] });
       toast.success(`Added ${label} to ${p.title}`);
       onClear();
     } catch (e) {

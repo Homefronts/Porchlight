@@ -201,6 +201,8 @@ export function useTrackMenuController(item: ShelfItem) {
       // possibly VL-prefixed id), so ["playlist", p.id] never matched and
       // the invalidation was a no-op. Prefix-match every open playlist page.
       await qc.invalidateQueries({ queryKey: ["playlist-pages"] });
+      // Crate's liner notes show the first page from here.
+      void qc.invalidateQueries({ queryKey: ["playlist-first"] });
       toast.success(`Added to ${p.title}`);
     } catch (e) {
       toast.error(`Add failed: ${String(e)}`);
@@ -230,6 +232,8 @@ export function useTrackMenuController(item: ShelfItem) {
           })),
         };
       });
+      // One page each, so a refetch is cheap here.
+      void qc.invalidateQueries({ queryKey: ["playlist-first"] });
       toast.success("Removed from playlist");
     } catch (e) {
       toast.error(`Remove failed: ${String(e)}`);
