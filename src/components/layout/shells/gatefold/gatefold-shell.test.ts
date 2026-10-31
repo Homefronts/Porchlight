@@ -19,9 +19,9 @@ vi.hoisted(() => {
       removeItem: (k: string) => void m.delete(k),
     },
   });
-  // Full width; the compact form is the same tree with other classes.
+  // Full width unless a test sets `compact`; it's the same tree with other classes.
   globalThis.matchMedia = ((q: string) => ({
-    matches: false,
+    matches: !!(globalThis as { compact?: boolean }).compact,
     media: q,
     addEventListener() {},
     removeEventListener() {},
@@ -106,4 +106,25 @@ it("renders the playing record with its transport", async () => {
   expect(left.querySelector('button[aria-label="Next"]')).not.toBeNull();
   expect(left.querySelector("#dial")).not.toBeNull();
   unmount();
+});
+
+it("compact: Like and More sit under the transport while playing, not when empty", async () => {
+  (globalThis as { compact?: boolean }).compact = true;
+  usePlaybackStore.setState({
+    queue: [{ videoId: "v1", title: "Night Signals", thumbnails: [] }],
+    index: 0,
+  });
+  let { container, unmount } = await render(true);
+  let left = container.querySelector('section[aria-label="Now playing"]')!;
+  expect(left.className).toContain("w-[210px]"); // really the compact column
+  expect(left.querySelector('button[aria-label="More"]')).not.toBeNull();
+  expect(left.querySelector('button[aria-label="Add to liked"]')).not.toBeNull();
+  unmount();
+  usePlaybackStore.setState({ queue: [], index: -1 });
+  ({ container, unmount } = await render(false));
+  left = container.querySelector('section[aria-label="Now playing"]')!;
+  expect(left.querySelector('button[aria-label="More"]')).toBeNull();
+  expect(left.querySelector('button[aria-label="Add to liked"]')).toBeNull();
+  unmount();
+  (globalThis as { compact?: boolean }).compact = false;
 });

@@ -9,6 +9,8 @@ import { Thumbnail } from "@/components/shared/thumbnail";
 import { ArtistLinks } from "@/components/shared/artist-links";
 import { useITunesCover, VolumeControl } from "@/components/layout/player-bar";
 import { PlayerCoverMenu } from "@/components/layout/player-cover-menu";
+import { PlayerMoreMenu } from "@/components/layout/player-more-menu";
+import { LikeDislikeButtons } from "@/components/shared/like-buttons";
 import { QueueBody } from "@/components/layout/queue-panel";
 import {
   LyricsBody,
@@ -224,6 +226,12 @@ export function IndexStrip({ hasTrack, compact }: { hasTrack: boolean; compact: 
             <QueueBody />
           </WordPopover>
           <VolumeControl direction="vertical" />
+          {track ? (
+            <>
+              <LikeDislikeButtons videoId={track.videoId} track={track} />
+              <PlayerMoreMenu track={track} />
+            </>
+          ) : null}
           <PopOutButton hasTrack={hasTrack} />
         </div>
       </section>

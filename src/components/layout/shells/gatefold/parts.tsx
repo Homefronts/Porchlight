@@ -395,6 +395,13 @@ export function Transport({ compact, className }: { compact: boolean; className?
             <VolumeControl direction="vertical" />
             <PopOutButton hasTrack={hasTrack} />
           </div>
+          {/* Its own row: the 210px column has no room left on the one above. */}
+          {track ? (
+            <div className="flex items-center justify-between">
+              <LikeDislikeButtons videoId={track.videoId} track={track} />
+              <PlayerMoreMenu track={track} />
+            </div>
+          ) : null}
         </>
       ) : (
         <div className="flex flex-wrap items-center gap-1">
