@@ -9,5 +9,12 @@ import { playerTokens } from "@/lib/theme/tokens";
  */
 export function usePlayerStyle(): CSSProperties {
   const seeds = useThemeStore((s) => activeLook(s).seeds);
-  return useMemo(() => playerTokens(seeds) as CSSProperties, [seeds]);
+  return useMemo(() => {
+    // A hand-edited saved look can lack seeds; the area then keeps the app's tokens.
+    try {
+      return playerTokens(seeds) as CSSProperties;
+    } catch {
+      return {};
+    }
+  }, [seeds]);
 }
