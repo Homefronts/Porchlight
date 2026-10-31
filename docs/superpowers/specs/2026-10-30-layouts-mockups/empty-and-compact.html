@@ -1,0 +1,315 @@
+<title>Porchlight Empty and Compact</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;800;900&family=Inter:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one column of "sleeves". Each layout is a 1100x660 app frame scaled to fit the screen, in the Sleeve look, with real covers from the app. */
+:root{
+  --page:#0b0b0c; --ink:#e9e7e2; --mute:#9a978f; --rule:#26262a;
+  --bg:#0e0d0c; --fg:#ece6da; --dim:#8a8378; --faint:#5d574e; --line:#2a2622; --acc:#ff3b5c;
+  --serif:"Instrument Serif",Georgia,serif; --bold:"Archivo",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace; --sans:"Inter",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font:15px/1.55 var(--sans);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 72px}
+.wrap{max-width:1140px;margin:0 auto;display:grid;gap:44px}
+.eyebrow{font:600 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+h1{font:400 clamp(36px,6vw,60px)/1 var(--serif);margin:.25em 0 .2em;text-wrap:balance}
+h1 i{color:var(--acc)}
+.lead{color:var(--mute);max-width:64ch;margin:0}
+.opt{display:grid;gap:12px}
+.opt-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.tag{display:inline-grid;place-items:center;min-width:34px;height:26px;padding:0 9px;border-radius:99px;background:var(--rule);font:600 12px var(--mono)}
+.opt-head b{font:900 20px/1 var(--bold);text-transform:uppercase}
+.opt p{margin:0;color:var(--mute);max-width:72ch}
+.size{font:600 10.5px var(--mono);letter-spacing:.1em;color:var(--mute);border:1px solid var(--rule);border-radius:99px;padding:4px 9px}
+.scaler{position:relative;width:100%;overflow:hidden;border-radius:12px;box-shadow:0 20px 60px rgb(0 0 0 / .5)}
+.frame{position:absolute;left:0;top:0;width:1100px;height:660px;transform-origin:top left;background:var(--bg);color:var(--fg);font-family:var(--sans);overflow:hidden}
+.mono{font-family:var(--mono)} .serif{font-family:var(--serif);font-weight:400} .bold{font-family:var(--bold);font-weight:900;text-transform:uppercase;letter-spacing:-.01em}
+.acc{color:var(--acc)} .dim{color:var(--dim)} .faint{color:var(--faint)}
+.cv{background-image:url(covers.jpg);background-repeat:no-repeat;flex:none;border-radius:4px}
+.tabs{display:flex;gap:22px;font:11px var(--mono);letter-spacing:.12em;color:var(--dim)}
+.tabs .on{color:var(--fg);border-bottom:2px solid var(--acc);padding-bottom:3px}
+.counter{font:11px var(--mono);color:var(--dim);display:flex;align-items:center;gap:10px}
+.counter .track{flex:1;height:2px;background:var(--line);position:relative}
+.counter .track b{position:absolute;inset:0 66% 0 0;background:var(--acc)}
+.vinyl{border-radius:50%;background:repeating-radial-gradient(circle,#0a0a0a 0 2px,#161616 2px 3px);box-shadow:0 10px 30px rgb(0 0 0 / .6),inset 0 0 0 1px #2a2a2a;position:relative}
+.vinyl .label{position:absolute;inset:31%;border-radius:50%;overflow:hidden}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:no-preference){.spin{animation:spin 6s linear infinite}}
+.logo{font:900 18px/.9 var(--bold);text-transform:uppercase}
+.logo i{color:var(--acc);font-style:normal}
+
+/* Sidebar (today) */
+.shot{width:100%;display:block;border-radius:12px}
+
+/* Gatefold */
+.gate{display:grid;grid-template-columns:1fr 1fr}
+.gate .left{padding:30px 34px;border-right:1px solid var(--line);position:relative;display:flex;flex-direction:column}
+.gate .left::after{content:"";position:absolute;top:0;bottom:0;right:-1px;width:40px;background:linear-gradient(90deg,transparent,rgb(0 0 0 / .35))}
+.gate .np{display:flex;gap:22px}
+.gate .np .t{font-size:34px;line-height:.95}
+.gate .np .s{font-size:24px;font-style:italic;color:var(--dim)}
+.gate .credits{font-size:11px;color:var(--dim);display:grid;grid-template-columns:auto 1fr;gap:3px 14px;margin-top:14px}
+.gate .lyrics{margin-top:22px;font-size:24px;line-height:1.3;color:var(--faint)}
+.gate .lyrics .now{color:var(--fg)}
+.gate .xport{margin-top:auto}
+.gate .right{padding:26px 30px;overflow:hidden}
+.gate .right .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+.gate h2{font-size:46px;line-height:1;margin:0 0 14px}
+.rule{font:11px var(--mono);color:var(--faint);border-top:1px solid var(--line);padding-top:7px;margin:14px 0 12px;letter-spacing:.08em;display:flex;justify-content:space-between}
+.row{display:flex;gap:16px}
+.tile{width:112px} .tile .t{font-size:11px;line-height:1.15;margin-top:7px}
+
+/* Crate */
+.crate{display:flex;flex-direction:column}
+.crate header{display:flex;align-items:center;gap:34px;padding:18px 28px;border-bottom:1px solid var(--line)}
+.crate .search{margin-left:auto;font:11px var(--mono);color:var(--faint);border:1px solid var(--line);padding:6px 12px;width:220px}
+.crate .stage{flex:1;padding:20px 28px 0;position:relative;overflow:hidden}
+.crate .stage h2{font-size:44px;line-height:1;margin:0}
+.crate .flip{position:relative;height:290px;margin-top:16px;perspective:1400px}
+.crate .flip .sl{position:absolute;top:20px;transform-origin:bottom center;box-shadow:-8px 0 20px rgb(0 0 0 / .55)}
+.crate .front{position:absolute;left:330px;top:0;display:flex;gap:26px;align-items:flex-end}
+.crate .front .info .t{font-size:30px;line-height:.95}
+.crate .front .info .k{font-size:11px;letter-spacing:.1em}
+.crate .btns{display:flex;gap:10px;margin-top:14px;font:11px var(--mono);letter-spacing:.1em}
+.crate .btns span{border:1px solid var(--line);padding:6px 12px}
+.crate .btns .p{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.crate .dividers{display:flex;gap:8px;margin-top:14px;font:11px var(--mono);letter-spacing:.1em}
+.crate .dividers span{padding:6px 12px;border:1px solid var(--line);color:var(--dim)}
+.crate .dividers .on{background:var(--acc);border-color:var(--acc);color:#fff}
+.crate footer{height:112px;border-top:1px solid var(--line);display:flex;align-items:center;gap:22px;padding:0 28px;position:relative;overflow:hidden}
+.crate .deck{width:150px;height:112px;position:relative;flex:none}
+.crate .deck .vinyl{position:absolute;left:0;top:10px;width:150px;height:150px}
+.crate .arm{position:absolute;right:-6px;top:6px;width:4px;height:70px;background:#8a8378;transform:rotate(28deg);transform-origin:top;border-radius:2px}
+.crate .meta .t{font-size:22px;line-height:1} .crate .meta .s{font-size:18px;font-style:italic;color:var(--dim)}
+.crate .mid{flex:1;display:flex;flex-direction:column;gap:8px}
+.xp{display:flex;justify-content:center;gap:24px;font:11px var(--mono);letter-spacing:.12em;color:var(--dim)}
+.xp .p{color:var(--bg);background:var(--fg);padding:4px 12px}
+.crate .next{width:200px;font:11px var(--mono);color:var(--dim)}
+.crate .next div{display:flex;justify-content:space-between;padding:1px 0}
+
+/* Index */
+.index{display:flex;flex-direction:column}
+.index .strip{display:flex;align-items:center;gap:18px;padding:12px 26px;background:var(--fg);color:var(--bg)}
+.index .cass{width:56px;height:36px;border:2px solid var(--bg);border-radius:4px;display:flex;justify-content:space-around;align-items:center;flex:none}
+.index .cass i{width:12px;height:12px;border-radius:50%;border:2px solid var(--bg)}
+.index .strip .t{font-size:18px;line-height:1} .index .strip .s{font-size:16px;font-style:italic}
+.index .strip .counter{flex:1;color:var(--bg)} .index .strip .counter .track{background:rgb(0 0 0 / .2)}
+.index .strip .xp{color:var(--bg)}
+.index .body{flex:1;display:grid;grid-template-columns:1fr 260px;overflow:hidden}
+.index .toc{padding:24px 34px;overflow:hidden}
+.index .toc .top{display:flex;justify-content:space-between;align-items:baseline}
+.index .toc h2{font-size:76px;line-height:.9;margin:0}
+.index .entry{display:grid;grid-template-columns:46px 1fr auto;align-items:baseline;gap:14px;border-top:1px solid var(--line);padding:12px 0 14px}
+.index .entry .no{font-size:13px;color:var(--acc)}
+.index .entry .h{font-size:30px;line-height:1} .index .entry .h i{color:var(--dim)}
+.index .thumbs{display:flex;gap:8px;margin-top:10px}
+.index .thumbs .lbl{font:11px var(--mono);color:var(--dim);max-width:150px;line-height:1.25;align-self:flex-end}
+.index .pg{font:11px var(--mono);color:var(--faint)}
+.index .appendix{border-left:1px solid var(--line);padding:24px 22px;font:12px var(--mono)}
+.index .appendix .hd{font-size:11px;color:var(--faint);letter-spacing:.1em;margin-bottom:8px}
+.index .appendix .li{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dotted var(--line);color:var(--dim)}
+
+/* Panels */
+.panels{display:grid;grid-template-rows:1fr 84px;gap:8px;padding:8px;background:#000}
+.panels .top{display:grid;grid-template-columns:230px 1fr 270px;gap:8px;min-height:0}
+.panels .p{background:var(--bg);border-radius:12px;overflow:hidden;position:relative}
+.panels .nav{padding:18px 16px;display:grid;gap:14px;align-content:start}
+.panels .nav .item{font:500 14px var(--sans);color:var(--dim);display:flex;gap:10px;align-items:center}
+.panels .nav .item.on{color:var(--fg)}
+.panels .nav .pl{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--dim)}
+.panels .main{padding:0}
+.panels .wash{position:absolute;inset:0 0 auto 0;height:260px;background:linear-gradient(180deg,rgb(214 200 180 / .35),transparent)}
+.panels .inner{position:relative;padding:24px 26px}
+.panels .inner h2{font-size:44px;line-height:1;margin:0 0 18px}
+.panels .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.panels .card{background:#171513;border-radius:10px;padding:10px}
+.panels .card .t{font-size:12px;margin-top:8px;line-height:1.2}
+.panels .card .s{font-size:11px;color:var(--dim)}
+.panels .side{padding:16px}
+.panels .side .t{font-size:20px;line-height:1;margin-top:12px}
+.panels .bar{display:grid;grid-template-columns:280px 1fr 280px;align-items:center;padding:0 18px;gap:20px}
+.panels .bar .who{display:flex;gap:12px;align-items:center}
+.panels .bar .ctl{display:grid;gap:8px}
+.panels .round{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--fg);color:var(--bg);font-size:13px}
+
+/* Switching ideas */
+.ideas{display:grid;gap:18px}
+.idea{background:#121214;border:1px solid var(--rule);border-radius:14px;padding:18px;display:grid;gap:14px}
+.idea h3{margin:0;font:900 17px/1 var(--bold);text-transform:uppercase}
+.idea p{margin:0;color:var(--mute);max-width:70ch}
+.dial{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font:600 11px var(--mono);letter-spacing:.12em}
+.dial span{padding:7px 11px;border:1px solid var(--rule);border-radius:99px;color:var(--mute);cursor:pointer;user-select:none}
+.dial span[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:#fff}
+.knob{width:120px;height:120px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3a3836,#141312 70%);box-shadow:inset 0 0 0 2px #2c2a28,0 8px 20px rgb(0 0 0 / .6);position:relative;flex:none;transition:transform .35s cubic-bezier(.3,1.4,.5,1)}
+.knob::after{content:"";position:absolute;left:50%;top:10px;width:4px;height:26px;margin-left:-2px;background:var(--acc);border-radius:2px}
+.knobwrap{display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+.knoblabels{display:grid;gap:4px;font:600 11px var(--mono);letter-spacing:.12em;color:var(--mute)}
+.knoblabels .on{color:var(--fg)}
+.toast{display:inline-flex;gap:12px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 16px;font:600 12px var(--mono);letter-spacing:.1em}
+.toast b{font:400 24px var(--serif);letter-spacing:0;text-transform:none}
+.kbd{border:1px solid var(--rule);border-bottom-width:3px;border-radius:6px;padding:2px 7px;font:600 11px var(--mono);color:var(--ink)}
+.flipdemo{perspective:900px;height:150px;display:grid;place-items:center}
+.flipdemo .card{width:220px;height:132px;border-radius:10px;background:linear-gradient(135deg,#1c1a18,#0e0d0c);border:1px solid var(--line);display:grid;place-items:center;font:900 16px var(--bold);text-transform:uppercase;transform-style:preserve-3d}
+@media (prefers-reduced-motion:no-preference){.flipdemo .card{animation:flip 4s ease-in-out infinite}}
+@keyframes flip{0%,35%{transform:rotateY(0)}50%{transform:rotateY(90deg)}65%,100%{transform:rotateY(0)}}
+.foot{font:12px var(--mono);color:var(--mute)}
+/* Empty, compact, dial additions */
+.sub{font:600 11px var(--mono);letter-spacing:.14em;color:var(--mute);text-transform:uppercase;border-top:1px solid var(--rule);padding-top:14px;margin-top:6px}
+.cap{margin:0;color:var(--mute);font-size:14px}
+.cap b{color:var(--ink);font-weight:600}
+.pair{display:grid;gap:26px}
+.empty{border:2px dashed var(--line);border-radius:4px;display:grid;place-items:center;flex:none;position:relative;overflow:hidden;color:var(--faint);font:11px var(--mono);letter-spacing:.1em}
+.empty .vinyl{position:absolute;right:-40%;top:12%;width:80%;aspect-ratio:1;opacity:.5;box-shadow:none}
+.off{opacity:.38}
+.vinyl.blank .label{background:#1d1b19;display:grid;place-items:center}
+.vinyl.blank .label::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--bg)}
+.gate.c{grid-template-columns:210px 1fr}
+.gate.c .left{padding:22px 20px}
+.gate.c .right{padding:20px 22px}
+.gate.c h2{font-size:38px}
+.mini{display:flex;justify-content:space-between;font:11px var(--mono);letter-spacing:.1em;color:var(--dim);margin-top:12px}
+.btn{border:1px solid var(--line);padding:5px 10px;font:11px var(--mono);letter-spacing:.1em;color:var(--dim)}
+.btn.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.pop{position:absolute;right:20px;top:64px;width:230px;background:#171513;border:1px solid var(--line);border-radius:10px;padding:14px 16px;font:12px var(--mono);box-shadow:0 18px 40px rgb(0 0 0 / .6);z-index:3}
+.pop .li{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dotted var(--line);color:var(--dim)}
+.pop .hd{font-size:11px;color:var(--faint);letter-spacing:.1em;margin:8px 0 4px}
+.rail{display:grid;gap:18px;justify-items:center;padding:18px 0;align-content:start;font-size:18px;color:var(--dim)}
+.rail .on{color:var(--fg)}
+.dialdemo{display:flex;flex-wrap:wrap;gap:22px}
+.dcard{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:12px;padding:18px 22px 16px;display:grid;gap:12px;min-width:min(100%,300px);flex:1;position:relative}
+.dbar{display:flex;align-items:center;gap:16px;min-height:96px}
+.dwrap{position:relative;width:96px;height:80px;flex:none}
+.dwrap svg{width:96px;height:80px;display:block;overflow:visible}
+.dlab{font:600 11px var(--mono);letter-spacing:.14em;color:var(--fg);min-width:78px}
+.tip{background:var(--fg);color:var(--bg);font:600 12px var(--mono);letter-spacing:.06em;border-radius:8px;padding:8px 12px;position:relative;max-width:210px}
+.tip::before{content:"";position:absolute;left:-6px;top:50%;margin-top:-6px;border:6px solid transparent;border-left:0;border-right-color:var(--fg)}
+.shelfgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:14px}
+.shelfgrid .t{font-size:11px;line-height:1.15;margin-top:6px}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Porchlight · layouts mockup, part 2</div>
+    <h1>The quiet and <i>cramped</i> states.</h1>
+    <p class="lead">What each new layout does with nothing playing, in a small window of about 800 px, plus the layout dial and the Index shelf page. Same Sleeve look and real covers as the first mockup.</p>
+  </header>
+
+  <section class="opt">
+    <div class="opt-head"><span class="tag">1</span><b>Nothing playing</b><span class="size">1100 × 660</span></div>
+    <p>Each layout keeps its shape and shows an empty state instead of hiding its player.</p>
+    <div class="pair">
+      <div class="opt"><div class="sub">Gatefold</div><p class="cap">The left page becomes an empty sleeve: <b>"Nothing playing yet"</b> and three picks from Home to start.</p>
+        <div class="scaler"><div class="frame gate" id="e-gate"></div></div></div>
+      <div class="opt"><div class="sub">Index</div><p class="cap">The strip shows an empty cassette and reads <b>"Nothing on the tape"</b>. Transport is dimmed.</p>
+        <div class="scaler"><div class="frame index" id="e-index"></div></div></div>
+      <div class="opt"><div class="sub">Crate</div><p class="cap">The turntable keeps its place along the bottom with a blank <b>empty platter</b>, tone arm parked, nothing spinning.</p>
+        <div class="scaler"><div class="frame crate" id="e-crate"></div></div></div>
+      <div class="opt"><div class="sub">Panels</div><p class="cap">The player bar is <b>idle</b>: empty cover slot, dimmed controls, and the right panel invites you to pick something.</p>
+        <div class="scaler"><div class="frame panels" id="e-panels"></div></div></div>
+    </div>
+  </section>
+
+  <section class="opt">
+    <div class="opt-head"><span class="tag">2</span><b>Small window</b><span class="size">800 × 600</span></div>
+    <p>Compact forms at about 800 px wide. Navigation, Settings and the player stay reachable in every one.</p>
+    <div class="pair">
+      <div class="opt"><div class="sub">Gatefold, compact</div><p class="cap">The left page shrinks to a <b>slim now-playing column</b> with cover and controls. Lyrics move behind a LYRICS button. Settings is a gear next to the logo.</p>
+        <div class="scaler"><div class="frame gate c" id="c-gate" data-w="800" data-h="600"></div></div></div>
+      <div class="opt"><div class="sub">Index, compact</div><p class="cap">The appendix <b>folds into a MENU button</b> (shown open) holding playlists and Settings. The strip drops its time readout for a thin progress line.</p>
+        <div class="scaler"><div class="frame index" id="c-index" data-w="800" data-h="600"></div></div></div>
+      <div class="opt"><div class="sub">Crate, compact</div><p class="cap"><b>Two leaning sleeves</b> instead of three, a smaller front cover, and a shorter turntable bar with the up-next list dropped. Settings is a gear in the header.</p>
+        <div class="scaler"><div class="frame crate" id="c-crate" data-w="800" data-h="600"></div></div></div>
+      <div class="opt"><div class="sub">Panels, compact</div><p class="cap">The nav panel becomes an <b>icon rail</b>, and the right panel <b>hides into the bar</b> behind a NOW PLAYING toggle, so the cover and details are one tap away.</p>
+        <div class="scaler"><div class="frame panels" id="c-panels" data-w="800" data-h="600"></div></div></div>
+    </div>
+  </section>
+
+  <section class="opt">
+    <div class="opt-head"><span class="tag">3</span><b>The turntable dial</b></div>
+    <p>A small knob next to the logo with five tick marks: Sidebar, Gatefold, Index, Crate, Panels. The current layout's tick is in the accent colour.</p>
+    <div class="dialdemo" id="dials"></div>
+  </section>
+
+  <section class="opt">
+    <div class="opt-head"><span class="tag">4</span><b>Index shelf page</b><span class="size">1100 × 660</span></div>
+    <p class="cap">Clicking a contents entry opens that Home shelf in full: <b>"Pump it up"</b>, all 10 records, with a way back to Contents. (A couple of covers repeat because the mockup only has eight real ones.)</p>
+    <div class="scaler"><div class="frame index" id="shelf"></div></div>
+  </section>
+</div>
+
+<script>
+const C={pop:[240,182,192],country:[456,182,192],hiphop:[672,182,192],dance:[888,182,150],texas:[240,538,192],thriller:[456,538,192],blood:[692,538,192],gaga:[908,538,138],np:[1097,83,318]};
+const cv=(c,s,x='')=>`<div class="cv" data-c="${c}" data-s="${s}" style="${x}"></div>`;
+const logo='<span class="logo">PORCH<br>LIGHT<i>.</i></span>';
+const cnt=(a='01:13',b='05:57')=>`<div class="counter"><span>${a}</span><div class="track"><b></b></div><span>${b}</span></div>`;
+const tile=(c,t,s=112)=>`<div class="tile" style="width:${s}px">${cv(c,s)}<div class="t bold">${t}</div></div>`;
+const tabs=(a)=>`<div class="tabs">${a.map((t,i)=>`<span class="${i?'':'on'}">${t}</span>`).join('')}</div>`;
+
+const gateRight=(c)=>`<div class="right"><div class="top">${tabs(['HOME','EXPLORE','SEARCH','LIBRARY','REWIND'])}<span style="display:flex;gap:12px;align-items:center">${c?'<span class="dim">⚙</span>':''}${logo}</span></div>
+ <h2 class="serif">Good morning.</h2><div class="rule"><span>SIDE A · PUMP IT UP</span><span>10 RECORDS</span></div>
+ <div class="row">${tile('pop','Pop Motivation')}${tile('country','Wide Open Country')}${tile('hiphop',"'00s Hip Hop Party")}${c?'':tile('dance',"'80s Dance")}</div>
+ <div class="rule"><span>SIDE B · QUICK PICKS</span><span>20 RECORDS</span></div>
+ <div class="row">${tile('texas',"Choosin' Texas")}${tile('blood','Bloodstream')}${tile('gaga','Paparazzi')}</div></div>`;
+
+const toc=(sm)=>{const h=sm?'font-size:26px':'';const t=sm?60:74;return `<div class="toc" style="${sm?'padding:20px 26px':''}"><div class="top"><h2 class="serif" style="${sm?'font-size:52px':''}">Contents</h2>${sm?'<span class="btn on">☰ MENU</span>':tabs(['HOME','EXPLORE','SEARCH','LIBRARY'])}</div>
+ ${sm?`<div style="margin-top:10px">${tabs(['HOME','EXPLORE','SEARCH','LIBRARY'])}</div>`:''}
+ <div class="entry" style="margin-top:14px"><span class="no mono">01</span><div><div class="h serif" style="${h}">Pump it up <i>: the energy picks</i></div><div class="thumbs">${cv('pop',t)}${cv('country',t)}${cv('hiphop',t)}</div></div><span class="pg">10 RECORDS</span></div>
+ <div class="entry"><span class="no mono">02</span><div><div class="h serif" style="${h}">Quick picks <i>: songs for right now</i></div><div class="thumbs">${cv('texas',t)}${cv('thriller',t)}${cv('blood',t)}</div></div><span class="pg">20 RECORDS</span></div>
+ <div class="entry"><span class="no mono">03</span><div class="h serif" style="${h}">Rewind <i>: your quarter so far</i></div><span class="pg">OPEN ▸</span></div></div>`;};
+const appendix=`<div class="appendix"><div class="hd">APPENDIX · PLAYLISTS</div><div class="li"><span>Liked songs</span><span>♥</span></div><div class="li"><span>Road Trip</span><span>A</span></div><div class="li"><span>Late Night Drive</span><span>B</span></div><div class="li"><span>focus.</span><span>C</span></div><div class="hd" style="margin-top:22px">PORCHLIGHT</div><div class="dim">SETTINGS ▸</div></div>`;
+const stripPlaying=(sm)=>`<div class="strip"><div class="cass"><i></i><i></i></div>${cv('np',40)}<div><div class="t bold">Thriller</div><div class="s serif">Michael Jackson</div></div>${sm?'<div class="counter"><div class="track"><b></b></div></div>':cnt()}<div class="xp"><span>«</span><span>||</span><span>»</span>${sm?'':'<span>LYRICS</span><span>QUEUE</span>'}</div></div>`;
+const stripEmpty=`<div class="strip"><div class="cass off"><i></i><i></i></div><div class="empty" style="width:40px;height:40px;border-color:rgb(0 0 0 / .3)"></div><div><div class="t bold">Nothing on the tape</div><div class="s serif" style="opacity:.6">Pick a record to start</div></div><div class="counter off"><span>00:00</span><div class="track"></div><span>00:00</span></div><div class="xp off"><span>«</span><span>▶</span><span>»</span><span>LYRICS</span><span>QUEUE</span></div></div>`;
+const vinyl=(label,spin,size)=>`<div class="vinyl ${label?'':'blank'} ${spin?'spin':''}" style="width:${size}px;height:${size}px"><div class="label">${label?cv('np',Math.round(size*.38),'border-radius:0'):''}</div></div>`;
+const crateHead=(sm)=>`<header style="${sm?'gap:20px;padding:14px 22px':''}">${logo}${tabs(['HOME','EXPLORE','LIBRARY','REWIND'])}<div class="search" style="${sm?'width:120px':''}">⌕ SEARCH</div>${sm?'<span class="dim">⚙</span>':''}</header>`;
+const crateStage=(sm)=>`<div class="stage"><h2 class="serif" style="${sm?'font-size:36px':''}">Good morning.</h2><div class="dividers"><span>PUMP IT UP</span><span class="on">QUICK PICKS</span><span>FALL VIBES</span><span>PLAYLISTS</span></div>
+ <div class="flip" style="${sm?'height:240px':''}">${sm?`<div class="sl cv" data-c="blood" data-s="170" style="left:0;transform:rotateX(12deg) rotateY(32deg) scale(.86)"></div><div class="sl cv" data-c="texas" data-s="170" style="left:60px;transform:rotateX(9deg) rotateY(26deg) scale(.92)"></div>`:`<div class="sl cv" data-c="gaga" data-s="200" style="left:0;transform:rotateX(14deg) rotateY(38deg) scale(.82)"></div><div class="sl cv" data-c="blood" data-s="200" style="left:70px;transform:rotateX(12deg) rotateY(32deg) scale(.88)"></div><div class="sl cv" data-c="texas" data-s="200" style="left:140px;transform:rotateX(9deg) rotateY(26deg) scale(.94)"></div>`}
+ <div class="front" style="${sm?'left:170px':''}">${cv('thriller',sm?200:250,'box-shadow:0 20px 40px rgb(0 0 0 / .6)')}<div class="info"><div class="k mono acc">B2 · SONG</div><div class="t bold" style="${sm?'font-size:24px':''}">Thriller</div><div class="serif dim" style="font-size:20px;font-style:italic">Michael Jackson</div><div class="btns"><span class="p">&gt; PLAY</span><span>+ QUEUE</span></div></div></div></div></div>`;
+const crateFoot=(mode,sm)=>mode==='empty'
+ ?`<footer><div class="deck">${vinyl(false,false,150)}<div class="arm" style="transform:rotate(-8deg);right:-30px"></div></div><div class="meta"><div class="t bold">Nothing playing</div><div class="s serif">Drop a record on the platter</div></div><div class="mid off"><div class="xp"><span>SHUF</span><span>«</span><span class="p">▶ PLAY</span><span>»</span><span>REP</span></div>${cnt('00:00','00:00')}</div><div class="next off"><div class="faint">UP NEXT</div><div>Queue is empty</div></div></footer>`
+ :`<footer style="height:96px;gap:16px"><div class="deck" style="width:120px;height:96px">${vinyl(true,true,120)}<div class="arm"></div></div><div class="meta"><div class="t bold" style="font-size:18px">Thriller</div><div class="s serif">Michael Jackson</div></div><div class="mid"><div class="xp"><span>«</span><span class="p">|| PAUSE</span><span>»</span><span>QUEUE</span></div>${cnt()}</div></footer>`;
+const pcard=(c,t,s,w)=>`<div class="card">${cv(c,w)}<div class="t bold">${t}</div><div class="s">${s}</div></div>`;
+const pnav=`<div class="p nav"><span class="logo">PORCH<br>LIGHT<i>.</i></span><div class="item on">⌂ Home</div><div class="item">◎ Explore</div><div class="item">⌕ Search</div><div class="item">▤ Library</div><div class="eyebrow" style="margin-top:6px">Playlists</div><div class="pl">${cv('dance',34)}Liked songs</div><div class="pl">${cv('country',34)}Road Trip</div><div class="pl">${cv('hiphop',34)}Late Night Drive</div></div>`;
+const prail=`<div class="p rail"><span class="logo" style="font-size:22px">P<i>.</i></span><span class="on">⌂</span><span>◎</span><span>⌕</span><span>▤</span><span style="margin-top:auto">⚙</span></div>`;
+const pmain=(n,w)=>`<div class="p main"><div class="wash"></div><div class="inner" style="${n==3?'padding:20px':''}"><h2 class="serif" style="${n==3?'font-size:36px':''}">Good morning.</h2><div class="grid" style="grid-template-columns:repeat(${n},1fr)">${pcard('pop','Pop Motivation','Ariana Grande, P!nk',w)}${pcard('country','Wide Open Country','Lainey Wilson',w)}${pcard('hiphop',"'00s Hip Hop Party",'Ludacris, 50 Cent',w)}${n==4?pcard('texas',"Choosin' Texas",'Ella Langley',w):''}</div></div></div>`;
+const barPlay=`<div class="p bar" style="grid-template-columns:200px 1fr 150px;gap:14px;padding:0 14px"><div class="who">${cv('np',52)}<div><div class="bold" style="font-size:14px">Thriller</div><div class="dim" style="font-size:12px">Michael Jackson</div></div></div><div class="ctl"><div class="xp" style="align-items:center"><span>⇄</span><span>⏮</span><span class="round">❚❚</span><span>⏭</span><span>↻</span></div>${cnt('1:13','5:57')}</div><div style="text-align:right"><span class="btn on">▲ NOW PLAYING</span></div></div>`;
+const barIdle=`<div class="p bar"><div class="who"><div class="empty" style="width:52px;height:52px"></div><div><div class="bold" style="font-size:14px">Nothing playing</div><div class="dim" style="font-size:12px">Idle</div></div></div><div class="ctl off"><div class="xp" style="align-items:center"><span>⇄</span><span>⏮</span><span class="round">▶</span><span>⏭</span><span>↻</span></div>${cnt('0:00','0:00')}</div><div class="dim mono off" style="font-size:11px;text-align:right">LYRICS · QUEUE · ♪</div></div>`;
+const put=(id,h)=>{document.getElementById(id).innerHTML=h};
+
+put('e-gate',`<div class="left"><div class="mono dim" style="font-size:11px;letter-spacing:.1em">○ NOTHING PLAYING</div>
+ <div style="display:flex;gap:22px;margin-top:14px"><div class="empty" style="width:200px;height:200px"><div class="vinyl"></div><span style="position:relative">EMPTY SLEEVE</span></div><div><div class="t bold" style="font-size:30px;line-height:.95">Nothing playing yet</div><div class="serif dim" style="font-size:22px;font-style:italic;margin-top:6px">Pick something to start</div></div></div>
+ <div class="rule" style="margin-top:26px"><span>3 PICKS FROM HOME</span><span>TAP TO PLAY</span></div>
+ <div class="row">${tile('pop','Pop Motivation',124)}${tile('texas',"Choosin' Texas",124)}${tile('thriller','Thriller',124)}</div>
+ <div class="xport off">${cnt('00:00','00:00')}<div class="tabs" style="justify-content:space-between;margin-top:14px"><span>SHUF</span><span>« PREV</span><span style="background:var(--fg);color:var(--bg);padding:3px 12px">▶ PLAY</span><span>NEXT »</span><span>REP</span><span>QUEUE</span></div></div></div>${gateRight()}`);
+put('e-index',`${stripEmpty}<div class="body">${toc()}${appendix}</div>`);
+put('e-crate',`${crateHead()}${crateStage()}${crateFoot('empty')}`);
+put('e-panels',`<div class="top">${pnav}${pmain(4,150)}<div class="p side"><div class="eyebrow">Now playing</div><div class="empty" style="width:238px;height:238px;margin-top:10px">NOTHING YET</div><div class="t bold" style="color:var(--dim)">Nothing playing</div><div class="serif dim" style="font-size:18px;font-style:italic">Pick a record to start</div></div></div>${barIdle}`);
+
+put('c-gate',`<div class="left"><div class="mono acc" style="font-size:11px;letter-spacing:.1em">● NOW PLAYING</div><div style="margin-top:12px">${cv('np',168)}</div><div class="t bold" style="font-size:24px;line-height:.95;margin-top:12px">Thriller</div><div class="serif dim" style="font-size:18px;font-style:italic">Michael Jackson</div><div class="xport">${cnt('1:13','5:57')}<div class="mini"><span>«</span><span style="background:var(--fg);color:var(--bg);padding:2px 10px">||</span><span>»</span></div><div class="mini" style="margin-top:16px"><span>LYRICS</span><span>QUEUE</span></div></div></div>${gateRight(true)}`);
+put('c-index',`${stripPlaying(true)}<div class="body" style="grid-template-columns:1fr">${toc(true)}</div><div class="pop"><div class="hd" style="margin-top:0">PLAYLISTS</div><div class="li"><span>Liked songs</span><span>♥</span></div><div class="li"><span>Road Trip</span><span>A</span></div><div class="li"><span>Late Night Drive</span><span>B</span></div><div class="li"><span>focus.</span><span>C</span></div><div class="hd">PORCHLIGHT</div><div class="li" style="color:var(--fg)"><span>Settings</span><span>▸</span></div></div>`);
+put('c-crate',`${crateHead(true)}${crateStage(true)}${crateFoot('play',true)}`);
+put('c-panels',`<div class="top" style="grid-template-columns:56px 1fr">${prail}${pmain(3,150)}</div>${barPlay}`);
+
+const NAMES=['SIDEBAR','GATEFOLD','INDEX','CRATE','PANELS'],ANG=[-60,-30,0,30,60];
+const dial=(cur,ptr,label,tip)=>{
+  const ticks=ANG.map((a,i)=>`<line x1="48" y1="14" x2="48" y2="${i==cur?5:8}" stroke="${i==cur?'#ff3b5c':'#5d574e'}" stroke-width="${i==cur?3:2}" stroke-linecap="round" transform="rotate(${a} 48 52)"/>`).join('');
+  return `<div class="dbar"><div class="dwrap"><svg viewBox="0 0 96 80" role="img" aria-label="Layout dial set to ${NAMES[cur]}">${ticks}<g transform="rotate(${ptr} 48 52)"><circle cx="48" cy="52" r="20" fill="#232120" stroke="#2c2a28" stroke-width="2"/><rect x="46.5" y="35" width="3" height="11" rx="1.5" fill="#ff3b5c"/></g></svg></div>${logo}${label?`<span class="dlab">${label}</span>`:''}${tip?`<div class="tip">${tip}</div>`:''}</div>`;
+};
+document.getElementById('dials').innerHTML=[
+ ['At rest','Crate is current, so its tick is in the accent colour. No label until you touch it.',dial(3,30,'','')],
+ ['Mid-turn','Between Crate and Panels. The name label shows the layout you are about to land on.',dial(4,48,'PANELS','')],
+ ['First launch tip','Shown once after the update, pointing at the dial. Sidebar is the starting layout.',dial(0,-60,'','Turn this to change layouts.')]
+].map(([h,c,d])=>`<div class="dcard"><div class="sub" style="border:0;padding:0;margin:0">${h}</div>${d}<p class="cap">${c}</p></div>`).join('');
+
+const recs=[['pop','Pop Motivation'],['country','Wide Open Country'],['hiphop',"'00s Hip Hop Party"],['dance',"'80s Dance"],['texas',"Choosin' Texas"],['thriller','Thriller'],['blood','Bloodstream'],['gaga','Paparazzi'],['np','Pump It Up Radio'],['dance','Gym Hits']];
+put('shelf',`${stripPlaying()}<div class="body"><div class="toc"><div class="top"><span class="btn">‹ CONTENTS</span>${tabs(['HOME','EXPLORE','SEARCH','LIBRARY'])}</div>
+ <div style="display:flex;align-items:baseline;gap:16px;margin-top:14px"><span class="no mono acc" style="font-size:13px">01</span><h2 class="serif" style="font-size:56px;line-height:.9;margin:0">Pump it up</h2><span class="pg" style="margin-left:auto">10 RECORDS</span></div>
+ <div class="shelfgrid">${recs.map(([c,t])=>`<div>${cv(c,130)}<div class="t bold">${t}</div></div>`).join('')}</div></div>${appendix}</div>`);
+
+document.querySelectorAll('.cv').forEach(el=>{const [x,y,s]=C[el.dataset.c];const size=+el.dataset.s;const k=size/s;
+  Object.assign(el.style,{width:size+'px',height:size+'px',backgroundSize:(1440*k)+'px '+(840*k)+'px',backgroundPosition:(-x*k)+'px '+(-y*k)+'px'});});
+function fit(){document.querySelectorAll('.scaler').forEach(s=>{const f=s.firstElementChild;const w=+f.dataset.w||1100,h=+f.dataset.h||660;const k=s.clientWidth/w;
+  f.style.width=w+'px';f.style.height=h+'px';f.style.transform='scale('+k+')';s.style.height=(h*k)+'px';});}
+addEventListener('resize',fit);fit();
+</script>
