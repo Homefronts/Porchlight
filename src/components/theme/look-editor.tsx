@@ -194,18 +194,14 @@ export function LookEditor({
             key={id}
             type="button"
             aria-pressed={value.layout === id}
-            aria-label={id === "sidebar" ? name : `${name}, comes in a later update`}
             onClick={() => onChange({ ...value, layout: id })}
-            className={cn(card(value.layout === id), "p-1.5 text-center text-[11px] text-t3", id !== "sidebar" && value.layout !== id && "opacity-60")}
+            className={cn(card(value.layout === id), "p-1.5 text-center text-[11px] text-t3")}
           >
             <svg aria-hidden="true" viewBox="0 0 60 36" className="mb-1 block h-9 w-full">
               <rect x="1" y="1" width="58" height="34" rx="3" fill="none" stroke="currentColor" opacity=".4" />
               {shapes}
             </svg>
             {name}
-            {id !== "sidebar" && (
-              <small className="block font-meta text-[9px] text-t10">LATER UPDATE</small>
-            )}
           </button>
         ))}
       </div>

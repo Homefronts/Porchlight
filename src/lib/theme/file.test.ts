@@ -50,17 +50,12 @@ describe("theme file", () => {
     if (!r.ok) expect(r.error).toMatch(/update the app/i);
   });
 
-  it.each(["gatefold", "index", "crate", "panels"])(
-    "maps unbuilt layout %s to sidebar with a note",
-    (l) => {
-      const r = parseThemeFile(make(() => {}, l));
-      if (!r.ok) throw new Error(r.error);
-      expect(r.layout).toBe("sidebar");
-      expect(r.notes).toContain(
-        `This look was made for the ${l[0].toUpperCase()}${l.slice(1)} layout, which arrives in a later update.`,
-      );
-    },
-  );
+  it.each(["gatefold", "index", "crate", "panels"])("keeps layout %s with no note", (l) => {
+    const r = parseThemeFile(make(() => {}, l));
+    if (!r.ok) throw new Error(r.error);
+    expect(r.layout).toBe(l);
+    expect(r.notes).toEqual([]);
+  });
 
   it("cleans the name, clamps radius, ignores unknown keys", () => {
     const r = parseThemeFile(

@@ -91,7 +91,10 @@ it("any long-lived 0.8.x key means a previous install", async () => {
     for (const k of ["ytm-settings", "ytm-whats-new", "ytm-playback", "ytm-layout"]) localStorage.removeItem(k);
     if (key) localStorage.setItem(key, "{}");
     vi.resetModules();
-    return (await import("./store")).useThemeStore.getState().activeId;
+    const { activeId, layout } = (await import("./store")).useThemeStore.getState();
+    // Upgraders and new installs alike start on Sidebar until they choose.
+    expect(layout).toBe("sidebar");
+    return activeId;
   };
   expect(await run("ytm-whats-new")).toBe("classic");
   expect(await run("ytm-playback")).toBe("classic");

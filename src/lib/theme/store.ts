@@ -13,11 +13,16 @@ type ThemeState = {
   layout: LayoutId;
   custom: Look[];
   pickerSeen: boolean;
+  /** The one-time "Turn this to change layouts." tip by the dial. */
+  dialTipSeen: boolean;
+  /** The dial's optional click. */
+  dialSound: boolean;
   setActive(id: string): void;
   saveCustom(look: Look): string;
   renameCustom(id: string, name: string): void;
   deleteCustom(id: string): void;
   markPickerSeen(): void;
+  setLayout(id: LayoutId): void;
 };
 
 /** Existing installs keep their Classic app; new ones start on Sleeve. */
@@ -51,6 +56,8 @@ export const useThemeStore = create<ThemeState>()(
       layout: "sidebar",
       custom: [],
       pickerSeen: false,
+      dialTipSeen: false,
+      dialSound: false,
       setActive: (id) => set({ activeId: id }),
       saveCustom: (look) => {
         const id = look.id.startsWith("custom-")
@@ -76,6 +83,7 @@ export const useThemeStore = create<ThemeState>()(
               : s.activeId,
         })),
       markPickerSeen: () => set({ pickerSeen: true }),
+      setLayout: (layout) => set({ layout }),
     }),
     { name: "ytm-looks" },
   ),

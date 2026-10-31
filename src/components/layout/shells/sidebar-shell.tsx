@@ -7,11 +7,12 @@ import {
   SidebarResizeHandle,
 } from "@/components/layout/layout-resize-handle";
 import { useLayoutStore } from "@/lib/store/layout";
+import { DialSlot } from "./dial-slot";
 import { RouteHeaderSlot } from "./route-header-slot";
 import type { ShellProps } from "./types";
 
 /** Today's arrangement: title bar, nav column, page, and the player by mode. */
-export function SidebarShell({ page, nav, hasTrack }: ShellProps) {
+export function SidebarShell({ page, nav, dial, hasTrack }: ShellProps) {
   const mode = useLayoutStore((s) => s.mode);
   return (
     <>
@@ -20,7 +21,8 @@ export function SidebarShell({ page, nav, hasTrack }: ShellProps) {
           top-right corner, not behind the floating player. */}
       <TopBar />
       <div className="relative flex min-h-0 flex-1">
-        {nav}
+        {/* The nav draws the dial beside its logo. */}
+        <DialSlot.Provider value={dial}>{nav}</DialSlot.Provider>
         <SidebarResizeHandle />
         {/* In `right` mode we reserve 23rem on the right for the
             floating player card — but only when a track is

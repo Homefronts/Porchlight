@@ -55,6 +55,9 @@ import { useSessionStatusListener } from "@/lib/store/session-status";
 import { shellFor } from "@/components/layout/shells";
 import { usePersistentPage } from "@/components/layout/shells/persistent-page";
 import { RouteHeaderSlotProvider } from "@/components/layout/shells/route-header-slot";
+import { TurntableDial } from "@/components/theme/turntable-dial";
+import { LayoutNameCard, useLayoutFlip } from "@/components/theme/layout-flip";
+import { nextLayout, shouldCycleOnKey } from "@/lib/theme/layouts";
 
 function isEditableTarget(el: EventTarget | null): boolean {
   if (!(el instanceof HTMLElement)) return false;
@@ -65,9 +68,15 @@ function isEditableTarget(el: EventTarget | null): boolean {
 }
 
 function useGlobalShortcuts() {
+  const flip = useLayoutFlip();
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
+      if (shouldCycleOnKey(e)) {
+        e.preventDefault();
+        flip(nextLayout(useThemeStore.getState().layout));
+        return;
+      }
       if (isEditableTarget(e.target)) return;
       // Space toggles playback — but only when focus is NOT on an
       // interactive control, so a button/link the user tabbed to still
@@ -94,7 +103,7 @@ function useGlobalShortcuts() {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("blur", onWindowBlur);
     };
-  }, []);
+  }, [flip]);
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -241,12 +250,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             <BackgroundCover />
           )}
           <RouteHeaderSlotProvider>
-            <Shell
-              page={page}
-              nav={<AppSidebar />}
-              dial={null}
-              hasTrack={hasTrack}
-            />
+            {/* What the layout flip turns over; the page inside only moves. */}
+            <div data-layout-flip className="flex min-h-0 flex-1 flex-col">
+              <Shell
+                page={page}
+                nav={<AppSidebar />}
+                dial={<TurntableDial />}
+                hasTrack={hasTrack}
+              />
+            </div>
             {/* After the shell, so the page node is in place first. */}
             {portal}
           </RouteHeaderSlotProvider>
@@ -261,6 +273,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {pickerSeen ? <WhatsNewDialog /> : <MakeItYours />}
         </div>
       </SidebarProvider>
+      <LayoutNameCard />
       <MoveNotice ready={pickerSeen} />
       <Toaster />
     </TooltipProvider>

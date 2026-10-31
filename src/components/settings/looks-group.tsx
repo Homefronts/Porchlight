@@ -1,10 +1,11 @@
 import { useCallback, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTheme } from "next-themes";
-import { IconFileExport, IconFileImport, IconPalette, IconPencil, IconTrash } from "@tabler/icons-react";
+import { IconFileExport, IconFileImport, IconPalette, IconPencil, IconTrash, IconVolume } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Group, SettingRow } from "@/components/settings/primitives";
 import { ConfirmUnreadable } from "@/components/theme/confirm-unreadable";
 import { LookEditor, type LookEditorValue } from "@/components/theme/look-editor";
@@ -12,6 +13,7 @@ import { LookPreview } from "@/components/theme/look-preview";
 import { usePreviewSample } from "@/components/theme/make-it-yours";
 import { commitDraft, isBuiltIn, isUnreadable, paletteInUse } from "@/lib/theme/edit";
 import { parseThemeFile, toThemeFile } from "@/lib/theme/file";
+import { applyImport, layoutOfferText } from "@/lib/theme/layouts";
 import { exportFileName, MAX_NAME, validName } from "@/lib/theme/manage";
 import { activeLook, useThemeStore } from "@/lib/theme/store";
 
@@ -27,7 +29,12 @@ const startValue = (): LookEditorValue => {
  */
 export function LooksGroup() {
   const custom = useThemeStore((s) => s.custom);
-  const [draft, setDraft] = useState<LookEditorValue>(startValue);
+  // The layout applies at once and can also change from the dial or Ctrl+L,
+  // so it is read live rather than kept in the draft.
+  const layout = useThemeStore((s) => s.layout);
+  const dialSound = useThemeStore((s) => s.dialSound);
+  const [draftLook, setDraft] = useState<LookEditorValue>(startValue);
+  const draft = { ...draftLook, layout };
   const [renaming, setRenaming] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   // The activation waiting on the "hard to read" confirmation.
@@ -46,6 +53,7 @@ export function LooksGroup() {
   const dirty = !pristine(look);
 
   const change = (next: LookEditorValue) => {
+    if (next.layout !== layout) return useThemeStore.getState().setLayout(next.layout);
     setRenaming(null);
     setConfirming(false);
     if (!pristine(next.look)) return setDraft(next);
@@ -108,10 +116,18 @@ export function LooksGroup() {
       return;
     }
     // Imports land under Yours; the person decides when to use them.
-    useThemeStore.getState().saveCustom(res.look);
+    const offer = applyImport(res);
     toast.success(`Imported ${res.look.name}`, {
       description: res.notes.length ? res.notes.join(" ") : undefined,
     });
+    if (offer) {
+      toast(layoutOfferText(offer), {
+        duration: 10_000,
+        // Toast titles truncate to one line; this one is the question.
+        classNames: { title: "whitespace-normal!" },
+        action: { label: "Switch", onClick: () => useThemeStore.getState().setLayout(offer) },
+      });
+    }
   };
 
   return (
@@ -156,6 +172,18 @@ export function LooksGroup() {
               Import
             </Button>
           </div>
+        }
+      />
+      <SettingRow
+        icon={IconVolume}
+        title="Dial Click"
+        description="A soft click when you turn the layout dial by the logo."
+        control={
+          <Switch
+            checked={dialSound}
+            onCheckedChange={(on) => useThemeStore.setState({ dialSound: on })}
+            aria-label="Dial Click"
+          />
         }
       />
       <input

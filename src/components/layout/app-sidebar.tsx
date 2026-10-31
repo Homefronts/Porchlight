@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
@@ -96,6 +96,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useActiveLook } from "@/lib/theme/store";
 import { isLinerLook } from "@/lib/theme/looks";
+import { DialSlot } from "@/components/layout/shells/dial-slot";
 
 const NAV_ITEMS = [
   { to: "/", label: "Home", icon: IconHome, iconOn: IconHomeFilled },
@@ -149,6 +150,7 @@ export function AppSidebar() {
   const { location } = useRouterState();
   const look = useActiveLook();
   const liner = isLinerLook(look);
+  const dial = useContext(DialSlot);
 
   // The footer's divider only earns its keep when the playlist list is
   // actually scrolling: then rows disappear under the footer and the
@@ -184,7 +186,7 @@ export function AppSidebar() {
         {liner ? (
           <span
             data-sidebar-label
-            className="shrink-0 font-display text-[15px] font-black uppercase leading-[0.92] tracking-[-0.01em] text-t1"
+            className="min-w-0 overflow-hidden font-display text-[15px] font-black uppercase leading-[0.92] tracking-[-0.01em] text-t1"
           >
             Porch
             <br />
@@ -193,7 +195,7 @@ export function AppSidebar() {
         ) : (
           <span
             data-sidebar-label
-            className="shrink-0 font-headline text-[17px] font-semibold leading-none tracking-[-0.015em] text-t1"
+            className="min-w-0 overflow-hidden font-headline text-[17px] font-semibold leading-none tracking-[-0.015em] text-t1"
           >
             Porchlight
           </span>
@@ -205,6 +207,13 @@ export function AppSidebar() {
             className="shrink-0 rounded-[4px] border border-border/60 bg-muted/40 px-1 pb-px pt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wider text-muted-foreground"
           >
             Beta
+          </span>
+        )}
+        {/* The rail has no room for the dial; invisible also drops it
+            from the tab order. The wordmark gives way to it first. */}
+        {dial && (
+          <span className="ms-auto flex shrink-0 group-data-[collapsible=icon]:invisible">
+            {dial}
           </span>
         )}
       </SidebarHeader>

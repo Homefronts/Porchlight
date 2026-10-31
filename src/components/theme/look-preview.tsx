@@ -6,6 +6,7 @@ import {
   type LayoutId,
   type Look,
 } from "@/lib/theme/looks";
+import { LAYOUT_NAMES } from "@/lib/theme/layouts";
 import { deriveTokens } from "@/lib/theme/tokens";
 import { CrateMini } from "./miniatures/crate";
 import { GatefoldMini } from "./miniatures/gatefold";
@@ -23,13 +24,6 @@ const MINIS = {
   index: IndexMini,
   crate: CrateMini,
   panels: PanelsMini,
-};
-const LAYOUT_NAMES: Record<LayoutId, string> = {
-  sidebar: "Sidebar",
-  gatefold: "Gatefold",
-  index: "Index",
-  crate: "Crate",
-  panels: "Panels",
 };
 
 // Weights follow the face the way the mockup's presets do.
@@ -99,29 +93,11 @@ export function LookPreview({
   return (
     <div
       role="img"
-      aria-label={`${look.name} look, ${LAYOUT_NAMES[layout]} layout preview${layout === "sidebar" ? "" : ", comes in a later update"}`}
+      aria-label={`${look.name} look, ${LAYOUT_NAMES[layout]} layout preview`}
       style={style}
     >
       <div aria-hidden="true" style={{ position: "absolute", inset: 0 }}>
         <Mini sample={sample} liner={isLinerLook(look)} />
-        {layout !== "sidebar" && (
-          <div
-            style={{
-              position: "absolute",
-              right: u(12),
-              bottom: u(12),
-              fontFamily: FONT_STACKS["jetbrains-mono"],
-              fontSize: `max(7px, ${u(10)})`,
-              letterSpacing: ".08em",
-              background: "rgb(0 0 0 / .7)",
-              color: "#ece6da",
-              padding: `${u(5)} ${u(10)}`,
-              borderRadius: 99,
-            }}
-          >
-            PREVIEW · COMES IN A LATER UPDATE
-          </div>
-        )}
       </div>
     </div>
   );
