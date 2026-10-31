@@ -48,6 +48,7 @@ const song = (id: string, title: string) => ({ kind: "song" as const, id, title,
 const SHELVES: Shelf[] = [
   { id: "a", title: "Listen again", items: [song("a1", "Golden Hour"), song("a2", "Paper Lanterns"), song("a3", "Night Drive")] },
   { id: "b", title: "Mixed for you", items: [song("b1", "Supermix")] },
+  { id: "c", title: "Quick picks", items: Array.from({ length: 20 }, (_, i) => song(`c${i}`, `Pick ${i}`)) },
 ];
 
 async function render(hasTrack: boolean) {
@@ -88,8 +89,6 @@ it("renders the crate, the tabs, the menu and an empty platter", async () => {
   expect(deck.textContent).toContain("Queue is empty");
   const crate = container.querySelector('[aria-roledescription="crate"]')!;
   expect(crate.getAttribute("aria-label")).toContain("Golden Hour, 1 of 3");
-  // Only the front and the sleeves near it are drawn.
-  expect(crate.querySelectorAll("button[style]").length).toBeLessThanOrEqual(5);
   expect(document.documentElement.style.getPropertyValue("--shell-left-inset")).toBe("1rem");
   unmount();
 });
@@ -109,9 +108,40 @@ it("flips with the arrows, plays on Enter, and switches shelves at the dividers"
   expect(usePlaybackStore.getState().queue).toHaveLength(0);
   await key(crate(), "Enter");
   expect(usePlaybackStore.getState().queue[0]?.title).toBe("Paper Lanterns");
-  const divider = [...container.querySelectorAll('[role="tab"]')].find((b) => b.textContent === "Mixed for you")!;
-  await act(() => void (divider as HTMLElement).click());
+  const divider = (t: string) =>
+    [...container.querySelectorAll('[aria-label="Shelves"] button')].find((b) => b.textContent === t) as HTMLElement;
+  await act(() => void divider("Mixed for you").click());
+  expect(divider("Mixed for you").getAttribute("aria-pressed")).toBe("true");
   expect(crate().getAttribute("aria-label")).toContain("Supermix, 1 of 1");
+  unmount();
+});
+
+it("draws only the front and the sleeves near it on a long shelf", async () => {
+  usePlaybackStore.setState({ queue: [], index: -1 });
+  const { container, unmount } = await render(false);
+  const crate = () => container.querySelector('[aria-roledescription="crate"]')!;
+  const quick = [...container.querySelectorAll('[aria-label="Shelves"] button')].find((b) => b.textContent === "Quick picks") as HTMLElement;
+  await act(() => void quick.click());
+  for (let i = 0; i < 10; i++) await key(crate(), "ArrowRight");
+  expect(crate().getAttribute("aria-label")).toContain("Pick 10, 11 of 20");
+  // The one just flipped past, the front, and three leaning sleeves.
+  expect(crate().querySelectorAll("button[style]").length).toBe(5);
+  unmount();
+});
+
+it("keeps focus on the crate when a sleeve is clicked or a step button reaches an end", async () => {
+  usePlaybackStore.setState({ queue: [], index: -1 });
+  const { container, unmount } = await render(false);
+  const crate = () => container.querySelector('[aria-roledescription="crate"]') as HTMLElement;
+  const sleeve = crate().querySelector('button[aria-label="Bring Paper Lanterns to the front"]') as HTMLElement;
+  await act(() => void sleeve.click());
+  expect(document.activeElement).toBe(crate());
+  expect(crate().getAttribute("aria-label")).toContain("Paper Lanterns, 2 of 3");
+  const prev = container.querySelector('button[aria-label="Previous record"]') as HTMLElement;
+  prev.focus();
+  await act(() => void prev.click());
+  expect(crate().getAttribute("aria-label")).toContain("Golden Hour, 1 of 3");
+  expect(document.activeElement).toBe(crate());
   unmount();
 });
 

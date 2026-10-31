@@ -1,4 +1,4 @@
-import { forwardRef, useState, type KeyboardEvent } from "react";
+import { forwardRef, useRef, useState, type KeyboardEvent } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useShallow } from "zustand/react/shallow";
@@ -154,12 +154,17 @@ function useActions(item: ShelfItem | undefined) {
 export function Crate({ shelves: all }: { shelves: Shelf[] }) {
   const filter = useAiFilter();
   const shelves = all.map((s) => ({ ...s, items: filter(s.items) })).filter((s) => s.items.length > 0);
-  const [shelfAt, setShelfAt] = useState(0);
+  // Remembered by title (Home's shelf identity), so a refresh or reorder keeps it.
+  const [shelfTitle, setShelfTitle] = useState<string>();
   const [frontAt, setFrontAt] = useState(0);
+  const crateRef = useRef<HTMLDivElement>(null);
   const g = useCompact() ? COMPACT : FULL;
   const family = useLookFamily();
 
-  const si = Math.min(shelfAt, Math.max(shelves.length - 1, 0));
+  const si = Math.max(
+    shelves.findIndex((s) => s.title === shelfTitle),
+    0,
+  );
   const shelf = shelves[si];
   const items = shelf?.items ?? [];
   const front = crateStep(frontAt, 0, items.length);
@@ -187,13 +192,20 @@ export function Crate({ shelves: all }: { shelves: Shelf[] }) {
       {item.title}
     </span>
   );
+  // Sleeves and the step buttons can unmount or disable under focus; the
+  // crate keeps it so the arrows go on working.
+  const holdFocus = () => crateRef.current?.focus({ preventScroll: true });
+  const stepTo = (i: number) => {
+    setFrontAt(i);
+    if (i === 0 || i === items.length - 1) holdFocus();
+  };
   const first = Math.max(front - 1, 0);
   const shown = items.slice(first, front + g.sleeves.length + 1);
 
   return (
     <section aria-label="Crate" data-crate-home className="flex flex-col gap-4">
       <div
-        role="tablist"
+        role="group"
         aria-label="Shelves"
         // Compact keeps the dividers to one scrolling row so the crate stays in view.
         className={cn("flex gap-2", g === FULL ? "flex-wrap" : "app-scroll -mb-2 overflow-x-auto pb-2 [&>*]:shrink-0")}
@@ -201,11 +213,10 @@ export function Crate({ shelves: all }: { shelves: Shelf[] }) {
         {shelves.map((s, i) => (
           <Button
             key={s.id}
-            role="tab"
-            aria-selected={i === si}
+            aria-pressed={i === si}
             variant="outline"
             onClick={() => {
-              setShelfAt(i);
+              setShelfTitle(s.title);
               setFrontAt(0);
             }}
             className={cn(CHIP, i === si ? "on-brand border-brand bg-brand text-white hover:bg-brand/90 hover:text-white" : "text-muted-foreground")}
@@ -215,6 +226,7 @@ export function Crate({ shelves: all }: { shelves: Shelf[] }) {
         ))}
       </div>
       <div
+        ref={crateRef}
         tabIndex={0}
         role="group"
         aria-roledescription="crate"
@@ -233,7 +245,12 @@ export function Crate({ shelves: all }: { shelves: Shelf[] }) {
               tabIndex={-1}
               aria-hidden={slot !== 0 || undefined}
               aria-label={slot === 0 ? undefined : `Bring ${it.title} to the front`}
-              onClick={() => (slot === 0 ? act.play() : setFrontAt(first + i))}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => {
+                holdFocus();
+                if (slot === 0) act.play();
+                else setFrontAt(first + i);
+              }}
               className={cn(
                 "absolute start-0 top-0 isolate origin-bottom motion-safe:transition-[transform,opacity] motion-safe:duration-300",
                 slot === 0 ? "shadow-[0_20px_40px_rgb(0_0_0/0.6)]" : "shadow-[-8px_0_20px_rgb(0_0_0/0.55)]",
@@ -275,13 +292,13 @@ export function Crate({ shelves: all }: { shelves: Shelf[] }) {
             {playable(item) && <LikeDislikeButtons videoId={playable(item)!.id} track={item} />}
           </div>
           <div className={cn(MONO, "mt-3 flex items-center gap-3 text-muted-foreground")}>
-            <Button variant="ghost" size="sm" className={CHIP} aria-label="Previous record" disabled={front === 0} onClick={() => setFrontAt(front - 1)}>
+            <Button variant="ghost" size="sm" className={CHIP} aria-label="Previous record" disabled={front === 0} onClick={() => stepTo(front - 1)}>
               ‹
             </Button>
             <span className="tabular-nums">
               {front + 1} / {items.length}
             </span>
-            <Button variant="ghost" size="sm" className={CHIP} aria-label="Next record" disabled={front === items.length - 1} onClick={() => setFrontAt(front + 1)}>
+            <Button variant="ghost" size="sm" className={CHIP} aria-label="Next record" disabled={front === items.length - 1} onClick={() => stepTo(front + 1)}>
               ›
             </Button>
             <Link to="/shelf/$title" params={{ title: shelf.title }} className="hover:text-foreground hover:underline">
