@@ -275,6 +275,7 @@ All four ship together in one update (the user's call). The floating mini player
 | Start radio on every player | the button was only on the sidebar card and the bottom bar | ced52c2 |
 | Source menu radio label | "Start radio" stayed put while a mix was already running. Stop runs only when a mix is already going, so the floating window can still start one | ced52c2 |
 | Review follow-ups | layout tip held through What's New's close; fullscreen radio keeps its on tint | ced52c2 |
+| Release build type error | the tip timer was a number, and the release build's setTimeout returns a Node timeout | this commit |
 
 What the reviews and the live pass caught along the way (all fixed):
 - The scroller remounting on a swap.

@@ -51,12 +51,12 @@ function useDialogOpen(): { open: boolean; holding: () => boolean } {
   const was = useRef(false);
   const hold = useRef(false);
   useEffect(() => {
-    let timer = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     // Captured here: a mutation callback can run where `window` is missing.
     const cancel = clearTimeout;
     const schedule = setTimeout;
     const check = () => {
-      cancel(timer);
+      if (timer !== undefined) cancel(timer);
       if (anyDialogOpen()) {
         was.current = true;
         hold.current = true;
@@ -81,7 +81,7 @@ function useDialogOpen(): { open: boolean; holding: () => boolean } {
     mo.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-state", "role"] });
     check();
     return () => {
-      clearTimeout(timer);
+      if (timer !== undefined) cancel(timer);
       mo.disconnect();
     };
   }, []);
