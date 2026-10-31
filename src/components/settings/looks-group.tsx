@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Group, SettingRow } from "@/components/settings/primitives";
 import { ConfirmUnreadable } from "@/components/theme/confirm-unreadable";
+import { flipTo } from "@/components/theme/layout-flip";
 import { LookEditor, type LookEditorValue } from "@/components/theme/look-editor";
 import { LookPreview } from "@/components/theme/look-preview";
 import { usePreviewSample } from "@/components/theme/make-it-yours";
@@ -53,7 +54,7 @@ export function LooksGroup() {
   const dirty = !pristine(look);
 
   const change = (next: LookEditorValue) => {
-    if (next.layout !== layout) return useThemeStore.getState().setLayout(next.layout);
+    if (next.layout !== layout) return flipTo(next.layout);
     setRenaming(null);
     setConfirming(false);
     if (!pristine(next.look)) return setDraft(next);
@@ -125,7 +126,7 @@ export function LooksGroup() {
         duration: 10_000,
         // Toast titles truncate to one line; this one is the question.
         classNames: { title: "whitespace-normal!" },
-        action: { label: "Switch", onClick: () => useThemeStore.getState().setLayout(offer) },
+        action: { label: "Switch", onClick: () => flipTo(offer) },
       });
     }
   };
