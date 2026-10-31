@@ -329,14 +329,15 @@ export const Turntable = forwardRef<HTMLDivElement, { compact: boolean }>(functi
     <footer
       ref={ref}
       aria-label="Turntable"
-      className={cn("relative flex shrink-0 items-center overflow-hidden border-t border-w110", compact ? "gap-4 px-5" : "gap-[22px] px-7")}
+      className={cn("relative flex shrink-0 items-center border-t border-w110", compact ? "gap-4 px-5" : "gap-[22px] px-7")}
     >
       <button
         type="button"
         aria-label={track ? "Open full screen" : "Empty platter"}
         disabled={!track}
         onClick={openFullscreen}
-        className="relative shrink-0 self-stretch"
+        // Clip only the record's bottom edge here, not the whole footer, so popups like volume can grow upward.
+        className="relative shrink-0 self-stretch overflow-y-clip"
         style={{ width: deck, minHeight: compact ? 96 : 112 }}
       >
         <Vinyl
