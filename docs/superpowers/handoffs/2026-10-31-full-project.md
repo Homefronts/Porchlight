@@ -281,6 +281,7 @@ All four ship together in one update (the user's call). The floating mini player
 | 1.1.0 published | the user asked to publish. `gh release edit v1.1.0 --draft=false` at 2026-10-31T18:27:23Z. Latest is v1.1.0 | https://github.com/Homefronts/Porchlight/releases/tag/v1.1.0 |
 | Local rebuild | `pnpm tauri build` wrote `src-tauri\target\release\bundle\nsis\Porchlight_1.1.0_x64-setup.exe`. The command then exited 1 because a pubkey is set and no private key was present, so no updater `.sig`. The installer was still installed over the local app with `/S` | not a commit |
 | Logo | brainstormed, then stopped. Nothing from it is in the app | mockups only, gitignored |
+| New logo: the P record (2026-11-04) | on branch `logo`, not merged or released. Ink and paper for desktop, installer and browser icons; follows each look inside the app (`PorchlightMark`); dev icon orange | f9d7baf |
 
 What the reviews and the live pass caught along the way (all fixed):
 - The scroller remounting on a swap.
@@ -377,7 +378,7 @@ The user asked (2026-10-31) that **every change gets added to this write-up as i
    - The website installer skips the bridge (see Part 1). The README note shipped in 1.1.0; detecting an un-updated Plus install is still open.
 5. **Fork detach:** verify once GitHub Support finishes (see Part 1).
 6. **Next projects:**
-   - **A new logo.** Tried on 2026-10-31 and stopped. The user said it was not getting anywhere. Leave it until they ask again. What they had settled, and where the mockups are, is under the user's requests, item 11.
+   - **A new logo.** Chosen 2026-11-04: B, the P record, a P whose round part is a record. Drafts: https://claude.ai/artifact/PAvRhs8SVphpEf8x2P8mNA. It's on branch `logo` (f9d7baf), not merged or released. The user chose to have the in-app mark follow each look. Master: `assets/branding/porchlight-icon.svg`. Not yet seen in the running app. Ships with the next release.
    - **More looks.** Was framed as a content update before 1.1. 1.1.0 is already published, so this is a later content update if they still want it.
    - Roadmap ideas are in the README → Roadmap. Next up: sleep timer, remove duplicates, sort playlists by artist, and others.
 
@@ -400,6 +401,7 @@ The user asked (2026-10-31) that **every change gets added to this write-up as i
 
 ## State right now
 
+- **Current branch is `logo`** (f9d7baf plus this note), off `main` at `2c05b2e`. The project folder moved to `C:\Users\sdand\Desktop\AI Projects\Porchlight\YTubic Plus`, so `node_modules` was reinstalled and `target/debug` cleared.
 - **1.1.0 is published.** https://github.com/Homefronts/Porchlight/releases/tag/v1.1.0. `main`, `layouts`, and tag `v1.1.0` are all at `2c05b2e`. The release is not a draft.
 - **The dev task is not running.** The app that is open is the installed one: `%LOCALAPPDATA%\Porchlight\porchlight.exe`, from the local rebuild installed with `/S` after the timer fix. That local build has no updater signature. The published installers are the ones from run 41225491877.
 - **Backup** taken just before the earlier dev launch: `C:\Users\sdand\PorchlightDataBackup-20261031-1123`, holding the data folders plus `porchlight.reg` and `ytubic-plus.reg`. The pre-1.1.0 install backup is `C:\Users\sdand\PorchlightDataBackup-20261031-1226-pre-1.1.0`.
