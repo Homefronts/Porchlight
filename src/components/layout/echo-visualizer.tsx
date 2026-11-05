@@ -93,9 +93,9 @@ export function EchoVisualizer({ track, light }: { track: QueueTrack; light: boo
         const values = trails[n];
         const points: [number, number][] = [];
         for (let i = 0; i < POINTS; i++) {
-          // The low end of the spectrum holds nearly all the movement, so it gets more points.
-          const bin = Math.floor(Math.pow(i / POINTS, 2) * bins.length * 0.7);
-          const want = (bins[bin] ?? 0) / 255;
+          // Most of the energy is in the bass, so highs get more points and a lift to move as much.
+          const bin = Math.floor(Math.pow(i / POINTS, 1.7) * bins.length * 0.5);
+          const want = Math.min(1, ((bins[bin] ?? 0) / 255) * (1 + (i / POINTS) * 1.8));
           values[i] += (want - values[i]) * (want > values[i] ? Math.max(follow, 0.45 * follow + 0.04) : follow * 0.3);
           const edge = Math.sin((i / (POINTS - 1)) * Math.PI);
           const x = w * (0.055 + 0.89 * (i / (POINTS - 1)));
