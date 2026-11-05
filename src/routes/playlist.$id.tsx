@@ -823,19 +823,18 @@ function RemoveDuplicatesButton({
   const confirm = async () => {
     if (busy || !dupes) return;
     setBusy(true);
-    try {
-      await removeManyFromPlaylist(
-        playlistId,
-        dupes.map((t) => ({ videoId: t.id, setVideoId: t.setVideoId! })),
-      );
-      toast.success(dupes.length === 1 ? "Removed 1 duplicate" : `Removed ${dupes.length} duplicates`);
-      setDupes(null);
-      void qc.invalidateQueries({ predicate: (q) => isPageOf(q.queryKey, routeId) });
-    } catch (e) {
-      toast.error(`Couldn't remove duplicates: ${String(e)}`);
-    } finally {
-      setBusy(false);
-    }
+    const { removed, error } = await removeManyFromPlaylist(
+      playlistId,
+      dupes.map((t) => ({ videoId: t.id, setVideoId: t.setVideoId! })),
+    );
+    setBusy(false);
+    setDupes(null);
+    const count = removed === 1 ? "1 duplicate" : `${removed} duplicates`;
+    if (!error) toast.success(`Removed ${count}`);
+    else if (removed) toast.error(`Removed ${count}, then YouTube Music stopped accepting changes. Try again for the rest.`);
+    else toast.error(`Couldn't remove duplicates: ${String(error)}`);
+    // Even a partial run changed the playlist.
+    if (removed) void qc.invalidateQueries({ predicate: (q) => isPageOf(q.queryKey, routeId) });
   };
 
   return (

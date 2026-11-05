@@ -206,23 +206,39 @@ export async function removeFromPlaylist(
   }
 }
 
-/** Remove several rows in one request (the later copies of duplicate songs). */
+const REMOVE_BATCH = 50;
+
+/**
+ * Remove several rows (the later copies of duplicate songs), in batches, since
+ * a very long single request might be refused. Stops at the first batch that
+ * fails; `removed` says how many went through before it.
+ */
 export async function removeManyFromPlaylist(
   playlistId: string,
   rows: { videoId: string; setVideoId: string }[],
-): Promise<void> {
-  const json = await innertubePost("browse/edit_playlist", {
-    playlistId,
-    actions: rows.map((r) => ({
-      action: "ACTION_REMOVE_VIDEO",
-      removedVideoId: r.videoId,
-      setVideoId: r.setVideoId,
-    })),
-  });
-  const status = json?.status as string | undefined;
-  if (status && status !== "STATUS_SUCCEEDED") {
-    throw new Error(`edit_playlist failed: ${status}`);
+): Promise<{ removed: number; error?: unknown }> {
+  let removed = 0;
+  for (let i = 0; i < rows.length; i += REMOVE_BATCH) {
+    const batch = rows.slice(i, i + REMOVE_BATCH);
+    try {
+      const json = await innertubePost("browse/edit_playlist", {
+        playlistId,
+        actions: batch.map((r) => ({
+          action: "ACTION_REMOVE_VIDEO",
+          removedVideoId: r.videoId,
+          setVideoId: r.setVideoId,
+        })),
+      });
+      const status = json?.status as string | undefined;
+      if (status && status !== "STATUS_SUCCEEDED") {
+        throw new Error(`edit_playlist failed: ${status}`);
+      }
+    } catch (error) {
+      return { removed, error };
+    }
+    removed += batch.length;
   }
+  return { removed };
 }
 
 /** Rename a playlist the user owns. */
