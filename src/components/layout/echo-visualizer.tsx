@@ -63,6 +63,10 @@ export function EchoVisualizer({ track, light }: { track: QueueTrack; light: boo
     const trails = TRAILS.map(() => new Float32Array(POINTS));
     let bins = new Uint8Array(0);
     let frame = 0;
+    let last = performance.now();
+    let phase = 0;
+    let bassAverage = 0;
+    let hit = 0;
     const fit = () => {
       const scale = devicePixelRatio || 1;
       el.width = el.clientWidth * scale;
@@ -82,9 +86,15 @@ export function EchoVisualizer({ track, light }: { track: QueueTrack; light: boo
       analyser?.getByteFrequencyData(bins);
       // The kick and bass, roughly below 300 Hz at a usual sample rate, push the whole line.
       const bass = ((bins[0] ?? 0) + (bins[1] ?? 0) + (bins[2] ?? 0)) / 765;
+      // A hit is the bass jumping above its recent level: the kick drum, mostly.
+      bassAverage += (bass - bassAverage) * 0.06;
+      hit = Math.max(hit * 0.86, Math.min(1, Math.max(0, bass - bassAverage) * 5));
+      // The ripple runs faster with the music and lurches forward on each hit.
+      const dt = Math.min(now - last, 50) / 1000;
+      last = now;
+      phase += dt * (1 + bass * 5 + hit * 14);
       const w = el.clientWidth;
       const h = el.clientHeight;
-      const t = now / 1000;
       g.clearRect(0, 0, w, h);
       // A canvas can't read a CSS variable through strokeStyle, so resolve it here.
       const paint = stroke.current.startsWith("var(")
@@ -93,17 +103,18 @@ export function EchoVisualizer({ track, light }: { track: QueueTrack; light: boo
       g.strokeStyle = paint;
       g.lineCap = "round";
       TRAILS.forEach(({ follow, alpha, width, lag }, n) => {
+        const at = phase - lag;
         const values = trails[n];
         const points: [number, number][] = [];
         for (let i = 0; i < POINTS; i++) {
           // Bass in the middle and highs out to both ends, since most of the energy is in the bass.
           const fromMiddle = Math.abs((i / (POINTS - 1)) * 2 - 1);
           const bin = Math.floor(Math.pow(fromMiddle, 1.7) * bins.length * 0.5);
-          const want = Math.min(1, ((bins[bin] ?? 0) / 255) * (1 + fromMiddle * 1.8) * 0.6 + bass * bass * BASS_PUSH);
-          values[i] += (want - values[i]) * (want > values[i] ? Math.max(follow, 0.45 * follow + 0.04) : follow * 0.3);
+          const want = Math.min(1, ((bins[bin] ?? 0) / 255) * (1 + fromMiddle * 1.8) * 0.6 + bass * bass * BASS_PUSH + hit * 0.3);
+          values[i] += (want - values[i]) * (want > values[i] ? Math.max(follow, 0.45 * follow + 0.04) : follow * 0.5);
           const edge = Math.sin((i / (POINTS - 1)) * Math.PI);
           const x = w * (0.055 + 0.89 * (i / (POINTS - 1)));
-          points.push([x, h / 2 + Math.sin(i * 0.42 + (t - lag) * 2.4) * values[i] * (h * 0.44) * edge]);
+          points.push([x, h / 2 + (Math.sin(i * 0.42 + at) * 0.72 + Math.sin(i * 1.05 - at * 1.6) * 0.28) * values[i] * (h * 0.46) * edge]);
         }
         g.beginPath();
         g.moveTo(points[0][0], points[0][1]);
@@ -111,8 +122,9 @@ export function EchoVisualizer({ track, light }: { track: QueueTrack; light: boo
           const mid = (points[i - 1][0] + points[i][0]) / 2;
           g.bezierCurveTo(mid, points[i - 1][1], mid, points[i][1], points[i][0], points[i][1]);
         }
-        g.globalAlpha = alpha;
-        g.lineWidth = width;
+        // Each hit flares the line, so the beat shows even when the shape barely changes.
+        g.globalAlpha = Math.min(1, alpha + hit * 0.25);
+        g.lineWidth = width + hit * 1.6;
         g.stroke();
       });
       g.globalAlpha = 1;
