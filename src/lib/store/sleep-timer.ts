@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { currentTrack, usePlaybackStore } from "@/lib/store/playback";
+import { usePlaybackStore } from "@/lib/store/playback";
 
 /** `endsAt`: when playback stops. `endOfSong`: stop when this song is over. */
 export const useSleepTimer = create<{ endsAt: number | null; endOfSong: boolean }>(() => ({
@@ -8,12 +8,9 @@ export const useSleepTimer = create<{ endsAt: number | null; endOfSong: boolean 
 }));
 
 let timer: ReturnType<typeof setTimeout> | undefined;
-let unwatch: (() => void) | undefined;
 
 export function cancelSleepTimer(): void {
   clearTimeout(timer);
-  unwatch?.();
-  unwatch = undefined;
   useSleepTimer.setState({ endsAt: null, endOfSong: false });
 }
 
@@ -29,12 +26,15 @@ export function sleepAfterMinutes(minutes: number): void {
   timer = setTimeout(stop, ms);
 }
 
-// shortcut: a manual skip also stops, and repeat-one never does; track the song's real end if that's reported.
+/** Stops when whichever song is playing reaches its end, so skipping just moves the stop along. */
 export function sleepAfterThisSong(): void {
   cancelSleepTimer();
   useSleepTimer.setState({ endOfSong: true });
-  const id = currentTrack(usePlaybackStore.getState())?.videoId;
-  unwatch = usePlaybackStore.subscribe((s) => {
-    if (currentTrack(s)?.videoId !== id) stop();
-  });
+}
+
+/** For the audio engine when a song ends: true once, if the timer was waiting for this. */
+export function takeEndOfSongStop(): boolean {
+  if (!useSleepTimer.getState().endOfSong) return false;
+  cancelSleepTimer();
+  return true;
 }

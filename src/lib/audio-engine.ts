@@ -16,6 +16,7 @@ import { eqGains, usePlaybackSettings } from "@/lib/store/playback-settings";
 import { playbackAllowed, usePlaybackAllowed } from "@/lib/store/premium";
 import { useSettingsStore } from "@/lib/store/settings";
 import { useFullscreenStore } from "@/lib/store/fullscreen";
+import { takeEndOfSongStop, useSleepTimer } from "@/lib/store/sleep-timer";
 import { openPremiumGate } from "@/lib/store/premium-gate";
 import { resolveStreamId, resumeOnSourceSwitch, useTrackSourceStore } from "@/lib/store/track-source";
 import { pickThumbnail } from "@/components/shared/thumbnail";
@@ -222,7 +223,8 @@ export function useAudioEngine() {
       const s = store();
       // Rewind's snippet mode always crossfades, whatever the setting.
       const cf = s.snippets ? SNIPPET_FADE_SEC : usePlaybackSettings.getState().crossfadeSec;
-      if (cf <= 0 || fadeRef.current) return;
+      // A fade would start the next song before the sleep timer's stop.
+      if (cf <= 0 || fadeRef.current || useSleepTimer.getState().endOfSong) return;
       const nextIndex = s.index + 1;
       // Only a plain step to the next queued track is crossfaded; repeat
       // wraps and single-track loops go through `ended` as before.
@@ -337,7 +339,10 @@ export function useAudioEngine() {
       // The outgoing half of a crossfade ends on its own; the store has
       // already moved on.
       if (!isActive(e)) return;
+      // Sleep timer: move on to the next song, but don't let it start.
+      const sleeping = takeEndOfSongStop();
       store().next();
+      if (sleeping) store().setPlaying(false);
     };
     const onError = (e: Event) => {
       const el = e.currentTarget as HTMLAudioElement;

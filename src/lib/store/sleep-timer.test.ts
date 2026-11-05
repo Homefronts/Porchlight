@@ -13,7 +13,7 @@ vi.hoisted(() => {
 });
 
 import { usePlaybackStore } from "@/lib/store/playback";
-import { cancelSleepTimer, sleepAfterMinutes, sleepAfterThisSong, useSleepTimer } from "./sleep-timer";
+import { cancelSleepTimer, sleepAfterMinutes, sleepAfterThisSong, takeEndOfSongStop, useSleepTimer } from "./sleep-timer";
 
 const track = (videoId: string) => ({ videoId, title: videoId, thumbnails: [] });
 
@@ -42,9 +42,13 @@ it("cancelling keeps the music playing", () => {
   expect(usePlaybackStore.getState().playing).toBe(true);
 });
 
-it("end of song pauses when the next song starts", () => {
+it("end of song waits for a song to end, through any skips, and fires once", () => {
+  expect(takeEndOfSongStop()).toBe(false);
   sleepAfterThisSong();
   usePlaybackStore.setState({ index: 1 });
-  expect(usePlaybackStore.getState().playing).toBe(false);
+  expect(usePlaybackStore.getState().playing).toBe(true);
+  expect(useSleepTimer.getState().endOfSong).toBe(true);
+  expect(takeEndOfSongStop()).toBe(true);
   expect(useSleepTimer.getState().endOfSong).toBe(false);
+  expect(takeEndOfSongStop()).toBe(false);
 });
