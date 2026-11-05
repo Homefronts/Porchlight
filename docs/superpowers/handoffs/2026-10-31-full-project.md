@@ -388,6 +388,7 @@ The user asked (2026-10-31) that **every change gets added to this write-up as i
 5. **Fork detach:** verify once GitHub Support finishes (see Part 1).
 6. **Next projects:**
    - **A new logo.** Chosen 2026-11-04: B, the P record, a P whose round part is a record. Drafts: https://claude.ai/artifact/PAvRhs8SVphpEf8x2P8mNA. It's on branch `logo` (f9d7baf), not merged or released. The user chose to have the in-app mark follow each look. Master: `assets/branding/porchlight-icon.svg`. Not yet seen in the running app. Ships with the next release.
+   - **Real vinyl pressings** (user idea, on the README roadmap, for after 1.2.0): reusable record styles first (black, solid, see-through, two-tone, splatter), then test about 50 albums against Discogs before building any lookup, plus a menu to pick a pressing.
    - **More looks.** Was framed as a content update before 1.1. 1.1.0 is already published, so this is a later content update if they still want it.
    - Roadmap ideas are in the README → Roadmap. Next up: sleep timer, remove duplicates, sort playlists by artist, and others.
 

@@ -281,6 +281,7 @@ Bigger pieces of work.
 - [ ] **Weekly and monthly Rewinds** — a recap for every week and month as well as every quarter, with your listening sessions named by what they were.
 - [ ] **Smart playlists** — playlists made of rules (liked, played often, not heard in a while, genre, length) that keep themselves up to date.
 - [ ] **Now-playing API for overlays** — a local WebSocket that OBS and stream overlays can read, for music credits on stream.
+- [ ] **Real vinyl pressings** — the record on screen matches a real pressing of the album, like red translucent or splatter, with a menu to pick your favourite. Starts with reusable record styles for new looks, then a test of how well a vinyl database can match albums.
 - [ ] **Video quality by GPU** — pick the default music video quality from what your graphics card can decode smoothly.
 - [ ] **Download compression** — smaller offline files.
 
