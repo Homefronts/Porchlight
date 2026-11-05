@@ -78,7 +78,8 @@ jobs:
         shell: bash
         run: |
           version="${GITHUB_REF_NAME#v}"
-          body=$(tr -d '\r' < README.md | awk -v head="#### $version " 'index($0, head) == 1 { on = 1; next } on && /^#+ |^<details>|^<\/details>/ { exit } on')
+          # awk reads the file itself: in a pipe, stopping early can fail the step under pipefail.
+          body=$(awk -v head="#### $version " '{ sub(/\r$/, "") } index($0, head) == 1 { on = 1; next } on && /^#+ |^<details>|^<\/details>/ { exit } on' README.md)
           {
             echo 'body<<NOTES_END'
             echo "${body:-See the assets below to download and install this version.}"
