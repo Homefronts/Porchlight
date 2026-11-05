@@ -4,6 +4,7 @@ import { useScrubStore } from "@/lib/store/scrub";
 
 /** How far the drag winds the record: a whole song is a few turns, not a blur. */
 const MS_PER_SONG_SECOND = 250;
+const SPIN_UP_MS = 700;
 
 /** The spin's time after scrubbing `delta` seconds, kept positive so it can wind back forever. */
 export function platterTime(current: number, delta: number, turnMs: number): number {
@@ -53,10 +54,28 @@ export function usePlatter<E extends HTMLElement>(turnMs: number, on: boolean) {
     };
   }, [turnMs]);
 
+  const wasOn = useRef(on);
   useEffect(() => {
-    if (useScrubStore.getState().scrub !== null) return;
-    if (on) spin.current?.play();
-    else spin.current?.pause();
+    const anim = spin.current;
+    const starting = on && !wasOn.current;
+    wasOn.current = on;
+    if (!anim || useScrubStore.getState().scrub !== null) return;
+    if (!on) return anim.pause();
+    anim.play();
+    if (!starting) return;
+    // The record comes up to speed instead of starting at full tilt.
+    const from = performance.now();
+    let frame = 0;
+    const step = (now: number) => {
+      const k = Math.min((now - from) / SPIN_UP_MS, 1);
+      anim.updatePlaybackRate(Math.max(k, 0.02));
+      if (k < 1) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => {
+      cancelAnimationFrame(frame);
+      anim.updatePlaybackRate(1);
+    };
   }, [on]);
 
   return ref;

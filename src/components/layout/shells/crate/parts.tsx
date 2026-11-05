@@ -1,4 +1,4 @@
-import { forwardRef, Fragment, useRef, useState, type KeyboardEvent } from "react";
+import { forwardRef, Fragment, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useShallow } from "zustand/react/shallow";
@@ -22,13 +22,14 @@ import { playPlaylistNow } from "@/lib/play-playlist";
 import { openFullscreen } from "@/lib/store/fullscreen";
 import { currentTrack, usePlaybackStore } from "@/lib/store/playback";
 import { useScrubStore } from "@/lib/store/scrub";
+import { useThemeStore } from "@/lib/theme/store";
 import type { Shelf, ShelfItem } from "@/lib/innertube/types";
 import { cn } from "@/lib/utils";
 import { useLyricsView } from "@/components/layout/lyrics-view";
 import { LyricsButton, Transport } from "../gatefold/parts";
 import { useCompact } from "../compact";
 import { usePlayerStyle } from "../player-colour";
-import { crateStep, needleAngle } from "./step";
+import { crateStep, needleAngle, NEEDLE_DROP_MS, NEEDLE_REST, needleDropFrames } from "./step";
 import { subtitleRuns } from "./subtitle";
 import { LinerNotes } from "./liner-notes";
 const MONO = "font-meta text-[11px] uppercase tracking-[0.1em]";
@@ -338,24 +339,88 @@ export function Crate({ shelves: all }: { shelves: Shelf[] }) {
  * platter with the arm parked. Compact drops Up Next (the Queue button stays).
  */
 /**
- * The needle rides the record: it drops on the outer edge when a song starts
- * and creeps in toward the label as it plays, following a seek drag too.
- * Parked off the record when there's nothing to play.
+ * The needle rides the record: when a song starts the arm lifts, swings to the
+ * outer edge and settles (the style is the Appearance setting), then it creeps
+ * in toward the label as the song plays, following a seek drag too. It stays
+ * parked off the record until the first play.
  */
-function ToneArm({ loaded, deck }: { loaded: boolean; deck: number }) {
+function ToneArm({
+  trackId,
+  deck,
+  onHold,
+}: {
+  trackId?: string;
+  deck: number;
+  /** The record waits while the arm comes over from rest. */
+  onHold: (hold: boolean) => void;
+}) {
   const position = usePlaybackStore((s) => s.position);
   const duration = usePlaybackStore((s) => s.duration);
+  const playing = usePlaybackStore((s) => s.playing);
   const scrub = useScrubStore((s) => s.scrub);
+  const head = useThemeStore((s) => s.needleHead);
+  const ref = useRef<HTMLSpanElement>(null);
+  // The song the needle is already on. A restored song part way through counts.
+  const landed = useRef(position >= 1 ? trackId : undefined);
+  const wasPlaying = useRef(playing);
+  const shown = useRef(NEEDLE_REST);
+  const flight = useRef<Animation | undefined>(undefined);
+
+  const parked = !trackId || (scrub === null && !playing && position < 1 && landed.current !== trackId);
+  const angle = parked ? NEEDLE_REST : needleAngle(scrub ?? position, duration);
+
+  useEffect(() => {
+    const fromStill = !wasPlaying.current;
+    wasPlaying.current = playing;
+    if (!trackId || !playing || landed.current === trackId) return;
+    landed.current = trackId;
+    if (usePlaybackStore.getState().position >= 1) return;
+    const el = ref.current;
+    if (!el?.animate || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    flight.current?.cancel();
+    const hold = fromStill;
+    if (hold) onHold(true);
+    const anim = el.animate(needleDropFrames(shown.current, needleAngle(0, 1)), {
+      duration: NEEDLE_DROP_MS[useThemeStore.getState().needleDrop],
+      easing: "ease-in-out",
+    });
+    flight.current = anim;
+    const land = () => {
+      if (flight.current !== anim) return;
+      flight.current = undefined;
+      onHold(false);
+    };
+    anim.finished.then(land, land);
+  }, [trackId, playing, onHold]);
+
+  // After the effect above, so a new song's flight starts from where the arm was.
+  useEffect(() => {
+    shown.current = angle;
+  });
+
   return (
-    <span
-      aria-hidden
-      className="absolute top-1.5 w-1 origin-top rounded-sm bg-[#8a8378] motion-safe:transition-transform motion-safe:duration-700"
-      style={{
-        height: Math.round(deck * 0.53),
-        right: loaded ? -6 : 0,
-        transform: `rotate(${loaded ? needleAngle(scrub ?? position, duration) : -8}deg)`,
-      }}
-    />
+    <>
+      <span
+        ref={ref}
+        aria-hidden
+        className={cn(
+          "absolute top-1.5 w-1 origin-top rounded-sm bg-[#8a8378] motion-safe:transition-transform motion-safe:duration-700",
+          head && "after:absolute after:-bottom-[3px] after:-left-0.5 after:h-[13px] after:w-2 after:rounded-[2px] after:bg-foreground",
+        )}
+        style={{
+          height: Math.round(deck * 0.53),
+          right: trackId ? -6 : 0,
+          transform: `rotate(${angle}deg)`,
+        }}
+      />
+      {head && (
+        <span
+          aria-hidden
+          className="absolute top-0 size-3 rounded-full border-2 border-[#8a8378] bg-card"
+          style={{ right: trackId ? -10 : -4 }}
+        />
+      )}
+    </>
   );
 }
 
@@ -369,7 +434,8 @@ export const Turntable = forwardRef<HTMLDivElement, { compact: boolean }>(functi
   const family = useLookFamily();
   const lyrics = useLyricsView(track);
   const deck = compact ? 120 : 150;
-  const platter = usePlatter<HTMLDivElement>(6000, !!track && playing);
+  const [armHold, setArmHold] = useState(false);
+  const platter = usePlatter<HTMLDivElement>(6000, !!track && playing && !armHold);
   const playerStyle = usePlayerStyle();
   return (
     <footer
@@ -413,7 +479,7 @@ export const Turntable = forwardRef<HTMLDivElement, { compact: boolean }>(functi
             <MusicVideo track={track} where="card" className="object-cover" />
           </div>
         ) : null}
-        <ToneArm loaded={!!track} deck={deck} />
+        <ToneArm trackId={track?.videoId} deck={deck} onHold={setArmHold} />
       </button>
       <div className={cn("flex min-w-0 flex-col", compact ? "w-[150px]" : "w-[220px]")}>
         {track ? (

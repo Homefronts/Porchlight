@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTheme } from "next-themes";
-import { IconFileExport, IconFileImport, IconPalette, IconPencil, IconTrash, IconVolume } from "@tabler/icons-react";
+import { IconFileExport, IconFileImport, IconVinyl, IconPalette, IconPencil, IconTrash, IconVolume } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,12 +16,18 @@ import { commitDraft, isBuiltIn, isUnreadable, paletteInUse } from "@/lib/theme/
 import { parseThemeFile, toThemeFile } from "@/lib/theme/file";
 import { applyImport, layoutOfferText } from "@/lib/theme/layouts";
 import { exportFileName, MAX_NAME, validName } from "@/lib/theme/manage";
-import { activeLook, useThemeStore } from "@/lib/theme/store";
+import { activeLook, useThemeStore, type NeedleDrop } from "@/lib/theme/store";
 
 const startValue = (): LookEditorValue => {
   const s = useThemeStore.getState();
   return { look: activeLook(s), layout: s.layout };
 };
+
+const NEEDLE_STYLES: [NeedleDrop, string][] = [
+  ["gentle", "Gentle"],
+  ["quick", "Quick"],
+  ["slow", "Slow cue"],
+];
 
 /**
  * Settings > Appearance > Look. Picking a built-in or saved look applies it at
@@ -34,6 +40,8 @@ export function LooksGroup() {
   // so it is read live rather than kept in the draft.
   const layout = useThemeStore((s) => s.layout);
   const dialSound = useThemeStore((s) => s.dialSound);
+  const needleDrop = useThemeStore((s) => s.needleDrop);
+  const needleHead = useThemeStore((s) => s.needleHead);
   const [draftLook, setDraft] = useState<LookEditorValue>(startValue);
   const draft = { ...draftLook, layout };
   const [renaming, setRenaming] = useState<string | null>(null);
@@ -178,7 +186,7 @@ export function LooksGroup() {
       <SettingRow
         icon={IconVolume}
         title="Dial Click"
-        description="A soft click when you turn the layout dial by the logo."
+        description="A soft click when you turn the layout dial in the title bar."
         control={
           <Switch
             checked={dialSound}
@@ -187,6 +195,43 @@ export function LooksGroup() {
           />
         }
       />
+      {layout === "crate" && (
+        <>
+          <SettingRow
+            icon={IconVinyl}
+            title="Needle Drop"
+            description="How the arm puts the needle on the record when a song starts."
+            control={
+              <div role="radiogroup" aria-label="Needle Drop" className="flex gap-1.5">
+                {NEEDLE_STYLES.map(([id, name]) => (
+                  <Button
+                    key={id}
+                    size="sm"
+                    role="radio"
+                    aria-checked={needleDrop === id}
+                    variant={needleDrop === id ? "default" : "outline"}
+                    onClick={() => useThemeStore.setState({ needleDrop: id })}
+                  >
+                    {name}
+                  </Button>
+                ))}
+              </div>
+            }
+          />
+          <SettingRow
+            icon={IconVinyl}
+            title="Needle Head"
+            description="Draw a needle head and pivot on the arm, or keep it a plain bar."
+            control={
+              <Switch
+                checked={needleHead}
+                onCheckedChange={(on) => useThemeStore.setState({ needleHead: on })}
+                aria-label="Needle Head"
+              />
+            }
+          />
+        </>
+      )}
       <input
         ref={fileInput}
         type="file"

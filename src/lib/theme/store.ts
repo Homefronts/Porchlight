@@ -8,6 +8,8 @@ import {
   type Look,
 } from "./looks";
 
+export type NeedleDrop = "gentle" | "quick" | "slow";
+
 type ThemeState = {
   activeId: string;
   layout: LayoutId;
@@ -17,6 +19,10 @@ type ThemeState = {
   dialTipSeen: boolean;
   /** The dial's optional click. */
   dialSound: boolean;
+  /** How Crate's tone arm puts the needle on the record. */
+  needleDrop: NeedleDrop;
+  /** Draws a needle head and a pivot on Crate's tone arm. */
+  needleHead: boolean;
   setActive(id: string): void;
   saveCustom(look: Look): string;
   renameCustom(id: string, name: string): void;
@@ -58,6 +64,8 @@ export const useThemeStore = create<ThemeState>()(
       pickerSeen: false,
       dialTipSeen: false,
       dialSound: false,
+      needleDrop: "gentle",
+      needleHead: true,
       setActive: (id) => set({ activeId: id }),
       saveCustom: (look) => {
         const id = look.id.startsWith("custom-")
