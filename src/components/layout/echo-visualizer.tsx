@@ -126,7 +126,7 @@ export function EchoVisualizer({ track, light }: { track: QueueTrack; light: boo
           values[i] += (want - values[i]) * (want > values[i] ? follow * 0.32 + 0.02 : follow * 0.16 + 0.01);
           const edge = Math.sin((i / (POINTS - 1)) * Math.PI);
           const x = w * (0.055 + 0.89 * (i / (POINTS - 1)));
-          points.push([x, h / 2 + (Math.sin(i * 0.3 + at) * 0.85 + Math.sin(i * 0.62 - at * 1.3) * 0.15) * values[i] * (h * 0.46) * edge]);
+          points.push([x, h / 2 + (Math.sin(i * 0.3 + at) * 0.85 + Math.sin(i * 0.62 - at * 1.3) * 0.15) * values[i] * (h * 0.8) * edge]);
         }
         g.beginPath();
         g.moveTo(points[0][0], points[0][1]);
