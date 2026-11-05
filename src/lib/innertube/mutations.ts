@@ -206,6 +206,25 @@ export async function removeFromPlaylist(
   }
 }
 
+/** Remove several rows in one request (the later copies of duplicate songs). */
+export async function removeManyFromPlaylist(
+  playlistId: string,
+  rows: { videoId: string; setVideoId: string }[],
+): Promise<void> {
+  const json = await innertubePost("browse/edit_playlist", {
+    playlistId,
+    actions: rows.map((r) => ({
+      action: "ACTION_REMOVE_VIDEO",
+      removedVideoId: r.videoId,
+      setVideoId: r.setVideoId,
+    })),
+  });
+  const status = json?.status as string | undefined;
+  if (status && status !== "STATUS_SUCCEEDED") {
+    throw new Error(`edit_playlist failed: ${status}`);
+  }
+}
+
 /** Rename a playlist the user owns. */
 export async function renamePlaylist(
   playlistId: string,

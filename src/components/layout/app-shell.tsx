@@ -56,7 +56,6 @@ import { useSessionStatusListener } from "@/lib/store/session-status";
 import { shellFor } from "@/components/layout/shells";
 import { usePersistentPage } from "@/components/layout/shells/persistent-page";
 import { RouteHeaderSlotProvider } from "@/components/layout/shells/route-header-slot";
-import { TurntableDial } from "@/components/theme/turntable-dial";
 import { cycleOnKey, LayoutNameCard } from "@/components/theme/layout-flip";
 
 function isEditableTarget(el: EventTarget | null): boolean {
@@ -257,7 +256,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Shell
                 page={page}
                 nav={<AppSidebar />}
-                dial={<TurntableDial />}
                 hasTrack={hasTrack}
               />
             </div>

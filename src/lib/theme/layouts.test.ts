@@ -40,12 +40,11 @@ describe("layouts", () => {
     expect(key(document.body, "l", false)).toBe(false);
   });
 
-  it("holds the dial tip until the picker is done and the dial is on screen", () => {
+  it("holds the dial tip until the picker is done, and shows it once", () => {
     const fresh = { pickerSeen: true, dialTipSeen: false };
-    expect(dialTipOpen(fresh, true)).toBe(true);
-    expect(dialTipOpen(fresh, false)).toBe(false);
-    expect(dialTipOpen({ ...fresh, pickerSeen: false }, true)).toBe(false);
-    expect(dialTipOpen({ ...fresh, dialTipSeen: true }, true)).toBe(false);
+    expect(dialTipOpen(fresh)).toBe(true);
+    expect(dialTipOpen({ ...fresh, pickerSeen: false })).toBe(false);
+    expect(dialTipOpen({ ...fresh, dialTipSeen: true })).toBe(false);
   });
 
   it("offers a file's layout by name", () => {

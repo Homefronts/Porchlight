@@ -1,6 +1,8 @@
 import { IconCheck } from "@tabler/icons-react";
 import { IconMusicFilled } from "@/components/shared/filled-icons";
-import { IconDotsVertical, IconLoader2, IconVideoFilled } from "@tabler/icons-react";
+import { IconDotsVertical, IconLoader2, IconMoonFilled, IconVideoFilled } from "@tabler/icons-react";
+import { isFloatingPlayerWindow } from "@/lib/floating-player";
+import { cancelSleepTimer, sleepAfterMinutes, sleepAfterThisSong, useSleepTimer } from "@/lib/store/sleep-timer";
 import { playerIconButton } from "@/components/layout/player-chrome";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -15,6 +17,9 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -116,6 +121,7 @@ export function PlayerMoreMenu({
                 controller={controller}
                 primitives={dropPrimitives}
               />
+              {isFloatingPlayerWindow() ? null : <SleepTimerItems />}
             </>
           ) : null}
         </DropdownMenuContent>
@@ -128,6 +134,39 @@ export function PlayerMoreMenu({
           videoIds={[item.id]}
         />
       ) : null}
+    </>
+  );
+}
+
+/** Sleep timer, in the main window's menus: the timer lives with the player there. */
+function SleepTimerItems() {
+  const { endsAt, endOfSong } = useSleepTimer();
+  return (
+    <>
+      <DropdownMenuSeparator />
+      {endsAt || endOfSong ? (
+        <DropdownMenuItem onSelect={cancelSleepTimer}>
+          <IconMoonFilled />
+          {endOfSong
+            ? "Cancel sleep timer (end of song)"
+            : `Cancel sleep timer (${Math.max(1, Math.ceil((endsAt! - Date.now()) / 60_000))} min left)`}
+        </DropdownMenuItem>
+      ) : (
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <IconMoonFilled />
+            Sleep timer
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            {[15, 30, 45, 60, 90].map((m) => (
+              <DropdownMenuItem key={m} onSelect={() => sleepAfterMinutes(m)}>
+                {m} minutes
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuItem onSelect={sleepAfterThisSong}>End of this song</DropdownMenuItem>
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+      )}
     </>
   );
 }

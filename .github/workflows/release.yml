@@ -73,6 +73,18 @@ jobs:
         with:
           workspaces: src-tauri
       - run: pnpm install --frozen-lockfile
+      - name: Read this version's notes from the README changelog
+        id: notes
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          body=$(tr -d '\r' < README.md | awk -v head="#### $version " 'index($0, head) == 1 { on = 1; next } on && /^#+ |^<details>|^<\/details>/ { exit } on')
+          {
+            echo 'body<<NOTES_END'
+            echo "${body:-See the assets below to download and install this version.}"
+            echo 'NOTES_END'
+          } >> "$GITHUB_OUTPUT"
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -93,7 +105,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Porchlight ${{ github.ref_name }}"
-          releaseBody: "See the assets below to download and install this version."
+          releaseBody: ${{ steps.notes.outputs.body }}
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

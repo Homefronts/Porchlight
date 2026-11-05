@@ -57,7 +57,6 @@ async function render(hasTrack: boolean) {
         createElement(GatefoldShell, {
           page,
           nav: null,
-          dial: createElement("div", { id: "dial" }),
           hasTrack,
         }),
     }),
@@ -85,7 +84,6 @@ it("renders the empty sleeve with picks from Home, the tabs and the page", async
   expect(left.textContent).toContain("Nothing playing yet");
   expect(left.textContent).toContain("Pick one");
   expect(left.textContent).toContain("Pick two");
-  expect(left.querySelector("#dial")).not.toBeNull();
   const tabs = [...container.querySelectorAll('nav[aria-label="Browse"] a')].map((a) => a.textContent);
   expect(tabs).toEqual(["Home", "Explore", "Search", "Library", "Downloads", "Rewind"]);
   expect(container.querySelector("#page")).not.toBeNull();
@@ -104,7 +102,6 @@ it("renders the playing record with its transport", async () => {
   expect(left.textContent).toContain("Late Night");
   expect(left.textContent).toContain("Lyric sheet");
   expect(left.querySelector('button[aria-label="Next"]')).not.toBeNull();
-  expect(left.querySelector("#dial")).not.toBeNull();
   unmount();
 });
 

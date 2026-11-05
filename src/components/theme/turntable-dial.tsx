@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
-import { useSidebar } from "@/components/ui/sidebar";
 import { dialTipOpen, LAYOUT_NAMES, LAYOUT_ORDER, nextLayout } from "@/lib/theme/layouts";
 import type { LayoutId } from "@/lib/theme/looks";
 import { useThemeStore } from "@/lib/theme/store";
@@ -94,12 +93,10 @@ function useDialogOpen(): { open: boolean; holding: () => boolean } {
  */
 export function TurntableDial() {
   const layout = useThemeStore((s) => s.layout);
-  // The collapsed rail hides the dial, so the tip waits for it to open.
-  const expanded = useSidebar().state === "expanded";
   // What's New opens on the same first launch; showing the tip under it lets
   // the dialog's focus dismiss the tip unseen, so it waits for dialogs to close.
   const dialog = useDialogOpen();
-  const tip = useThemeStore((s) => dialTipOpen(s, expanded)) && !dialog.open;
+  const tip = useThemeStore(dialTipOpen) && !dialog.open;
   const ref = useRef<HTMLDivElement>(null);
   const lastWheel = useRef(0);
   const at = LAYOUT_ORDER.indexOf(layout);
@@ -146,7 +143,7 @@ export function TurntableDial() {
             lastWheel.current = e.timeStamp;
             turn(e.deltaY > 0 ? 1 : -1);
           }}
-          className="relative size-7 shrink-0 cursor-pointer select-none"
+          className="relative me-1.5 size-7 shrink-0 cursor-pointer select-none"
         >
           {LAYOUT_ORDER.map((id, i) => (
             <span
@@ -176,8 +173,9 @@ export function TurntableDial() {
         </div>
       </PopoverAnchor>
       <PopoverContent
-        side="right"
-        sideOffset={10}
+        side="bottom"
+        align="end"
+        sideOffset={8}
         className="w-auto px-3 py-2 text-xs text-t1"
         // The tip points at the dial; it shouldn't take focus from the app.
         onOpenAutoFocus={(e) => e.preventDefault()}

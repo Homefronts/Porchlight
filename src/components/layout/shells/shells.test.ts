@@ -83,7 +83,7 @@ it("keeps the page, its scroller, scroll, focus and header slot across a shell s
     return createElement(
       RouteHeaderSlotProvider,
       null,
-      createElement(Shell, { page, nav: null, dial: null, hasTrack: false }),
+      createElement(Shell, { page, nav: null, hasTrack: false }),
       portal,
     );
   }

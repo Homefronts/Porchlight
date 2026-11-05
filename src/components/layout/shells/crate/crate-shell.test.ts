@@ -57,7 +57,7 @@ async function render(hasTrack: boolean) {
   const router = createRouter({
     routeTree: createRootRoute({
       component: () =>
-        createElement(CrateShell, { page, nav: null, dial: createElement("div", { id: "dial" }), hasTrack }),
+        createElement(CrateShell, { page, nav: null, hasTrack }),
     }),
     history: createMemoryHistory({ initialEntries: ["/"] }),
   });
@@ -80,7 +80,6 @@ const key = (el: Element, k: string) =>
 it("renders the crate, the tabs, the menu and an empty platter", async () => {
   usePlaybackStore.setState({ queue: [], index: -1 });
   const { container, unmount } = await render(false);
-  expect(container.querySelector("#dial")).not.toBeNull();
   const tabs = [...container.querySelectorAll('nav[aria-label="Browse"] a')].map((a) => a.textContent);
   expect(tabs).toEqual(["Home", "Explore", "Search", "Library", "Downloads", "Rewind"]);
   expect(container.textContent).toContain("MENU");

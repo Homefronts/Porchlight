@@ -1,3 +1,4 @@
+import { TurntableDial } from "@/components/theme/turntable-dial";
 import { useEffect, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -226,6 +227,8 @@ export function TopBar({ sidebarToggle = true }: { sidebarToggle?: boolean } = {
         {/* Clear of the fixed window controls (3 x w-11) off macOS. */}
         {fullscreen ? null : (
           <>
+            {/* In the title bar so it stays under the mouse from layout to layout. */}
+            <TurntableDial />
             {/* Always one click away; the ⋯ menu has the same item. */}
             <Tooltip>
               <TooltipTrigger asChild>

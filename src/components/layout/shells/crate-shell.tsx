@@ -10,13 +10,13 @@ import { Turntable } from "./crate/parts";
 import type { ShellProps } from "./types";
 
 /**
- * A record crate: logo and dial, the tabs and the MENU (playlists,
+ * A record crate: the logo, the tabs and the MENU (playlists,
  * Settings, account) across the top, the stage (Home draws the crate
  * itself, see crate/parts.tsx; every other page renders as usual), and
  * the turntable along the bottom. Below Panels' breakpoint the tabs drop
  * to their own row, the crate shows two sleeves and the deck loses Up Next.
  */
-export function CrateShell({ page, dial }: ShellProps) {
+export function CrateShell({ page }: ShellProps) {
   const compact = useCompact();
   // Overlays sit 1rem above the turntable, whatever height it settles at.
   const deckRef = useRef<HTMLDivElement>(null);
@@ -26,7 +26,7 @@ export function CrateShell({ page, dial }: ShellProps) {
     <div data-crate className="relative flex min-h-0 flex-1 flex-col">
       <TopBar sidebarToggle={false} />
       <div className="flex shrink-0 flex-wrap items-center gap-x-8 gap-y-2 border-b border-w110 px-7 pb-2.5 pt-1">
-        <Wordmark dial={dial} />
+        <Wordmark />
         <BrowseTabs className={compact ? "order-last basis-full" : undefined} />
         <MenuButton />
       </div>

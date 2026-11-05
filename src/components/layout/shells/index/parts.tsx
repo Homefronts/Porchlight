@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { IconMenu2 } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
@@ -19,12 +19,8 @@ import { PorchlightMark } from "@/components/theme/porchlight-mark";
 
 const EYEBROW = "font-meta text-[11px] uppercase tracking-[0.1em] text-muted-foreground/70";
 
-/**
- * The logo with the dial beside it. The dial reads "expanded" from the
- * nearest sidebar state to time its tip; here it is always on screen, so
- * it gets its own state that is always open.
- */
-export function Wordmark({ dial }: { dial: ReactNode }) {
+/** The logo and the name. */
+export function Wordmark() {
   const liner = isLinerLook(useActiveLook());
   return (
     <div className="flex items-center gap-[9px]">
@@ -40,9 +36,6 @@ export function Wordmark({ dial }: { dial: ReactNode }) {
           Porchlight
         </span>
       )}
-      <SidebarProvider open onOpenChange={noop} className="ms-1 min-h-0 w-auto">
-        {dial}
-      </SidebarProvider>
     </div>
   );
 }
@@ -79,19 +72,17 @@ export function BrowseTabs({ className }: { className?: string }) {
   );
 }
 
-/** Logo, dial and the tabs. */
+/** Logo and the tabs. */
 export function IndexMasthead({
-  dial,
   compact,
 }: {
-  dial: ReactNode;
   compact: boolean;
 }) {
   return (
     <div
       className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-2 border-b border-w110 px-6 pb-2.5 pt-3"
     >
-      <Wordmark dial={dial} />
+      <Wordmark />
       <BrowseTabs className={compact ? "order-last basis-full" : "ms-auto"} />
       {compact && <MenuButton />}
     </div>

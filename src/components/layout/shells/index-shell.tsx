@@ -13,7 +13,7 @@ import type { ShellProps } from "./types";
  * No sidebar. Below Panels' breakpoint the Appendix folds into a MENU
  * button, the tabs drop to their own row and the strip loses its times.
  */
-export function IndexShell({ page, dial, hasTrack }: ShellProps) {
+export function IndexShell({ page, hasTrack }: ShellProps) {
   const compact = useCompact();
   // No left or bottom chrome; overlays only clear the Appendix.
   useShellInsets({
@@ -27,7 +27,7 @@ export function IndexShell({ page, dial, hasTrack }: ShellProps) {
       <IndexStrip hasTrack={hasTrack} compact={compact} />
       <div className="relative flex min-h-0 flex-1">
         <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-          <IndexMasthead dial={dial} compact={compact} />
+          <IndexMasthead compact={compact} />
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
             <EntityPageHeader />
             <RouteHeaderSlot className="pointer-events-none absolute inset-x-0 top-0 z-20 [&>*]:pointer-events-auto" />

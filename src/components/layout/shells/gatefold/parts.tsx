@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { IconLoader2, IconMicrophoneFilled } from "@tabler/icons-react";
 import { useShallow } from "zustand/react/shallow";
@@ -53,11 +52,9 @@ const SHEET = "[&_.lyrics-line]:text-[22px] [&_.app-scroll]:text-[22px]";
 export function RecordPage({
   hasTrack,
   compact,
-  dial,
 }: {
   hasTrack: boolean;
   compact: boolean;
-  dial: ReactNode;
 }) {
   const playerStyle = usePlayerStyle();
   const eyebrow = hasTrack ? (
@@ -75,7 +72,7 @@ export function RecordPage({
         compact ? "w-[210px] px-5 pb-4 pt-3" : "w-1/2 px-[34px] pb-6 pt-5",
       )}
     >
-      {/* The label's corner: the logo with the dial, where it never wraps. */}
+      {/* The label's corner: the logo, where it never wraps. */}
       <div
         className={cn(
           "mb-3.5 flex shrink-0",
@@ -83,9 +80,9 @@ export function RecordPage({
         )}
       >
         {eyebrow}
-        {/* One order in the tree so the dial never remounts at the breakpoint. */}
+        {/* One order in the tree so the logo never remounts at the breakpoint. */}
         <div className={cn(compact && "order-first")}>
-          <Wordmark dial={dial} />
+          <Wordmark />
         </div>
       </div>
       {hasTrack ? <Playing compact={compact} /> : <EmptySleeve compact={compact} />}

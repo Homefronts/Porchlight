@@ -7,7 +7,6 @@ import { EntityPageHeader } from "@/components/layout/entity-page-header";
 import { BackgroundCover } from "@/components/layout/background-cover";
 import { useLayoutStore } from "@/lib/store/layout";
 import { cn, noop } from "@/lib/utils";
-import { DialSlot } from "./dial-slot";
 import { escapeClosesOverlay } from "./panels/escape";
 import { useHeight, useShellInsets } from "./insets";
 import { useCompact } from "./compact";
@@ -27,7 +26,7 @@ import type { ShellProps } from "./types";
  * cover, Now playing on the right, and the player bar along the bottom.
  * The nav panel and its [data-panels] styles live in index.css.
  */
-export function PanelsShell({ page, nav, dial, hasTrack }: ShellProps) {
+export function PanelsShell({ page, nav, hasTrack }: ShellProps) {
   const compact = useCompact();
   const [nowOpen, setNowOpen] = useState(false);
   const outer = useSidebar();
@@ -68,8 +67,7 @@ export function PanelsShell({ page, nav, dial, hasTrack }: ShellProps) {
       <div className="relative flex min-h-0 flex-1 pb-2 pe-2">
         {/* Its own sidebar state, so the compact rail never collapses
             Sidebar's nav. The title bar's toggle still drives it when
-            there is room; the no-op keeps Ctrl+B from toggling twice.
-            The dial reads this state, so its tip waits while it's hidden. */}
+            there is room; the no-op keeps Ctrl+B from toggling twice. */}
         <SidebarProvider
           open={navOpen}
           onOpenChange={noop}
@@ -81,7 +79,7 @@ export function PanelsShell({ page, nav, dial, hasTrack }: ShellProps) {
             } as React.CSSProperties
           }
         >
-          <DialSlot.Provider value={dial}>{nav}</DialSlot.Provider>
+          {nav}
         </SidebarProvider>
         <div
           className={cn(

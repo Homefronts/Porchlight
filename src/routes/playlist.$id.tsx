@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { CollectionDownloadButton } from "@/components/shared/download-button";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircleIcon, BookmarkCheckIcon, BookmarkPlusIcon, PencilIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
+import { AlertCircleIcon, BookmarkCheckIcon, BookmarkPlusIcon, CopyMinusIcon, PencilIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
 import {
   IconCheck,
   IconLoader2,
@@ -27,6 +27,8 @@ import { LikedCover } from "@/components/shared/liked-cover";
 import { LikedCoverPicker } from "@/components/shared/liked-cover-picker";
 import { ExpandableText } from "@/components/shared/expandable-text";
 import { TrackList } from "@/components/shared/track-list";
+import { removeManyFromPlaylist } from "@/lib/innertube/mutations";
+import { duplicateTracks } from "@/lib/playlist-duplicates";
 import { JumpToCurrentButton } from "@/components/shared/jump-to-current-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -372,6 +374,15 @@ function PlaylistPageView() {
                     playlistId={bare(id)}
                     routeId={id}
                     title={header.title}
+                  />
+                  <RemoveDuplicatesButton
+                    playlistId={bare(id)}
+                    routeId={id}
+                    loadAll={async () => {
+                      let r: Pick<typeof query, "data" | "hasNextPage"> = query;
+                      while (r.hasNextPage) r = await query.fetchNextPage();
+                      return r.data?.pages.flatMap((p) => p.tracks) ?? [];
+                    }}
                   />
                   <DeletePlaylistButton
                     playlistId={bare(id)}
@@ -782,6 +793,96 @@ function RenamePlaylistButton({ playlistId, routeId, title }: { playlistId: stri
 }
 
 /** Delete a playlist you own from YouTube Music, after a confirmation. */
+function RemoveDuplicatesButton({
+  playlistId,
+  routeId,
+  loadAll,
+}: {
+  playlistId: string;
+  routeId: string;
+  loadAll: () => Promise<ShelfItem[]>;
+}) {
+  const qc = useQueryClient();
+  const [dupes, setDupes] = useState<ShelfItem[] | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const check = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const found = duplicateTracks(await loadAll());
+      if (found.length) setDupes(found);
+      else toast("No duplicates in this playlist");
+    } catch (e) {
+      toast.error(`Couldn't check for duplicates: ${String(e)}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirm = async () => {
+    if (busy || !dupes) return;
+    setBusy(true);
+    try {
+      await removeManyFromPlaylist(
+        playlistId,
+        dupes.map((t) => ({ videoId: t.id, setVideoId: t.setVideoId! })),
+      );
+      toast.success(dupes.length === 1 ? "Removed 1 duplicate" : `Removed ${dupes.length} duplicates`);
+      setDupes(null);
+      void qc.invalidateQueries({ predicate: (q) => isPageOf(q.queryKey, routeId) });
+    } catch (e) {
+      toast.error(`Couldn't remove duplicates: ${String(e)}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="icon"
+        aria-label="Remove duplicates"
+        title="Remove duplicates"
+        disabled={busy && !dupes}
+        onClick={() => void check()}
+      >
+        {busy && !dupes ? <IconLoader2 className="animate-spin" /> : <CopyMinusIcon />}
+      </Button>
+      <Dialog open={dupes !== null} onOpenChange={(o) => !o && !busy && setDupes(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {dupes?.length === 1 ? "Remove 1 duplicate?" : `Remove ${dupes?.length} duplicates?`}
+            </DialogTitle>
+            <DialogDescription>
+              The first copy of each song stays. This also changes the playlist on YouTube Music.
+            </DialogDescription>
+          </DialogHeader>
+          <ul className="max-h-56 overflow-y-auto text-sm text-muted-foreground">
+            {dupes?.map((t) => (
+              <li key={t.setVideoId} className="truncate py-0.5">
+                {t.title}
+                {t.artists?.length ? ` by ${t.artists.map((a) => a.name).join(", ")}` : ""}
+              </li>
+            ))}
+          </ul>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDupes(null)} disabled={busy}>
+              Cancel
+            </Button>
+            <Button onClick={() => void confirm()} disabled={busy}>
+              {busy && <IconLoader2 className="animate-spin" />}
+              Remove
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 function DeletePlaylistButton({ playlistId, routeId, title }: { playlistId: string; routeId: string; title: string }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
