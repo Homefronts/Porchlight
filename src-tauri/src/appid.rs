@@ -41,3 +41,22 @@ pub fn init() {
         }
     }
 }
+
+/// Windows keeps showing a shortcut's old icon from its cache after an update
+/// replaces the exe. Ask it to refresh once per version, so a new icon reaches
+/// pinned shortcuts. Best effort; a no-op off Windows.
+pub fn refresh_shell_icons_once(data_dir: &std::path::Path, version: &str) {
+    #[cfg(windows)]
+    {
+        let marker = data_dir.join("shell-icons-version");
+        if std::fs::read_to_string(&marker).is_ok_and(|seen| seen == version) {
+            return;
+        }
+        use windows_sys::Win32::UI::Shell::{SHChangeNotify, SHCNE_ASSOCCHANGED, SHCNF_IDLIST};
+        unsafe { SHChangeNotify(SHCNE_ASSOCCHANGED as _, SHCNF_IDLIST, std::ptr::null(), std::ptr::null()) };
+        let _ = std::fs::create_dir_all(data_dir);
+        let _ = std::fs::write(marker, version);
+    }
+    #[cfg(not(windows))]
+    let _ = (data_dir, version);
+}

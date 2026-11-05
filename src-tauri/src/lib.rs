@@ -4545,6 +4545,9 @@ pub fn run() {
         .setup(move |app| {
             // First: everything below reads the data folder this fills.
             migrate::start(app.handle());
+            if let Ok(dir) = app.path().app_data_dir() {
+                appid::refresh_shell_icons_once(&dir, &app.package_info().version.to_string());
+            }
             eprintln!(
                 "[boot] Porchlight {} starting (debug={})",
                 app.package_info().version,
