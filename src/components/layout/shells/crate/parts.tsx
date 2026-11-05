@@ -21,13 +21,14 @@ import { useAiFilter } from "@/lib/ai/use-ai";
 import { playPlaylistNow } from "@/lib/play-playlist";
 import { openFullscreen } from "@/lib/store/fullscreen";
 import { currentTrack, usePlaybackStore } from "@/lib/store/playback";
+import { useScrubStore } from "@/lib/store/scrub";
 import type { Shelf, ShelfItem } from "@/lib/innertube/types";
 import { cn } from "@/lib/utils";
 import { useLyricsView } from "@/components/layout/lyrics-view";
 import { LyricsButton, Transport } from "../gatefold/parts";
 import { useCompact } from "../compact";
 import { usePlayerStyle } from "../player-colour";
-import { crateStep } from "./step";
+import { crateStep, needleAngle } from "./step";
 import { subtitleRuns } from "./subtitle";
 import { LinerNotes } from "./liner-notes";
 const MONO = "font-meta text-[11px] uppercase tracking-[0.1em]";
@@ -336,6 +337,28 @@ export function Crate({ shelves: all }: { shelves: Shelf[] }) {
  * from the cover, then the title, the transport and Up Next. Empty, a blank
  * platter with the arm parked. Compact drops Up Next (the Queue button stays).
  */
+/**
+ * The needle rides the record: it drops on the outer edge when a song starts
+ * and creeps in toward the label as it plays, following a seek drag too.
+ * Parked off the record when there's nothing to play.
+ */
+function ToneArm({ loaded, deck }: { loaded: boolean; deck: number }) {
+  const position = usePlaybackStore((s) => s.position);
+  const duration = usePlaybackStore((s) => s.duration);
+  const scrub = useScrubStore((s) => s.scrub);
+  return (
+    <span
+      aria-hidden
+      className="absolute top-1.5 w-1 origin-top rounded-sm bg-[#8a8378] motion-safe:transition-transform motion-safe:duration-700"
+      style={{
+        height: Math.round(deck * 0.53),
+        right: loaded ? -6 : 0,
+        transform: `rotate(${loaded ? needleAngle(scrub ?? position, duration) : -8}deg)`,
+      }}
+    />
+  );
+}
+
 export const Turntable = forwardRef<HTMLDivElement, { compact: boolean }>(function Turntable({ compact }, ref) {
   const track = usePlaybackStore(currentTrack);
   const { playing, queue, index } = usePlaybackStore(
@@ -390,12 +413,7 @@ export const Turntable = forwardRef<HTMLDivElement, { compact: boolean }>(functi
             <MusicVideo track={track} where="card" className="object-cover" />
           </div>
         ) : null}
-        {/* Tone arm: on the record while there is one, parked when empty. */}
-        <span
-          aria-hidden
-          className="absolute top-1.5 h-[70px] w-1 origin-top rounded-sm bg-[#8a8378] motion-safe:transition-transform"
-          style={{ right: track ? -6 : 0, transform: `rotate(${track ? 28 : -8}deg)` }}
-        />
+        <ToneArm loaded={!!track} deck={deck} />
       </button>
       <div className={cn("flex min-w-0 flex-col", compact ? "w-[150px]" : "w-[220px]")}>
         {track ? (
