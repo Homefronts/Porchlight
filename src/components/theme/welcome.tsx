@@ -3,6 +3,7 @@ import { Dialog as DialogPrimitive } from "radix-ui";
 import { Button } from "@/components/ui/button";
 import { welcomeCopy } from "@/lib/theme/first-launch";
 import { FONT_STACKS } from "@/lib/theme/looks";
+import { PorchlightMark } from "./porchlight-mark";
 
 const serif = { fontFamily: FONT_STACKS["instrument-serif"] };
 const mono = { fontFamily: FONT_STACKS["jetbrains-mono"] };
@@ -33,7 +34,7 @@ export function Welcome({ updater, onDone }: { updater: boolean; onDone: () => v
             className="welcome-spin flex size-full items-center justify-center rounded-full shadow-[inset_0_0_0_2px_#707070]"
             style={{ background: "repeating-radial-gradient(circle, #0c0c0c 0 3px, #2a2a2a 3px 4px)" }}
           >
-            <img src="/ytubic-icon.svg" alt="" className="size-[58px] rounded-full" />
+            <PorchlightMark detail className="size-[58px] rounded-full" />
           </div>
         </div>
         <div className="absolute inset-y-0 left-0 z-10 w-[180px] rounded-[var(--radius-cover,4px)] border border-border bg-card shadow-lg">

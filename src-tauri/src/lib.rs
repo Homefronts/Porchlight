@@ -4308,7 +4308,7 @@ fn show_main_window(app: &tauri::AppHandle) {
 /// App icon for runtime surfaces (tray, taskbar). Debug builds get an
 /// orange variant of the logo so a dev instance running next to an
 /// installed release is distinguishable at a glance; release builds use
-/// the bundled (red) icon.
+/// the bundled icon.
 fn runtime_icon(app: &tauri::AppHandle) -> tauri::image::Image<'static> {
     #[cfg(debug_assertions)]
     {

@@ -15,6 +15,7 @@ import { useActiveLook } from "@/lib/theme/store";
 import { openSettings } from "@/lib/store/settings-dialog";
 import { sideLetter } from "@/components/theme/section-label";
 import { cn, noop } from "@/lib/utils";
+import { PorchlightMark } from "@/components/theme/porchlight-mark";
 
 const EYEBROW = "font-meta text-[11px] uppercase tracking-[0.1em] text-muted-foreground/70";
 
@@ -27,7 +28,7 @@ export function Wordmark({ dial }: { dial: ReactNode }) {
   const liner = isLinerLook(useActiveLook());
   return (
     <div className="flex items-center gap-[9px]">
-      <img src="/ytubic-icon.svg" alt="Porchlight" className="size-7 shrink-0 rounded-full" />
+      <PorchlightMark className="size-7" />
       {liner ? (
         <span className="font-display text-[15px] font-black uppercase leading-[0.92] tracking-[-0.01em] text-t1">
           Porch

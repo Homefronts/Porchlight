@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/branding/ytubic-icon.svg" alt="YTubic" width="96" />
+  <img src="assets/branding/porchlight-icon.svg" alt="Porchlight" width="96" />
 </p>
 
 <h1 align="center">Porchlight</h1>

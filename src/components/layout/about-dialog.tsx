@@ -31,6 +31,7 @@ import {
 } from "@/components/shared/brand-icons";
 import { cn } from "@/lib/utils";
 import { useLookFamily } from "@/components/theme/look-type";
+import { PorchlightMark } from "@/components/theme/porchlight-mark";
 
 // Porchlight lives on the Homefronts fork; the original project and its
 // author keep their credit (and the Support / X / Discord links) below.
@@ -168,13 +169,9 @@ export function AboutDialog({
         <div className="flex flex-col gap-4 px-7 pb-0 pt-7">
           {/* Right padding clears the close button. */}
           <div className="flex items-center gap-4 pr-[34px]">
-            <img
-              src="/ytubic-icon.svg"
-              alt=""
-              // The design draws a 16px squircle here, but our icon is a
-              // circular disc — a box-shadow follows the element's radius,
-              // so at 16px the accent glow leaked out as square corners.
-              className="size-14 shrink-0 rounded-full shadow-[0_6px_18px_-6px_rgba(var(--acc1rgb),0.35)]"
+            <PorchlightMark
+              detail
+              className="size-14 rounded-[22%] shadow-[0_6px_18px_-6px_rgba(var(--acc1rgb),0.35)]"
             />
             <div className="flex min-w-0 flex-col gap-[9px]">
               <DialogTitle

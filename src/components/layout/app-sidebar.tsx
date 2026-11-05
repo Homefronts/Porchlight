@@ -97,6 +97,7 @@ import { cn } from "@/lib/utils";
 import { useActiveLook } from "@/lib/theme/store";
 import { isLinerLook } from "@/lib/theme/looks";
 import { DialSlot } from "@/components/layout/shells/dial-slot";
+import { PorchlightMark } from "@/components/theme/porchlight-mark";
 
 export const NAV_ITEMS = [
   { to: "/", label: "Home", icon: IconHome, iconOn: IconHomeFilled },
@@ -174,15 +175,11 @@ export function AppSidebar() {
       className="px-2 pb-2 pt-0 duration-300 ease-out [&>[data-slot=sidebar-inner]]:rounded-[var(--radius-window,12px)] [&>[data-slot=sidebar-inner]]:border [&>[data-slot=sidebar-inner]]:border-w110 [&>[data-slot=sidebar-inner]]:bg-glass1 [&>[data-slot=sidebar-inner]]:shadow-[0_6px_18px_-14px_var(--k550)] [&>[data-slot=sidebar-inner]]:backdrop-blur-[24px]"
     >
       <SidebarHeader className="flex-row items-center gap-[9px] overflow-hidden px-4 pt-4 pb-2 group-data-[collapsible=icon]:ps-3.5 group-data-[collapsible=icon]:pe-2">
-        {/* Single round logo. Expanded it sits at px-4, in line with the
+        {/* Single logo. Expanded it sits at px-4, in line with the
          *  menu glyphs. On the rail the start inset puts its centre on the
          *  rail's own axis (14 + 14 = 28), so it glides there instead of
          *  hopping to a centered row. */}
-        <img
-          src="/ytubic-icon.svg"
-          alt="Porchlight"
-          className="size-7 shrink-0 rounded-full"
-        />
+        <PorchlightMark className="size-7" />
         {liner ? (
           <span
             data-sidebar-label
