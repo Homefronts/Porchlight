@@ -5,6 +5,7 @@ import { currentAnalyser } from "@/lib/audio-graph";
 import { pickCoverColour } from "@/lib/cover-colour";
 
 const POINTS = 64;
+const BASS_PUSH = 0.75;
 // Each trail follows the one before it more slowly, and is fainter and thinner.
 const TRAILS = [
   { follow: 0.05, alpha: 0.28, width: 2, lag: 0.9 },
@@ -79,6 +80,8 @@ export function EchoVisualizer({ track, light }: { track: QueueTrack; light: boo
         bins = new Uint8Array(analyser.frequencyBinCount);
       }
       analyser?.getByteFrequencyData(bins);
+      // The kick and bass, roughly below 300 Hz at a usual sample rate, push the whole line.
+      const bass = ((bins[0] ?? 0) + (bins[1] ?? 0) + (bins[2] ?? 0)) / 765;
       const w = el.clientWidth;
       const h = el.clientHeight;
       const t = now / 1000;
@@ -96,7 +99,7 @@ export function EchoVisualizer({ track, light }: { track: QueueTrack; light: boo
           // Bass in the middle and highs out to both ends, since most of the energy is in the bass.
           const fromMiddle = Math.abs((i / (POINTS - 1)) * 2 - 1);
           const bin = Math.floor(Math.pow(fromMiddle, 1.7) * bins.length * 0.5);
-          const want = Math.min(1, ((bins[bin] ?? 0) / 255) * (1 + fromMiddle * 1.8));
+          const want = Math.min(1, ((bins[bin] ?? 0) / 255) * (1 + fromMiddle * 1.8) * 0.6 + bass * bass * BASS_PUSH);
           values[i] += (want - values[i]) * (want > values[i] ? Math.max(follow, 0.45 * follow + 0.04) : follow * 0.3);
           const edge = Math.sin((i / (POINTS - 1)) * Math.PI);
           const x = w * (0.055 + 0.89 * (i / (POINTS - 1)));
