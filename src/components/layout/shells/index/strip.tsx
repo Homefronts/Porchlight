@@ -24,6 +24,7 @@ import { TransportLabel } from "@/components/theme/transport-label";
 import { openFullscreen } from "@/lib/store/fullscreen";
 import { currentTrack, usePlaybackStore } from "@/lib/store/playback";
 import { useScrubStore } from "@/lib/store/scrub";
+import { usePlatter } from "@/components/theme/use-platter";
 import { cn } from "@/lib/utils";
 import { PopOutButton } from "../panels/parts";
 
@@ -33,11 +34,12 @@ const ON_LABEL =
 const WORD = "h-8 px-2 font-meta text-[11px] tracking-[0.12em]";
 
 /** Two reels in a box; they turn while the tape plays. */
+function Reel({ playing }: { playing: boolean }) {
+  const ref = usePlatter<HTMLElement>(2400, playing);
+  return <i ref={ref} className="size-3 rounded-full border-2 border-dashed border-on-strip" />;
+}
+
 function Cassette({ on, playing }: { on: boolean; playing: boolean }) {
-  const reel = cn(
-    "size-3 rounded-full border-2 border-dashed border-on-strip",
-    playing && "motion-safe:animate-[spin_2.4s_linear_infinite]",
-  );
   return (
     <div
       aria-hidden
@@ -46,8 +48,8 @@ function Cassette({ on, playing }: { on: boolean; playing: boolean }) {
         !on && "opacity-40",
       )}
     >
-      <i className={reel} />
-      <i className={reel} />
+      <Reel playing={playing} />
+      <Reel playing={playing} />
     </div>
   );
 }

@@ -381,6 +381,7 @@ The user asked (2026-10-31) that **every change gets added to this write-up as i
    - On branch `logo`, the dial moved to the title bar, left of the bug button, so it sits at the same spot in every layout (measured live: x 1690, y 4 at 1920 wide in all five).
    - On branch `logo`, remove duplicates on your own playlists (lists them, asks first, keeps the first copy), and a sleep timer in the player's More menu (15 to 90 minutes, or end of this song; a manual skip also counts as the end). Neither was run live, to avoid changing the user's real playlists and playback. Sort by artist already existed as Artist (A-Z), so it only came off the roadmap.
    - On branch `logo`, each release's notes now come from that version's README changelog section. Correction: the in-app update banner never showed those notes, only the version; What's New covers them after updating.
+   - On branch `logo`, Crate's record and Index's cassette reels follow the progress slider while it's dragged: backward when you drag backward, still when you stop (`usePlatter`). Skip and seek keys don't turn it.
    - On branch `logo`, primary buttons read in Ink: `--on-accent` is white unless the accent is too pale for it. Classic, Sleeve and Paper are unchanged.
 5. **Fork detach:** verify once GitHub Support finishes (see Part 1).
 6. **Next projects:**

@@ -15,6 +15,7 @@ import { MusicVideo } from "@/components/layout/music-video";
 import { formatTime, useITunesCover } from "@/components/layout/player-bar";
 import { recordTitleClass, useLookFamily } from "@/components/theme/look-type";
 import { sideLetter } from "@/components/theme/section-label";
+import { usePlatter } from "@/components/theme/use-platter";
 import { Vinyl } from "@/components/theme/vinyl";
 import { useAiFilter } from "@/lib/ai/use-ai";
 import { playPlaylistNow } from "@/lib/play-playlist";
@@ -345,6 +346,7 @@ export const Turntable = forwardRef<HTMLDivElement, { compact: boolean }>(functi
   const family = useLookFamily();
   const lyrics = useLyricsView(track);
   const deck = compact ? 120 : 150;
+  const platter = usePlatter<HTMLDivElement>(6000, !!track && playing);
   const playerStyle = usePlayerStyle();
   return (
     <footer
@@ -364,11 +366,10 @@ export const Turntable = forwardRef<HTMLDivElement, { compact: boolean }>(functi
         style={{ width: deck, minHeight: compact ? 96 : 112 }}
       >
         <Vinyl
+          ref={platter}
           always
           className={cn(
             "inset-auto start-0 top-2.5 z-0 translate-none", compact ? "size-[120px]" : "size-[150px]",
-            track && "motion-safe:animate-[spin_6s_linear_infinite]",
-            !playing && "[animation-play-state:paused]",
           )}
         >
           <div className={cn("absolute inset-[31%] overflow-hidden rounded-full", !track && "grid place-items-center bg-[#1d1b19]")}>

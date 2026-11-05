@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 import { useActiveLook } from "@/lib/theme/store";
 import { cn } from "@/lib/utils";
 
@@ -12,16 +12,18 @@ export function Vinyl({
   className,
   always,
   children,
+  ref,
 }: {
   className?: string;
   always?: boolean;
   /** The record's label, laid over its centre. */
   children?: ReactNode;
+  ref?: Ref<HTMLDivElement>;
 }) {
   const on = useActiveLook().touches.vinyl;
   if (!on && !always) return null;
   return (
-    <div aria-hidden="true" className={cn("vinyl", className)}>
+    <div ref={ref} aria-hidden="true" className={cn("vinyl", className)}>
       {children}
     </div>
   );
