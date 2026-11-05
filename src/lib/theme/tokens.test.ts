@@ -15,6 +15,12 @@ describe("deriveTokens", () => {
     expect(t["--brand"]).toBe("#ff3b5c");
   });
 
+  it("keeps primary buttons white unless the accent is too pale for it", () => {
+    expect(deriveTokens(BUILT_IN_LOOKS.sleeve)["--on-accent"]).toBe("#ffffff");
+    expect(deriveTokens(BUILT_IN_LOOKS.paper)["--on-accent"]).toBe("#ffffff");
+    expect(deriveTokens(BUILT_IN_LOOKS.ink)["--on-accent"]).toBe("#000000");
+  });
+
   it("returns nothing for Classic, which is the stylesheet", () => {
     expect(deriveTokens(BUILT_IN_LOOKS.classic)).toEqual({});
   });

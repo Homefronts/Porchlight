@@ -74,4 +74,9 @@ export async function showMoveNotice(): Promise<void> {
   const { notice } = await invoke<MoveStatus>("move_status");
   if (notice === "moved") toast("Moved over from YTubic Plus.");
   else if (notice === "failed") showFailed();
+  else if (await invoke<boolean>("plus_needs_update")) {
+    toast("Still using YTubic Plus? Update it from its Settings > General first, so your library and settings move over.", {
+      duration: 15000,
+    });
+  }
 }

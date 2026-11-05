@@ -104,6 +104,14 @@ it("notice_failed_has_try_again_that_calls_retry_move", async () => {
   expect(h.invoke).toHaveBeenCalledWith("retry_move");
 });
 
+it("notice_asks_an_old_plus_install_to_update_first", async () => {
+  serve(null, { state: "notPlus", attempts: 0, notice: null });
+  const served = h.invoke.getMockImplementation()!;
+  h.invoke.mockImplementation(async (cmd: string) => (cmd === "plus_needs_update" ? true : served(cmd)));
+  await showMoveNotice();
+  expect(h.toast.mock.calls[0][0]).toContain("Update it from its Settings > General first");
+});
+
 it("no_notice_when_nothing_to_say", async () => {
   serve(null, { state: "done", attempts: 0, notice: null });
   await showMoveNotice();

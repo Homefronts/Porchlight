@@ -374,8 +374,9 @@ The user asked (2026-10-31) that **every change gets added to this write-up as i
 3. **Release.** Done. `layouts` was fast-forwarded into `main`, `main` was pushed, then lightweight tag `v1.1.0` was pushed. The first tag failed the build. It was deleted and pushed again on `2c05b2e`. Run 41225491877 opened the draft. The user asked to publish it, and it is public: https://github.com/Homefronts/Porchlight/releases/tag/v1.1.0. The app can offer 1.1.0 from `latest.json`. Do not tag again for a notes change.
 4. **1.0.1-type fixes, still queued** (they could ride along in the release):
    - Done in 1.1.0: Ink look's sidebar "Sign in" button now uses `on-brand`.
-   - The dev build writes the installed app's real data folders instead of `.dev` ones. Fixing this would make testing safe.
-   - The website installer skips the bridge (see Part 1). The README note shipped in 1.1.0; detecting an un-updated Plus install is still open.
+   - Dev builds keep the installed app's real data: the user decided this on 2026-11-04 so they don't have to sign in twice. `pnpm tauri dev` skips `tauri.dev.conf.json`. Keep backing up data before every run.
+   - The website installer skips the bridge (see Part 1). The README note shipped in 1.1.0. On branch `logo`, Porchlight now tells someone on Plus 0.6.0 to 0.9.0 (Windows only, no bridge marker yet) to update Plus first. Hint only; it never acts on that install, since NUber's app shares the slot.
+   - On branch `logo`, primary buttons read in Ink: `--on-accent` is white unless the accent is too pale for it. Classic, Sleeve and Paper are unchanged.
 5. **Fork detach:** verify once GitHub Support finishes (see Part 1).
 6. **Next projects:**
    - **A new logo.** Chosen 2026-11-04: B, the P record, a P whose round part is a record. Drafts: https://claude.ai/artifact/PAvRhs8SVphpEf8x2P8mNA. It's on branch `logo` (f9d7baf), not merged or released. The user chose to have the in-app mark follow each look. Master: `assets/branding/porchlight-icon.svg`. Not yet seen in the running app. Ships with the next release.

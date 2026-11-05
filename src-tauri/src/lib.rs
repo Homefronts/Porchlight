@@ -4445,6 +4445,7 @@ pub fn run() {
             migrate::take_handoff_frontend,
             migrate::ack_handoff_imported,
             migrate::move_status,
+            migrate::plus_needs_update,
             migrate::retry_move,
             save_png,
             save_text_file,

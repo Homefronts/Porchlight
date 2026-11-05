@@ -1001,6 +1001,26 @@ pub fn ack_handoff_imported(app: AppHandle) -> Result<(), String> {
     ack_import(&MovePaths::detect(&app)?)
 }
 
+/// `major.minor.patch` as numbers, so 0.10.0 sorts after 0.9.1.
+fn version_parts(v: &str) -> Option<(u32, u32, u32)> {
+    let mut p = v.trim().split('.').map(|n| n.parse().ok());
+    Some((p.next()??, p.next()??, p.next()??))
+}
+
+/// A Plus version older than the 0.9.1 bridge, with no bridge marker yet: the
+/// data can't move until that install updates itself. NUber's app shares this
+/// slot, so this only ever drives a hint and never acts on the install.
+fn needs_bridge_update(paths: &MovePaths) -> bool {
+    let unbridged = !paths.old_roaming.join(MARKER).exists() && !paths.old_roaming.join(MOVED_MARKER).exists();
+    let version = paths.old_install_version.as_deref().and_then(version_parts);
+    unbridged && version.is_some_and(|v| (0, 6, 0) <= v && v < (0, 9, 1))
+}
+
+#[tauri::command]
+pub fn plus_needs_update(app: AppHandle) -> bool {
+    MovePaths::detect(&app).is_ok_and(|p| needs_bridge_update(&p))
+}
+
 #[tauri::command]
 pub fn move_status(cell: State<'_, MoveCell>) -> MoveOutcome {
     cell.0.lock().unwrap_or_else(|e| e.into_inner()).clone()
@@ -1145,6 +1165,19 @@ mod tests {
         assert!(fake.uninstalls.borrow().is_empty());
         assert!(old_track(paths) && new_track(paths));
         assert_eq!(state(paths)["downloads"], "copied");
+    }
+
+    #[test]
+    fn hints_only_for_an_unbridged_plus_version() {
+        let mut p = plus_tree("bridge-hint");
+        fs::remove_file(p.old_roaming.join(MARKER)).unwrap();
+        for (v, want) in [("0.5.1", false), ("0.6.0", true), ("0.9.0", true), ("0.9.1", false), ("0.10.0", false), ("", false)] {
+            p.old_install_version = Some(v.into());
+            assert_eq!(needs_bridge_update(&p), want, "{v}");
+        }
+        p.old_install_version = Some("0.8.1".into());
+        put(&p.old_roaming.join(MOVED_MARKER), "{}");
+        assert!(!needs_bridge_update(&p));
     }
 
     #[test]

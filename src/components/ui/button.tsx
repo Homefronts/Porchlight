@@ -22,7 +22,7 @@ const buttonVariants = cva(
         // highlight; hover brightens it and lifts the accent glow
         // instead of shifting the hue.
         default:
-          "border border-transparent bg-[radial-gradient(circle_at_50%_0%,var(--acc5),var(--acc1)_62%)] font-semibold text-white shadow-[0_5px_16px_-5px_rgba(var(--acc1rgb),0.13),inset_0_1px_1px_var(--w170)] hover:brightness-[1.16] hover:shadow-[0_8px_22px_-5px_rgba(var(--acc1rgb),0.34),inset_0_1px_1px_var(--w240)]",
+          "border border-transparent bg-[radial-gradient(circle_at_50%_0%,var(--acc5),var(--acc1)_62%)] font-semibold text-[var(--on-accent,#fff)] shadow-[0_5px_16px_-5px_rgba(var(--acc1rgb),0.13),inset_0_1px_1px_var(--w170)] hover:brightness-[1.16] hover:shadow-[0_8px_22px_-5px_rgba(var(--acc1rgb),0.34),inset_0_1px_1px_var(--w240)]",
         // Danger (Clear cache, Sign out). Accent hue, but hollow — the
         // solid accent is reserved for the primary action.
         destructive:

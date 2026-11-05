@@ -59,6 +59,8 @@ export function deriveTokens(look: Look): Record<string, string> {
 
   // Readable text on the accent: whichever of bg/fg contrasts more.
   const onAcc = contrastRatio(bg, acc) > contrastRatio(fg, acc) ? bg : fg;
+  // Primary buttons stay white wherever that reads; Ink's cream accent needs dark.
+  const onButton = contrastRatio("#ffffff", acc) >= 3 ? "#ffffff" : onAcc;
   const card = mix(bg, fg, 0.05);
   const raised = mix(bg, fg, 0.1);
 
@@ -71,6 +73,7 @@ export function deriveTokens(look: Look): Record<string, string> {
     "--popover-foreground": fg,
     "--brand": acc,
     "--brand-foreground": onAcc,
+    "--on-accent": onButton,
     "--primary": acc,
     "--primary-foreground": onAcc,
     "--secondary": raised,
@@ -195,6 +198,7 @@ export function playerTokens(seeds: Seeds): Record<string, string> {
     t["--brand"] = on;
     t["--acc1"] = on;
     t["--brand-foreground"] = player;
+    t["--on-accent"] = player;
   }
   for (let i = 1; i <= 10; i++) t[`--t${i}`] = mix(on, player, ((i - 1) / 9) * 0.6);
   for (const s of W_STEPS) t[`--w${pad(s)}`] = rgba(on, s / 1000);
