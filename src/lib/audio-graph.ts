@@ -22,6 +22,11 @@ type SinkCapable = { setSinkId?: (id: string) => Promise<void> };
 
 const dbToGain = (db: number) => 10 ** (db / 20);
 
+let analyser: AnalyserNode | null = null;
+
+/** The live audio's analyser, once the graph exists. */
+export const currentAnalyser = () => analyser;
+
 export class AudioGraph {
   readonly ctx: AudioContext;
   private readonly head: GainNode;
@@ -78,6 +83,11 @@ export class AudioGraph {
     node.connect(this.mono);
     this.mono.connect(this.tail);
     this.tail.connect(ctx.destination);
+    // A tap for the visualizer: it reads the sound and passes nothing on.
+    analyser = ctx.createAnalyser();
+    analyser.fftSize = 512;
+    analyser.smoothingTimeConstant = 0.75;
+    this.tail.connect(analyser);
   }
 
   /** Route an element through the graph. Idempotent per element. */

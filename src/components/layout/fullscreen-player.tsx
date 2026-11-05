@@ -4,6 +4,7 @@ import { HeartIcon, ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 import { toast } from "sonner";
 import { fetchLikedSongs } from "@/lib/innertube/library";
 import { toggleDisliked, toggleLiked } from "@/lib/like-actions";
+import { EchoVisualizer } from "@/components/layout/echo-visualizer";
 import { useDislikesStore } from "@/lib/store/dislikes";
 import { AnimatePresence, motion, useAnimate, useReducedMotion } from "motion/react";
 import { useTheme } from "next-themes";
@@ -181,6 +182,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
   }, [setOpen]);
 
   const immersive = shown === "immersive";
+  const visualizer = useSettingsStore((s) => s.fullscreenVisualizer);
   // The cover layouts wash the art out under a heavy blur. Immersive
   // keeps it sharp in the middle and blurs only the top and bottom bands
   // (below), where the chrome and the title sit. Light theme brightens
@@ -243,6 +245,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
           className="absolute inset-0 transition-opacity duration-500 motion-reduce:transition-none"
           style={{ background: "var(--g9d)", opacity: immersive ? 0 : 1 }}
         />
+        {visualizer ? <EchoVisualizer track={track} light={light} /> : null}
         {videoId ? (
           <VideoStage track={track} override={iTunesCover} host={host} slot={slot} immersive={immersive} />
         ) : null}

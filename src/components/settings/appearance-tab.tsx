@@ -138,6 +138,7 @@ export function AppearanceTab() {
           }
         />
         <FullscreenLayoutRow />
+        <FullscreenVisualizerRow />
       </Group>
     </TabPane>
   );
@@ -492,6 +493,19 @@ const PLAYER_TILES: {
  * "album" wash, a cover, the title bars and the transport with its play
  * button.
  */
+function FullscreenVisualizerRow() {
+  const on = useSettingsStore((s) => s.fullscreenVisualizer);
+  const set = useSettingsStore((s) => s.setFullscreenVisualizer);
+  return (
+    <SettingRow
+      icon={IconAppWindowFilled}
+      title="Fullscreen Visualizer"
+      description="Lines that move with the music, in the colours of the cover."
+      control={<Switch checked={on} onCheckedChange={set} aria-label="Fullscreen Visualizer" />}
+    />
+  );
+}
+
 function FullscreenLayoutRow() {
   const value = useSettingsStore((s) => s.fullscreenLayout);
   const setValue = useSettingsStore((s) => s.setFullscreenLayout);

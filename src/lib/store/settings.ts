@@ -34,6 +34,8 @@ type State = {
   /** Body of the full-screen player: cover centred, cover with the
    *  lyrics beside it, or the art itself behind the title. */
   fullscreenLayout: FullscreenLayout;
+  /** The moving lines along the bottom of the full-screen player. */
+  fullscreenVisualizer: boolean;
   /** Show synced lyrics under the controls in the side card and the
    *  floating player. Off leaves them to the cover and controls. */
   cardLyrics: boolean;
@@ -87,6 +89,7 @@ type State = {
   setInterfaceFont: (v: InterfaceFont) => void;
   setRatingButtons: (v: RatingButtons) => void;
   setFullscreenLayout: (v: FullscreenLayout) => void;
+  setFullscreenVisualizer: (v: boolean) => void;
   setCardLyrics: (v: boolean) => void;
   setShareYtMusicLinks: (v: boolean) => void;
   setPlaybackNotifications: (v: boolean) => void;
@@ -121,6 +124,7 @@ export const useSettingsStore = create<State>()(
       interfaceFont: "system",
       ratingButtons: "heart",
       fullscreenLayout: "cover",
+      fullscreenVisualizer: true,
       cardLyrics: true,
       shareYtMusicLinks: false,
       playbackNotifications: false,
@@ -142,6 +146,7 @@ export const useSettingsStore = create<State>()(
       setInterfaceFont: (interfaceFont) => set({ interfaceFont }),
       setRatingButtons: (ratingButtons) => set({ ratingButtons }),
       setFullscreenLayout: (fullscreenLayout) => set({ fullscreenLayout }),
+      setFullscreenVisualizer: (fullscreenVisualizer) => set({ fullscreenVisualizer }),
       setCardLyrics: (cardLyrics) => set({ cardLyrics }),
       setShareYtMusicLinks: (shareYtMusicLinks) => set({ shareYtMusicLinks }),
       setPlaybackNotifications: (playbackNotifications) =>

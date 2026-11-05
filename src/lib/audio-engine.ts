@@ -15,6 +15,7 @@ import { SNIPPET_FADE_SEC, isHeldAi, snippetWindow, usePlaybackStore, type Queue
 import { eqGains, usePlaybackSettings } from "@/lib/store/playback-settings";
 import { playbackAllowed, usePlaybackAllowed } from "@/lib/store/premium";
 import { useSettingsStore } from "@/lib/store/settings";
+import { useFullscreenStore } from "@/lib/store/fullscreen";
 import { openPremiumGate } from "@/lib/store/premium-gate";
 import { resolveStreamId, resumeOnSourceSwitch, useTrackSourceStore } from "@/lib/store/track-source";
 import { pickThumbnail } from "@/components/shared/thumbnail";
@@ -674,8 +675,10 @@ export function useAudioEngine() {
       })),
     );
   const outputDeviceId = usePlaybackSettings((s) => s.outputDeviceId);
+  const wantsVisualizer =
+    useFullscreenStore((s) => s.open) && useSettingsStore((s) => s.fullscreenVisualizer);
   const wantsGraph =
-    eqEnabled || monoAudio || normalizeVolume || outputDeviceId !== "";
+    eqEnabled || monoAudio || normalizeVolume || outputDeviceId !== "" || wantsVisualizer;
   useEffect(() => {
     const g = wantsGraph ? ensureGraph() : graphRef.current;
     if (!g) return;
