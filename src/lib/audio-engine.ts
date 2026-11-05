@@ -675,8 +675,9 @@ export function useAudioEngine() {
       })),
     );
   const outputDeviceId = usePlaybackSettings((s) => s.outputDeviceId);
-  const wantsVisualizer =
-    useFullscreenStore((s) => s.open) && useSettingsStore((s) => s.fullscreenVisualizer);
+  const fullscreenOpen = useFullscreenStore((s) => s.open);
+  const visualizerOn = useSettingsStore((s) => s.fullscreenVisualizer);
+  const wantsVisualizer = fullscreenOpen && visualizerOn;
   const wantsGraph =
     eqEnabled || monoAudio || normalizeVolume || outputDeviceId !== "" || wantsVisualizer;
   useEffect(() => {
