@@ -5,6 +5,8 @@ import { currentAnalyser } from "@/lib/audio-graph";
 import { pickCoverColour } from "@/lib/cover-colour";
 
 const POINTS = 64;
+/** Space kept clear at the canvas's top and bottom, for the line's width and a hit's flare. */
+const EDGE_ROOM = 6;
 const BASS_PUSH = 0.22;
 const HIT_PUSH = 0.75;
 // Each trail follows the one before it more slowly, and is fainter and thinner.
@@ -13,6 +15,11 @@ const TRAILS = [
   { follow: 0.12, alpha: 0.5, width: 2.2, lag: 0.45 },
   { follow: 1, alpha: 0.95, width: 3, lag: 0 },
 ];
+
+/** Eases a swing in as it nears `limit`, so loud peaks round off instead of being cut. */
+export function softLimit(swing: number, limit: number): number {
+  return limit * Math.tanh(swing / limit);
+}
 
 /** The cover's main colour, or null if the image can't be read. */
 function useCoverColour(track: QueueTrack, light: boolean): string | null {
@@ -126,7 +133,8 @@ export function EchoVisualizer({ track, light }: { track: QueueTrack; light: boo
           values[i] += (want - values[i]) * (want > values[i] ? follow * 0.32 + 0.02 : follow * 0.16 + 0.01);
           const edge = Math.sin((i / (POINTS - 1)) * Math.PI);
           const x = w * (0.055 + 0.89 * (i / (POINTS - 1)));
-          points.push([x, h / 2 + (Math.sin(i * 0.3 + at) * 0.85 + Math.sin(i * 0.62 - at * 1.3) * 0.15) * values[i] * (h * 0.8) * edge]);
+          const swing = (Math.sin(i * 0.3 + at) * 0.85 + Math.sin(i * 0.62 - at * 1.3) * 0.15) * values[i] * (h * 0.62) * edge;
+          points.push([x, h / 2 + softLimit(swing, h / 2 - EDGE_ROOM)]);
         }
         g.beginPath();
         g.moveTo(points[0][0], points[0][1]);
@@ -152,7 +160,7 @@ export function EchoVisualizer({ track, light }: { track: QueueTrack; light: boo
     <canvas
       ref={canvas}
       aria-hidden
-      className="pointer-events-none absolute inset-x-0 bottom-[108px] h-[140px] w-full"
+      className="pointer-events-none absolute inset-x-0 bottom-[108px] h-[170px] w-full"
     />
   );
 }
