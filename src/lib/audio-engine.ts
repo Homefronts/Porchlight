@@ -127,6 +127,15 @@ export function useAudioEngine() {
     const b = make();
     audioRef.current = a;
     standbyRef.current = b;
+    // The default survives each new track's load; the rate is the one playing now.
+    const applySpeed = (speed: number) => {
+      for (const el of [a, b]) {
+        el.defaultPlaybackRate = speed;
+        el.playbackRate = speed;
+      }
+    };
+    applySpeed(usePlaybackSettings.getState().playbackSpeed);
+    const unsubscribeSpeed = usePlaybackSettings.subscribe((s) => applySpeed(s.playbackSpeed));
     {
       const s = usePlaybackStore.getState();
       const t = s.index >= 0 ? s.queue[s.index] : undefined;
@@ -143,6 +152,7 @@ export function useAudioEngine() {
       }
     }
     return () => {
+      unsubscribeSpeed();
       for (const el of [a, b]) {
         el.pause();
         el.src = "";

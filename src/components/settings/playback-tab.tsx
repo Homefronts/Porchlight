@@ -17,6 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { SegmentedControl } from "@/components/ui/segmented";
@@ -54,6 +55,7 @@ export function PlaybackTab() {
       <Group>
         <CrossfadeRow />
         <NormalizeRow />
+        <SpeedRow />
         <FreePlaybackRow />
       </Group>
       <EqualizerGroup />
@@ -215,6 +217,36 @@ function FreePlaybackRow() {
             next ? openPremiumGate() : useFreePlaybackStore.setState({ enabled: false })
           }
         />
+      }
+    />
+  );
+}
+
+const SPEEDS = [0.75, 1, 1.25, 1.5];
+
+function SpeedRow() {
+  const speed = usePlaybackSettings((s) => s.playbackSpeed);
+  const setSpeed = usePlaybackSettings((s) => s.setPlaybackSpeed);
+  return (
+    <SettingRow
+      icon={IconPlayerPlayFilled}
+      title="Playback Speed"
+      description="Good for podcasts and episodes. The pitch stays the same."
+      control={
+        <div role="radiogroup" aria-label="Playback Speed" className="flex gap-1.5">
+          {SPEEDS.map((v) => (
+            <Button
+              key={v}
+              size="sm"
+              role="radio"
+              aria-checked={speed === v}
+              variant={speed === v ? "default" : "outline"}
+              onClick={() => setSpeed(v)}
+            >
+              {v}x
+            </Button>
+          ))}
+        </div>
       }
     />
   );

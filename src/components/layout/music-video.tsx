@@ -21,7 +21,8 @@ const MAX_DRIFT_SEC = 0.4;
 /** Never aim further ahead than this, however slow a jump has been. */
 const MAX_LEAD_SEC = 4;
 
-type Picture = Pick<HTMLVideoElement, "readyState" | "currentTime" | "paused" | "seeking" | "play" | "pause">;
+type Picture = Pick<HTMLVideoElement, "readyState" | "currentTime" | "paused" | "seeking" | "play" | "pause"> &
+  Partial<Pick<HTMLVideoElement, "playbackRate">>;
 
 // Per video element: when its current jump started, and how long its last one took.
 const jumpStarted = new WeakMap<Picture, number>();
@@ -41,6 +42,7 @@ export function syncPicture(v: Picture, s: { position: number; playing: boolean;
     jumpCost.set(v, (now - started) / 1000);
     jumpStarted.delete(v);
   }
+  v.playbackRate = usePlaybackSettings.getState().playbackSpeed;
   const play = s.playing && s.status === "ready";
   const ahead = v.currentTime - s.position;
   if (Math.abs(ahead) > MAX_DRIFT_SEC) {

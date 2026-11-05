@@ -63,6 +63,31 @@ export function FullscreenPlayer() {
   const setOpen = useFullscreenStore((s) => s.setOpen);
   const track = usePlaybackStore(currentTrack);
 
+  // Keep the screen on while it's up. Windows drops the lock when the window
+  // hides, so it's taken again on the way back. Without support it just sleeps.
+  useEffect(() => {
+    if (!open) return;
+    let lock: WakeLockSentinel | undefined;
+    let closed = false;
+    const take = () => {
+      if (document.visibilityState !== "visible") return;
+      navigator.wakeLock?.request("screen").then(
+        (l) => {
+          if (closed) void l.release();
+          else lock = l;
+        },
+        () => {},
+      );
+    };
+    take();
+    document.addEventListener("visibilitychange", take);
+    return () => {
+      closed = true;
+      document.removeEventListener("visibilitychange", take);
+      void lock?.release();
+    };
+  }, [open]);
+
   // Nothing to show once the queue is cleared underneath it.
   useEffect(() => {
     if (open && !track) setOpen(false);
@@ -486,17 +511,21 @@ const ghostButton =
  * accent while liked. Follows Appearance -> Rating buttons the way the
  * row buttons do, so with thumbs on it grows a thumbs-down chip too.
  */
-function LikePill({ track }: { track: QueueTrack }) {
-  const qc = useQueryClient();
-  const both = useSettingsStore((s) => s.ratingButtons === "both");
-  const isDisliked = useDislikesStore((s) => !!s.ids[track.videoId]);
+function useIsLiked(track: QueueTrack): boolean {
   const liked = useQuery({
     queryKey: ["liked-songs"],
     queryFn: () => fetchLikedSongs(),
     staleTime: 60 * 60 * 1000,
     retry: false,
   });
-  const isLiked = getLikedIdsSet(liked.data).has(track.videoId);
+  return getLikedIdsSet(liked.data).has(track.videoId);
+}
+
+function LikePill({ track }: { track: QueueTrack }) {
+  const qc = useQueryClient();
+  const both = useSettingsStore((s) => s.ratingButtons === "both");
+  const isDisliked = useDislikesStore((s) => !!s.ids[track.videoId]);
+  const isLiked = useIsLiked(track);
   const [busy, setBusy] = useState(false);
 
   const run = async (action: () => Promise<void>) => {
@@ -595,15 +624,22 @@ function Cover({
   onSlot: (el: HTMLDivElement | null) => void;
 }) {
   const video = !!useMusicVideoId(track);
+  const qc = useQueryClient();
+  const isLiked = useIsLiked(track);
+  const likeOnDoubleClick = () => {
+    toggleLiked({ queryClient: qc, videoId: track.videoId, wasLiked: isLiked, track }).catch((err) =>
+      toast.error(String(err)),
+    );
+  };
   if (video) {
     return (
-      <div ref={onSlot} className={cn("relative isolate aspect-video shrink-0", className)}>
+      <div ref={onSlot} onDoubleClick={likeOnDoubleClick} className={cn("relative isolate aspect-video shrink-0", className)}>
         <ArtworkOutline className="rounded-[inherit]" />
       </div>
     );
   }
   return (
-    <div className={cn("relative isolate aspect-square shrink-0", className)}>
+    <div onDoubleClick={likeOnDoubleClick} className={cn("relative isolate aspect-square shrink-0", className)}>
       <Thumbnail
         thumbnails={track.thumbnails}
         alt={track.title}

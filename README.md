@@ -262,10 +262,9 @@ Ideas for future Porchlight releases. Not promises.
 
 Small, quick to build.
 
-- [ ] **Full-screen touches** — double-click the cover to like the song, and keep the computer awake while the full-screen player is open.
-- [ ] **"AI songs hidden" counter** — a small note in search showing how many AI results were filtered, with a way to peek.
 - [ ] **Share your AI marks** — turn your Mark as AI choices into a one-click report to the community list.
 - [ ] **Skip non-music parts of videos** — optional [SponsorBlock](https://sponsor.ajay.app) skipping of intros and skits in music videos (its "Non-Music Section" category), credited per its CC BY-NC-SA licence.
+- [ ] **Skip silences** — trim long quiet stretches, like the gap before a hidden track.
 - [ ] **Libre.fm and ListenBrainz scrobbling** — next to Last.fm, with a switch per service.
 
 ### Later

@@ -44,6 +44,9 @@ type State = {
   resumePlayback: boolean;
   /** Tallest music video picture to fetch, in pixels (720 = 720p). */
   videoQuality: VideoQuality;
+  /** 1 is normal; the pitch stays the same at any speed. */
+  playbackSpeed: number;
+  setPlaybackSpeed: (v: number) => void;
   setCrossfadeSec: (v: number) => void;
   setNormalizeVolume: (v: boolean) => void;
   setEqEnabled: (v: boolean) => void;
@@ -85,6 +88,8 @@ export const usePlaybackSettings = create<State>()(
   persist(
     (set) => ({
       crossfadeSec: 0,
+      playbackSpeed: 1,
+      setPlaybackSpeed: (playbackSpeed) => set({ playbackSpeed }),
       normalizeVolume: false,
       eqEnabled: false,
       eqPreset: "flat",

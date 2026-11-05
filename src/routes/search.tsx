@@ -50,6 +50,7 @@ import type {
   TopResultAction,
 } from "@/lib/innertube/types";
 import { useAiFilter } from "@/lib/ai/use-ai";
+import { useSettingsStore } from "@/lib/store/settings";
 
 type SearchParams = {
   q?: string;
@@ -151,10 +152,11 @@ function SearchPage() {
         <ErrorCard message={(error as Error).message} />
       ) : isLoading ? (
         <SearchSkeleton variant={filter === "songs" ? "list" : "shelves"} />
-      ) : !data ? null : filter === "all" ? (
-        <AllResults data={data} />
-      ) : (
-        <FilterResults data={data} filter={filter} />
+      ) : !data ? null : (
+        <>
+          <AiHiddenNote items={data.shelves.flatMap((s) => s.items)} />
+          {filter === "all" ? <AllResults data={data} /> : <FilterResults data={data} filter={filter} />}
+        </>
       )}
     </div>
   );
@@ -296,6 +298,22 @@ const ALL_SECTIONS: {
     cap: 15,
   },
 ];
+
+/** How many results the AI filter took out, with a way to bring them back. */
+function AiHiddenNote({ items }: { items: ShelfItem[] }) {
+  const aiFilter = useAiFilter();
+  const setAiMusic = useSettingsStore((s) => s.setAiMusic);
+  const hidden = items.length - aiFilter(items).length;
+  if (hidden === 0) return null;
+  return (
+    <p className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
+      {hidden === 1 ? "1 AI result hidden" : `${hidden} AI results hidden`}
+      <button type="button" className="underline hover:text-foreground" onClick={() => setAiMusic(true)}>
+        Show AI music
+      </button>
+    </p>
+  );
+}
 
 function AllResults({ data }: { data: SearchResults }) {
   const aiFilter = useAiFilter();
