@@ -383,6 +383,7 @@ The user asked (2026-10-31) that **every change gets added to this write-up as i
    - On branch `logo`, each release's notes now come from that version's README changelog section. Correction: the in-app update banner never showed those notes, only the version; What's New covers them after updating.
    - On branch `logo`, Crate's record and Index's cassette reels follow the progress slider while it's dragged: backward when you drag backward, still when you stop (`usePlatter`). Skip and seek keys don't turn it.
    - On branch `logo`, Crate's tone arm drops on the record's outer edge when a song starts and moves in toward the label as it plays (`needleAngle`), following a seek drag too.
+   - Needle-drop animation (user asked 2026-11-04): mockup only, not built yet, waiting on their pick: https://claude.ai/artifact/L7zXCeTZHDU9WUaPuvSA94. The arm lifts, swings to the edge, settles with a small bounce, then the record eases up to speed. Options: Gentle, Quick or Slow cue, and an optional needle head. The music wouldn't wait for it.
    - On branch `logo`, primary buttons read in Ink: `--on-accent` is white unless the accent is too pale for it. Classic, Sleeve and Paper are unchanged.
 5. **Fork detach:** verify once GitHub Support finishes (see Part 1).
 6. **Next projects:**
@@ -409,9 +410,9 @@ The user asked (2026-10-31) that **every change gets added to this write-up as i
 
 ## State right now
 
-- **Current branch is `logo`** (f9d7baf plus this note), off `main` at `2c05b2e`. The project folder moved to `C:\Users\sdand\Desktop\AI Projects\Porchlight\YTubic Plus`, so `node_modules` was reinstalled and `target/debug` cleared.
-- **1.1.0 is published.** https://github.com/Homefronts/Porchlight/releases/tag/v1.1.0. `main`, `layouts`, and tag `v1.1.0` are all at `2c05b2e`. The release is not a draft.
-- **The dev task is not running.** The app that is open is the installed one: `%LOCALAPPDATA%\Porchlight\porchlight.exe`, from the local rebuild installed with `/S` after the timer fix. That local build has no updater signature. The published installers are the ones from run 41225491877.
-- **Backup** taken just before the earlier dev launch: `C:\Users\sdand\PorchlightDataBackup-20261031-1123`, holding the data folders plus `porchlight.reg` and `ytubic-plus.reg`. The pre-1.1.0 install backup is `C:\Users\sdand\PorchlightDataBackup-20261031-1226-pre-1.1.0`.
-- **The dev session already ended.** Don't stop the installed `porchlight.exe` thinking it is the dev build. Don't restore the data folders unless the user asks. They used the dev build as their real app, so changes there were intentional. The `.reg` files in the 1123 backup are only for putting the registry back if a future dev run changes it.
-- **Tests:** 600 passing, tsc clean.
+- **Current branch is `logo`**, 10+ commits ahead of `main`, nothing pushed. `main` and tag `v1.1.0` are at `2c05b2e`, and 1.1.0 is published. Next release is planned as 1.2.0: not bumped or tagged yet, with What's New, the changelog and the installed update check still to do.
+- **The project folder moved** to `C:\Users\sdand\Desktop\AI Projects\Porchlight\YTubic Plus`, so `node_modules` was reinstalled and `target/debug` cleared.
+- **A dev build is running** (`pnpm tauri dev` on `logo`) on the user's real data, by their choice. When they're done, stop it, the debug `porchlight.exe` and Vite on port 1420, then `reg import` `porchlight.reg` and `ytubic-plus.reg` from the backup below. Don't restore the data folders unless they ask.
+- **Backup:** `C:\Users\sdand\PorchlightDataBackup-20261104-2215-pre-logo`. Its `.reg` files were copied from the 2026-10-31 backup because fresh exports failed; they point at the installed exe. A Free test account may still be listed in the app's account menu, and the free-playback opt-in may still be on (it does nothing on Premium).
+- **Not yet tried by hand:** remove duplicates and the sleep timer menu.
+- **Tests:** 617 passing, tsc clean.
