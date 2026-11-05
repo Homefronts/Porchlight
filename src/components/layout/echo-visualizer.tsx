@@ -5,7 +5,8 @@ import { currentAnalyser } from "@/lib/audio-graph";
 import { pickCoverColour } from "@/lib/cover-colour";
 
 const POINTS = 64;
-const BASS_PUSH = 0.75;
+const BASS_PUSH = 0.22;
+const HIT_PUSH = 0.75;
 // Each trail follows the one before it more slowly, and is fainter and thinner.
 const TRAILS = [
   { follow: 0.05, alpha: 0.28, width: 2, lag: 0.9 },
@@ -88,7 +89,7 @@ export function EchoVisualizer({ track, light }: { track: QueueTrack; light: boo
       const bass = ((bins[0] ?? 0) + (bins[1] ?? 0) + (bins[2] ?? 0)) / 765;
       // A hit is the bass jumping above its recent level: the kick drum, mostly.
       bassAverage += (bass - bassAverage) * 0.06;
-      hit = Math.max(hit * 0.86, Math.min(1, Math.max(0, bass - bassAverage) * 5));
+      hit = Math.max(hit * 0.86, Math.min(1, Math.max(0, bass - bassAverage) * 7));
       // The ripple runs faster with the music and lurches forward on each hit.
       const dt = Math.min(now - last, 50) / 1000;
       last = now;
@@ -110,7 +111,7 @@ export function EchoVisualizer({ track, light }: { track: QueueTrack; light: boo
           // Bass in the middle and highs out to both ends, since most of the energy is in the bass.
           const fromMiddle = Math.abs((i / (POINTS - 1)) * 2 - 1);
           const bin = Math.floor(Math.pow(fromMiddle, 1.7) * bins.length * 0.5);
-          const want = Math.min(1, ((bins[bin] ?? 0) / 255) * (1 + fromMiddle * 1.8) * 0.6 + bass * bass * BASS_PUSH + hit * 0.3);
+          const want = Math.min(1, ((bins[bin] ?? 0) / 255) * (1 + fromMiddle * 1.8) * 0.42 + bass * bass * BASS_PUSH + hit * HIT_PUSH);
           values[i] += (want - values[i]) * (want > values[i] ? Math.max(follow, 0.45 * follow + 0.04) : follow * 0.5);
           const edge = Math.sin((i / (POINTS - 1)) * Math.PI);
           const x = w * (0.055 + 0.89 * (i / (POINTS - 1)));
