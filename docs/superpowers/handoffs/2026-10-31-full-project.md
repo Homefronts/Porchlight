@@ -48,7 +48,7 @@ Newest first. The full user-facing changelog is in `README.md` → Changelog.
 
 | Version | Date | What it was |
 |---|---|---|
-| 1.1.0 | tagging `v1.1.0` on `main` | **Layouts**: Gatefold, Index, Crate, Panels, the turntable dial, Ctrl+L, the flip, Player colour, Crate liner notes, plus the install-test fixes (dial tip, liner measure, Source video, Start radio). |
+| 1.1.0 | 2026-10-31 | **Layouts**, published: https://github.com/Homefronts/Porchlight/releases/tag/v1.1.0. Tag `v1.1.0` is on `2c05b2e`. Gatefold, Index, Crate, Panels, the turntable dial, Ctrl+L, the flip, Player colour, Crate liner notes, plus the install-test fixes (dial tip, liner measure, Source video, Start radio). |
 | 1.0.0 | 2026-10-29/30 | **Porchlight**: rename from YTubic Plus, new app ID, sits beside the original YTubic, porchlight:// links (old ytubic-plus:// still work). |
 | 0.9.1 | 2026-10-29 | The bridge: saves a handoff copy of settings and library so Porchlight can import them on first launch. |
 | 0.9.0 | 2026-10-29 | **Looks**: five looks (Sleeve, Paper, Ink liner, Ink, Classic), the "Make it yours" picker, custom looks with a live editor, look files to share. |
@@ -79,7 +79,7 @@ The goal, in the user's words: "whatever makes it easier for the end user to upd
 - **Stub repos keep serving 0.9.1 forever.** Each holds only a `latest.json` plus 0.9.1 as Latest. **Never delete them.** Keep the move code long-term, and check 0.9.1 download counts before ever tidying it.
   - `Homefronts/YTubic-Plus`: the old feed. It also hosts the old share page, ai-data and the icon.
   - `Homefronts/YTubic-`: the feed for the 0.6-0.7.1 versions.
-- **Verified feeds:** Porchlight serves 1.0.0; YTubic-Plus and YTubic- serve 0.9.1.
+- **Verified feeds:** Porchlight's GitHub Latest is 1.1.0, published 2026-10-31. YTubic-Plus and YTubic- serve 0.9.1.
 - **Known gap (1.0.1 fix):** downloading the Porchlight installer from the website skips the bridge. The user hit this themselves, then the in-app update path worked.
   - Fix: a README and release-page note, "Already on YTubic Plus? Update from inside the app".
   - Also: Porchlight should detect an un-updated Plus install and tell the user to update it first.
@@ -275,7 +275,12 @@ All four ship together in one update (the user's call). The floating mini player
 | Start radio on every player | the button was only on the sidebar card and the bottom bar | ced52c2 |
 | Source menu radio label | "Start radio" stayed put while a mix was already running. Stop runs only when a mix is already going, so the floating window can still start one | ced52c2 |
 | Review follow-ups | layout tip held through What's New's close; fullscreen radio keeps its on tint | ced52c2 |
-| Release build type error | the tip timer was a number, and the release build's setTimeout returns a Node timeout | this commit |
+| Release build type error | the tip timer was a number, and the release build's setTimeout returns a Node timeout. First tag, on `89d8e1c`, failed all four jobs (run 41225059679). Retagged `v1.1.0` onto the fix | 2c05b2e |
+| v1.1.0 draft | run 41225491877 succeeded and opened the draft with the installers and `latest.json` | tag `v1.1.0` |
+| Release notes | the workflow body was the placeholder. Rewritten on the draft to match the 1.0.0 notes: a title, a flat list, an updating line, the NUber credit. The 0.7.5 emoji sections were tried and dropped. Notes are not in the repo. `latest.json` still has the placeholder, same as 1.0.0 | GitHub release only |
+| 1.1.0 published | the user asked to publish. `gh release edit v1.1.0 --draft=false` at 2026-10-31T18:27:23Z. Latest is v1.1.0 | https://github.com/Homefronts/Porchlight/releases/tag/v1.1.0 |
+| Local rebuild | `pnpm tauri build` wrote `src-tauri\target\release\bundle\nsis\Porchlight_1.1.0_x64-setup.exe`. The command then exited 1 because a pubkey is set and no private key was present, so no updater `.sig`. The installer was still installed over the local app with `/S` | not a commit |
+| Logo | brainstormed, then stopped. Nothing from it is in the app | mockups only, gitignored |
 
 What the reviews and the live pass caught along the way (all fixed):
 - The scroller remounting on a swap.
@@ -317,6 +322,13 @@ What the reviews and the live pass caught along the way (all fixed):
 7. **The Source menu's Song and Video buttons did nothing you could see** on the players that use that menu (Crate, Gatefold, Index, the bottom bar, Panels). The click did switch the mode. Those covers never drew the music video, which only the sidebar card and fullscreen had. The video now sits on those covers too. On Crate, switching to Video logged a 640x480 frame on the record.
 8. **Start radio on every player.** It was only on the sidebar card and the bottom bar. It is now on Crate and Gatefold's transport, Index's strip, and fullscreen as well.
 9. **The Source menu's radio row.** It always said "Start radio", and the row never looked at the running mix, so the label stayed even after the player button had flipped to "Stop radio". On the track that's playing, while a mix owns Up next, it now says "Stop radio" and ends that mix. Starting a mix, including from the floating window, still goes through the queue action that window can deliver. A different track still says "Start radio". Checked in the dev build on Crate, with a mix already running: the Source menu row reads "Stop radio". The row was not clicked, so that mix is still going.
+10. **Release notes, then publish** (2026-10-31). The draft went up with the workflow line "See the assets below to download and install this version." The notes were rewritten on the draft. The user asked for more of what you see and do, then for the 0.7.5 emoji sections, then to match 1.0 instead. The published body is a `## Layouts` title, flat bold-lead bullets (Gatefold, Index, Crate, Panels, the dial, Player colour, the floating player, the Ink sign-in label, playlists queued twice), one updating line, and the NUber credit. No emoji sections, and no notes about polish that only existed while 1.1.0 was unreleased. They then said "publish it." It is public. The in-app updater still reads the placeholder from `latest.json`, which is how 1.0.0 shipped too.
+11. **A new logo** (2026-10-31). The user asked because Porchlight is detached from YTubic and the old mark feels wrong. Product intent they confirmed: a cozy music player, heavy customizability, an easy interface, distinct from other YouTube Music clones. Mockups, all throwaway, are in `.superpowers/brainstorm/1308-1793468767/content/`. The server for that session is stopped.
+    - Palette they kept: ink `#2C2420` on paper `#E6D7C3`. Yellow and cream were rejected. Light is empty paper, not a drawn bulb.
+    - Rejected along the way: a play mark, headphones, a whole house, the sconce (unclear at taskbar size), dome and egg readings, the thin eave, a torii, roof-on-posts (reads as an arch), and the overhang, shelf, and step redraws.
+    - They liked the notch for a while (paper cut up into the bottom of an ink tile, `logo-ideas-12.html`). They then drew on the clipboard. The sketch is `C:\Users\sdand\AppData\Local\Temp\porchlight-clipboard.png` (452×510): a rounded ink block, a V under each side, and a small curve outside each bottom corner.
+    - Two corrections, both after the stroke versions were rejected: those V lines are the edges of one filled shape, not an empty stroke. The curves outside the top shape were meant to be chamfers, straight cuts on the bottom corners. `logo-ideas-19.html` shows that cut twice, Opening (middle stays paper) and Whole (middle is ink). They had not picked one.
+    - They stopped it: "forget it, we're not getting anywhere." Do not resume, and do not push more variants, unless they ask. Nothing from this pass is in the app.
 
 5. **"Let's check for bugs again"** (2026-10-31). An opus bug hunter read every change since release prep; the findings are in `.superpowers/sdd/2026-10-30-layouts/bug-hunt.md` and the fixes in `bug-fix-report.md`.
    - First, I painted a test Player colour onto `<html>` in the running app.
@@ -346,7 +358,7 @@ The user asked (2026-10-31) that **every change gets added to this write-up as i
 1. **Check the Player colour** in the dev build:
    - Set one in Settings → Appearance → the look editor, then dial through Index, Panels, Gatefold and Crate.
    - Also check liner notes at about 940px and 800px window heights.
-2. **Task 9B, the release commit.** Done: 1.1.0 chosen by the user, release commit `d96fa7b`, install-test fixes in `ced52c2`. The installer that was installed over 1.0.0 was built before those fixes (backup `C:\Users\sdand\PorchlightDataBackup-20261031-1226-pre-1.1.0`). The settings, looks, layout and library check was not finished. The user asked to publish anyway. The tag is `v1.1.0` on the tip that includes the fixes.
+2. **Task 9B, the release commit.** Done: 1.1.0 chosen by the user, release commit `d96fa7b`, install-test fixes in `ced52c2`, timer type fix in `2c05b2e`. The installer that was installed over 1.0.0 was built before those fixes (backup `C:\Users\sdand\PorchlightDataBackup-20261031-1226-pre-1.1.0`). A later local rebuild includes the timer fix and was installed with `/S`. The settings, looks, layout and library check was not finished. The user asked to publish anyway.
    - The user picks the version. My recommendation is **1.1.0**, since this is a feature release; the plan said "before 1.1", so they may want 1.0.x.
    - Bump `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` and `Cargo.lock`, as the 1.0.0 release commit did.
    - **What's New:** `LAYOUTS_RELEASE` in `src/lib/whats-new.ts` sits outside `WHATS_NEW` on purpose. At release:
@@ -358,15 +370,15 @@ The user asked (2026-10-31) that **every change gets added to this write-up as i
      - Update "Make it yours", which still only says "Pick a look".
    - Run `npx vitest run`, `npx tsc --noEmit` and `cargo check`, then commit `release: <version>`.
    - **Stop there.**
-3. **Release.** Merging `layouts` into `main`, pushing `main`, then pushing tag `v1.1.0`. The tag push starts the build and opens a draft release. The user publishes that draft when the build is green.
+3. **Release.** Done. `layouts` was fast-forwarded into `main`, `main` was pushed, then lightweight tag `v1.1.0` was pushed. The first tag failed the build. It was deleted and pushed again on `2c05b2e`. Run 41225491877 opened the draft. The user asked to publish it, and it is public: https://github.com/Homefronts/Porchlight/releases/tag/v1.1.0. The app can offer 1.1.0 from `latest.json`. Do not tag again for a notes change.
 4. **1.0.1-type fixes, still queued** (they could ride along in the release):
    - Done in 1.1.0: Ink look's sidebar "Sign in" button now uses `on-brand`.
    - The dev build writes the installed app's real data folders instead of `.dev` ones. Fixing this would make testing safe.
    - The website installer skips the bridge (see Part 1). The README note shipped in 1.1.0; detecting an un-updated Plus install is still open.
 5. **Fork detach:** verify once GitHub Support finishes (see Part 1).
 6. **Next projects:**
-   - **A new logo**, its own brainstorm. The user asked for it.
-   - **More looks**, as a content update before 1.1.
+   - **A new logo.** Tried on 2026-10-31 and stopped. The user said it was not getting anywhere. Leave it until they ask again. What they had settled, and where the mockups are, is under the user's requests, item 11.
+   - **More looks.** Was framed as a content update before 1.1. 1.1.0 is already published, so this is a later content update if they still want it.
    - Roadmap ideas are in the README → Roadmap. Next up: sleep timer, remove duplicates, sort playlists by artist, and others.
 
 ## Parked minor leftovers (fine to ship)
@@ -388,11 +400,8 @@ The user asked (2026-10-31) that **every change gets added to this write-up as i
 
 ## State right now
 
-- **A dev build is running.** It's a `pnpm tauri dev` background task, signed in with the user's account and live-reloading from `layouts`.
-  - If HMR says "could not Fast Refresh", reload the window with `cdp.mjs eval "location.reload()"`.
-- **Backup** taken just before it launched: `C:\Users\sdand\PorchlightDataBackup-20261031-1123`, holding the data folders plus `porchlight.reg` and `ytubic-plus.reg`.
-- **When the user is done testing:**
-  1. Stop the dev task, the debug `porchlight.exe`, and the Vite process on port 1420.
-  2. `reg import` the two `.reg` files from the backup.
-  3. Don't restore the data folders unless the user asks. They used the dev build as their real app, so their changes there are intentional.
+- **1.1.0 is published.** https://github.com/Homefronts/Porchlight/releases/tag/v1.1.0. `main`, `layouts`, and tag `v1.1.0` are all at `2c05b2e`. The release is not a draft.
+- **The dev task is not running.** The app that is open is the installed one: `%LOCALAPPDATA%\Porchlight\porchlight.exe`, from the local rebuild installed with `/S` after the timer fix. That local build has no updater signature. The published installers are the ones from run 41225491877.
+- **Backup** taken just before the earlier dev launch: `C:\Users\sdand\PorchlightDataBackup-20261031-1123`, holding the data folders plus `porchlight.reg` and `ytubic-plus.reg`. The pre-1.1.0 install backup is `C:\Users\sdand\PorchlightDataBackup-20261031-1226-pre-1.1.0`.
+- **The dev session already ended.** Don't stop the installed `porchlight.exe` thinking it is the dev build. Don't restore the data folders unless the user asks. They used the dev build as their real app, so changes there were intentional. The `.reg` files in the 1123 backup are only for putting the registry back if a future dev run changes it.
 - **Tests:** 600 passing, tsc clean.
