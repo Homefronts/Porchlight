@@ -166,19 +166,13 @@ export function TurntableDial() {
             >
               <i
                 className={cn(
-                  "absolute left-1/2 top-0 h-1 w-0.5 -translate-x-1/2 rounded-full",
+                  "absolute left-1/2 top-px size-[3px] -translate-x-1/2 rounded-full transition-colors",
                   i === at ? "bg-acc1" : "bg-t10",
                 )}
               />
             </span>
           ))}
-          <span
-            aria-hidden="true"
-            className="absolute inset-[6px] rounded-full border border-w110 bg-w050 shadow-[inset_0_-1px_2px_var(--k550)] transition-[rotate] duration-200 ease-out motion-reduce:transition-none"
-            style={{ rotate: `${ANGLES[at]}deg` }}
-          >
-            <i className="absolute left-1/2 top-[2px] h-[5px] w-0.5 -translate-x-1/2 rounded-full bg-t1" />
-          </span>
+          <span aria-hidden="true" className="absolute inset-[9px] rounded-full bg-t1" />
         </div>
       </PopoverAnchor>
       <PopoverContent

@@ -33,6 +33,8 @@ import {
 import { canSelectOutputDevice } from "@/lib/audio-graph";
 import { cn } from "@/lib/utils";
 import { useSettingsStore } from "@/lib/store/settings";
+import { useFreePlaybackStore, usePremiumStore } from "@/lib/store/premium";
+import { openPremiumGate } from "@/lib/store/premium-gate";
 import {
   AI_ACCURACY_TEXT,
   AI_ACCURACY_TITLE,
@@ -52,6 +54,7 @@ export function PlaybackTab() {
       <Group>
         <CrossfadeRow />
         <NormalizeRow />
+        <FreePlaybackRow />
       </Group>
       <EqualizerGroup />
       <Group>
@@ -191,6 +194,28 @@ function AiMusicRow() {
         </>
       }
       control={<Switch checked={on} onCheckedChange={setAiMusic} />}
+    />
+  );
+}
+
+/** Only for Free accounts. Turning it on goes through the Premium dialog's warning. */
+function FreePlaybackRow() {
+  const status = usePremiumStore((s) => s.status);
+  const on = useFreePlaybackStore((s) => s.enabled);
+  if (status !== "free") return null;
+  return (
+    <SettingRow
+      icon={IconPlayerPlayFilled}
+      title="Play without Premium (experimental)"
+      description="Not recommended. Porchlight is made for Music Premium accounts, and you're responsible for using this."
+      control={
+        <Switch
+          checked={on}
+          onCheckedChange={(next) =>
+            next ? openPremiumGate() : useFreePlaybackStore.setState({ enabled: false })
+          }
+        />
+      }
     />
   );
 }

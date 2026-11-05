@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { fetchPlaylist } from "@/lib/innertube/playlist";
+import { usePremiumStore } from "@/lib/store/premium";
 import { fetchAlbum } from "@/lib/innertube/album";
 import type { Thumbnail } from "@/lib/innertube/types";
 import {
@@ -87,6 +88,7 @@ export async function downloadCollection(
   kind: CollectionKind,
   id: string,
 ): Promise<void> {
+  if (usePremiumStore.getState().status === "free") return;
   const input = await fetchCollectionInput(kind, id);
   await invoke("downloads_set_collection", { input });
 }
@@ -97,6 +99,7 @@ function offline(): boolean {
 
 /** Re-sync one downloaded collection. Never throws; failure leaves it as is. */
 export async function syncCollection(id: string): Promise<void> {
+  if (usePremiumStore.getState().status === "free") return;
   const c = useDownloadsStore.getState().index.collections[id];
   if (!c || offline()) return;
   try {

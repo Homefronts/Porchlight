@@ -31,9 +31,8 @@ type State = {
  *
  * Nothing is persisted: `status` is rederived on every launch so a
  * Premium → Free downgrade outside the app takes effect on the next
- * start. There is deliberately NO user-facing override: playback
- * itself is Premium-gated, so a manual "I have Premium" switch would
- * be a one-click bypass of the gate. Misdetection is covered by
+ * start. There is no "I have Premium" override; Free accounts opt in
+ * through useFreePlaybackStore instead. Misdetection is covered by
  * fetchPremiumStatus failing open to "premium" when its patterns
  * don't match, plus the Re-check button on the Storage tab. (An
  * override used to exist and was persisted under the "ytm-premium"
@@ -71,6 +70,28 @@ export const useOfflineGrantStore = create<OfflineGrant>()(
   }),
 );
 
+/**
+ * The experimental opt-in for Free accounts, accepted in the Premium dialog.
+ * It unlocks streaming only: downloads and the persistent cache stay Premium
+ * (isPremium() is unchanged, so streams stay ephemeral).
+ */
+export const useFreePlaybackStore = create<{ enabled: boolean }>()(
+  persist((): { enabled: boolean } => ({ enabled: false }), {
+    name: "porchlight-free-playback",
+    storage: createJSONStorage(() => safeLocalStorage),
+  }),
+);
+
+/** Only a confirmed Free account: signed-out and still-checking stay gated. */
+export function freeStreamAllowed(status: PremiumStatus, enabled: boolean, downloaded: boolean): boolean {
+  return status === "free" && enabled && !downloaded;
+}
+
+/** Downloads are Premium only. Unknown status (offline, signed out) isn't a refusal. */
+export function useCanDownload(): boolean {
+  return usePremiumStore((s) => s.status) !== "free";
+}
+
 export const OFFLINE_GRANT_MS = 30 * 24 * 60 * 60 * 1000;
 
 export function downloadedPlaybackAllowed(
@@ -104,8 +125,10 @@ export function usePlaybackAllowed(videoId?: string): boolean {
   const downloaded = useDownloadsStore(
     (s) => !!videoId && s.index.tracks[videoId]?.state === "done",
   );
+  const free = useFreePlaybackStore((s) => s.enabled);
   return (
     status === "premium" ||
+    freeStreamAllowed(status, free, downloaded) ||
     (downloaded && downloadedPlaybackAllowed(Date.now(), { status, ...grant }))
   );
 }
@@ -115,9 +138,9 @@ export function playbackAllowed(videoId?: string): boolean {
   const status = usePremiumStore.getState().status;
   if (status === "premium") return true;
   if (!videoId) return false;
-  if (useDownloadsStore.getState().index.tracks[videoId]?.state !== "done") {
-    return false;
-  }
+  const downloaded = useDownloadsStore.getState().index.tracks[videoId]?.state === "done";
+  if (freeStreamAllowed(status, useFreePlaybackStore.getState().enabled, downloaded)) return true;
+  if (!downloaded) return false;
   return downloadedPlaybackAllowed(Date.now(), {
     status,
     ...useOfflineGrantStore.getState(),

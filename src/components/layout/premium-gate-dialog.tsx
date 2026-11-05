@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { usePremiumGateDialog } from "@/lib/store/premium-gate";
-import { usePremiumStore } from "@/lib/store/premium";
+import { useFreePlaybackStore, usePremiumStore } from "@/lib/store/premium";
 import { useDownloadsStore } from "@/lib/downloads";
 import { currentTrack, usePlaybackStore } from "@/lib/store/playback";
 import { authLoggedInQuery } from "@/lib/store/auth-queries";
@@ -56,6 +56,13 @@ export function PremiumGateDialog() {
 
   const signedOut = loggedIn.data === false;
   const checking = !needsCheckIn && !signedOut && status === null;
+  const offerFree = status === "free" && !downloaded;
+  const [accepted, setAccepted] = useState(false);
+  const playWithoutPremium = () => {
+    useFreePlaybackStore.setState({ enabled: true });
+    setOpen(false);
+    if (currentId) usePlaybackStore.getState().setPlaying(true);
+  };
 
   if (needsCheckIn) {
     return (
@@ -81,7 +88,7 @@ export function PremiumGateDialog() {
           <DialogTitle>
             {signedOut
               ? "Sign in to play music"
-              : "YouTube Music Premium required"}
+              : "YouTube Music Premium recommended"}
           </DialogTitle>
           <DialogDescription>
             {checking
@@ -109,6 +116,29 @@ export function PremiumGateDialog() {
                 music.youtube.com.
               </p>
             </div>
+            {offerFree && (
+              <div className="grid gap-3 rounded-lg border border-border/60 p-3 text-xs leading-relaxed text-muted-foreground">
+                <p>
+                  <span className="font-medium text-foreground">Play without Premium (experimental).</span>{" "}
+                  We don't recommend this. It has no downloads, it may stop
+                  working at any time, and YouTube could limit your account. You
+                  choose to use it, and you're responsible for that choice.
+                  Porchlight and its contributors accept no responsibility for
+                  how you use it.
+                </p>
+                <label className="flex items-center gap-2 text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={accepted}
+                    onChange={(e) => setAccepted(e.target.checked)}
+                  />
+                  I understand and accept this
+                </label>
+                <Button variant="outline" size="sm" className="justify-self-start" disabled={!accepted} onClick={playWithoutPremium}>
+                  Play without Premium
+                </Button>
+              </div>
+            )}
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => void openUrl(YTM_URL)}>
                 Listen in browser

@@ -210,6 +210,12 @@ Pick a look and a layout on first launch, with a live preview of your own librar
 > [yt-dlp](https://github.com/yt-dlp/yt-dlp) and may stop working at any time if
 > YouTube changes its internals. Use at your own risk.
 
+### Using Porchlight without Premium
+
+Porchlight is made for YouTube Music Premium, and that's the only way we recommend using it. Free YouTube Music is supported by ads, YouTube's Terms of Service require those ads to play, and Porchlight can't show them.
+
+Free accounts can turn on an experimental option to play anyway. It has no downloads, it may stop working at any time, and YouTube could limit your account. You choose to use it, and you're responsible for that choice. Porchlight and its contributors accept no responsibility for how anyone uses it.
+
 ## Install
 
 Download the latest installer from the [Releases](https://github.com/Homefronts/Porchlight/releases) page and run it.

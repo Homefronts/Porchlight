@@ -20,6 +20,7 @@ import {
   type DlTrack,
 } from "@/lib/downloads";
 import { downloadCollection, syncCollection } from "@/lib/downloads-sync";
+import { useCanDownload } from "@/lib/store/premium";
 import { cn } from "@/lib/utils";
 
 /** Ring that fills as a collection downloads. */
@@ -68,6 +69,7 @@ export function CollectionDownloadButton({
     useShallow((s) => collectionProgress(s.index, id)),
   );
   const downloaded = progress !== null;
+  const canDownload = useCanDownload();
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -99,6 +101,9 @@ export function CollectionDownloadButton({
       setBusy(false);
     }
   };
+
+  // A Free account can still remove what it downloaded on Premium.
+  if (!canDownload && !downloaded) return null;
 
   return (
     <Tooltip>

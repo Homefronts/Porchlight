@@ -17,18 +17,16 @@ const swap = (id: LayoutId) => {
   useNameCard.setState((s) => ({ id, n: s.n + 1 }));
 };
 
-const PERSPECTIVE = "perspective(1800px)";
-
 /** Where the next turn steps from: the pending layout while a flip is under way. */
 export function turnFrom(): LayoutId {
   return phase === "out" ? target : useThemeStore.getState().layout;
 }
 
 /**
- * Turns the app over like a record: the shell container ([data-layout-flip])
- * rotates edge-on, the layout swaps while it's unseen, and it turns back.
- * Only a CSS transform, so the page and the player stay mounted. Reduced
- * motion gets a plain fade.
+ * Changes layout with a settle: the shell container ([data-layout-flip]) fades
+ * out, the layout swaps while it's unseen, and it eases back into place. Only
+ * opacity and a transform, so the page and the player stay mounted. Reduced
+ * motion drops the movement and keeps the fade.
  */
 export function flipTo(id: LayoutId): void {
   target = id;
@@ -36,21 +34,21 @@ export function flipTo(id: LayoutId): void {
   const el = document.querySelector<HTMLElement>("[data-layout-flip]");
   if (phase === "in" || !el?.animate) return swap(id);
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const [out, back] = reduce
-    ? [[{ opacity: 1 }, { opacity: 0 }], [{ opacity: 0 }, { opacity: 1 }]]
+  const out = [{ opacity: 1 }, { opacity: 0 }];
+  const back = reduce
+    ? [{ opacity: 0 }, { opacity: 1 }]
     : [
-        [{ transform: `${PERSPECTIVE} rotateY(0deg)` }, { transform: `${PERSPECTIVE} rotateY(90deg)` }],
-        [{ transform: `${PERSPECTIVE} rotateY(-90deg)` }, { transform: `${PERSPECTIVE} rotateY(0deg)` }],
+        { opacity: 0, transform: "scale(0.975)" },
+        { opacity: 1, transform: "scale(1)" },
       ];
-  const duration = reduce ? 120 : 200;
   phase = "out";
-  // Held edge-on until the second half takes over, so nothing flashes between.
-  const hold = el.animate(out, { duration, easing: "ease-in", fill: "forwards" });
+  // Held hidden until the second half takes over, so nothing flashes between.
+  const hold = el.animate(out, { duration: 70, easing: "ease-in", fill: "forwards" });
   void hold.finished
     .then(() => {
       phase = "in";
       swap(target);
-      return el.animate(back, { duration, easing: "ease-out" }).finished;
+      return el.animate(back, { duration: 190, easing: "cubic-bezier(.2,.7,.2,1)" }).finished;
     })
     // Cancelled before the swap: still land on the target, once.
     .catch(() => {

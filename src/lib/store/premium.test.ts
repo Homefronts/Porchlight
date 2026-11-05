@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { OFFLINE_GRANT_MS, downloadedPlaybackAllowed } from "@/lib/store/premium";
+import { OFFLINE_GRANT_MS, downloadedPlaybackAllowed, freeStreamAllowed } from "@/lib/store/premium";
 
 const DAY = 24 * 60 * 60 * 1000;
 const now = 100 * DAY;
@@ -37,5 +37,17 @@ describe("downloadedPlaybackAllowed", () => {
     expect(
       downloadedPlaybackAllowed(now, { status: null, premiumConfirmedAt: null, premiumLapsed: false }),
     ).toBe(false);
+  });
+});
+
+describe("freeStreamAllowed", () => {
+  it("needs a confirmed Free account that opted in", () => {
+    expect(freeStreamAllowed("free", true, false)).toBe(true);
+    expect(freeStreamAllowed("free", false, false)).toBe(false);
+    expect(freeStreamAllowed(null, true, false)).toBe(false);
+  });
+
+  it("never unlocks a downloaded track past its offline grant", () => {
+    expect(freeStreamAllowed("free", true, true)).toBe(false);
   });
 });

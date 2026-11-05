@@ -211,6 +211,8 @@ export function AboutDialog({
             Fast, responsive YouTube Music desktop client. Unofficial — not
             affiliated with, endorsed by, or sponsored by Google or YouTube.
             "YouTube" and "YouTube Music" are trademarks of Google LLC.
+            Recommended for Music Premium accounts. You're responsible for how
+            you use Porchlight.
           </DialogDescription>
 
           {/* Fork signature. The original creator's credit stays first-class. */}

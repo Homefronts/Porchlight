@@ -73,6 +73,7 @@ import {
   removeTrackDownload,
   useDownloadsStore,
 } from "@/lib/downloads";
+import { useCanDownload } from "@/lib/store/premium";
 import { fetchLikedSongs } from "@/lib/innertube/library";
 import {
   addToPlaylist,
@@ -292,6 +293,7 @@ export function TrackMenuItems({
   );
   const dlState = dlTrack?.state ?? "none";
   const singleDownload = !!dlTrack?.refs.includes(SINGLE_REF);
+  const canDownload = useCanDownload();
   // With thumbs on every row the rating items would only repeat them.
   const thumbs = useSettingsStore((s) => s.ratingButtons === "both");
   // AI: overrides are per artist channel, so they need an id.
@@ -370,7 +372,7 @@ export function TrackMenuItems({
         <IconRadioFilled />
         {radioHere ? "Stop radio" : "Start radio"}
       </Item>
-      {dlState === "none" ? (
+      {dlState === "none" && !canDownload ? null : dlState === "none" ? (
         <Item
           onSelect={() =>
             void downloadTrack(item).catch((e) =>
