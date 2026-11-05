@@ -86,7 +86,7 @@ export class AudioGraph {
     // A tap for the visualizer: it reads the sound and passes nothing on.
     analyser = ctx.createAnalyser();
     analyser.fftSize = 512;
-    analyser.smoothingTimeConstant = 0.5;
+    analyser.smoothingTimeConstant = 0.65;
     this.tail.connect(analyser);
   }
 

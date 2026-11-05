@@ -68,6 +68,8 @@ export function EchoVisualizer({ track, light }: { track: QueueTrack; light: boo
     let phase = 0;
     let bassAverage = 0;
     let hit = 0;
+    let speed = 1;
+    const wants = new Float32Array(POINTS);
     const fit = () => {
       const scale = devicePixelRatio || 1;
       el.width = el.clientWidth * scale;
@@ -89,11 +91,23 @@ export function EchoVisualizer({ track, light }: { track: QueueTrack; light: boo
       const bass = ((bins[0] ?? 0) + (bins[1] ?? 0) + (bins[2] ?? 0)) / 765;
       // A hit is the bass jumping above its recent level: the kick drum, mostly.
       bassAverage += (bass - bassAverage) * 0.06;
-      hit = Math.max(hit * 0.86, Math.min(1, Math.max(0, bass - bassAverage) * 7));
+      const hitNow = Math.min(1, Math.max(0, bass - bassAverage) * 7);
+      // Hits swell in over a few frames instead of snapping, then fade slowly.
+      hit += (hitNow - hit) * (hitNow > hit ? 0.3 : 0.07);
       // The ripple runs faster with the music and lurches forward on each hit.
       const dt = Math.min(now - last, 50) / 1000;
       last = now;
-      phase += dt * (1 + bass * 5 + hit * 14);
+      speed += (1 + bass * 4 + hit * 7 - speed) * 0.08;
+      phase += dt * speed;
+      // Neighbouring points share their levels, so the line curves instead of jittering.
+      for (let i = 0; i < POINTS; i++) {
+        const fromMiddle = Math.abs((i / (POINTS - 1)) * 2 - 1);
+        const bin = Math.floor(Math.pow(fromMiddle, 1.7) * bins.length * 0.5);
+        wants[i] = Math.min(1, ((bins[bin] ?? 0) / 255) * (1 + fromMiddle * 1.8) * 0.42 + bass * bass * BASS_PUSH + hit * HIT_PUSH);
+      }
+      for (let pass = 0; pass < 3; pass++) {
+        for (let i = 1; i < POINTS - 1; i++) wants[i] = (wants[i - 1] + wants[i] * 2 + wants[i + 1]) / 4;
+      }
       const w = el.clientWidth;
       const h = el.clientHeight;
       g.clearRect(0, 0, w, h);
@@ -108,14 +122,11 @@ export function EchoVisualizer({ track, light }: { track: QueueTrack; light: boo
         const values = trails[n];
         const points: [number, number][] = [];
         for (let i = 0; i < POINTS; i++) {
-          // Bass in the middle and highs out to both ends, since most of the energy is in the bass.
-          const fromMiddle = Math.abs((i / (POINTS - 1)) * 2 - 1);
-          const bin = Math.floor(Math.pow(fromMiddle, 1.7) * bins.length * 0.5);
-          const want = Math.min(1, ((bins[bin] ?? 0) / 255) * (1 + fromMiddle * 1.8) * 0.42 + bass * bass * BASS_PUSH + hit * HIT_PUSH);
-          values[i] += (want - values[i]) * (want > values[i] ? Math.max(follow, 0.45 * follow + 0.04) : follow * 0.5);
+          const want = wants[i];
+          values[i] += (want - values[i]) * (want > values[i] ? follow * 0.32 + 0.02 : follow * 0.16 + 0.01);
           const edge = Math.sin((i / (POINTS - 1)) * Math.PI);
           const x = w * (0.055 + 0.89 * (i / (POINTS - 1)));
-          points.push([x, h / 2 + (Math.sin(i * 0.42 + at) * 0.72 + Math.sin(i * 1.05 - at * 1.6) * 0.28) * values[i] * (h * 0.46) * edge]);
+          points.push([x, h / 2 + (Math.sin(i * 0.3 + at) * 0.85 + Math.sin(i * 0.62 - at * 1.3) * 0.15) * values[i] * (h * 0.46) * edge]);
         }
         g.beginPath();
         g.moveTo(points[0][0], points[0][1]);
@@ -125,7 +136,7 @@ export function EchoVisualizer({ track, light }: { track: QueueTrack; light: boo
         }
         // Each hit flares the line, so the beat shows even when the shape barely changes.
         g.globalAlpha = Math.min(1, alpha + hit * 0.25);
-        g.lineWidth = width + hit * 1.6;
+        g.lineWidth = width + hit * 1;
         g.stroke();
       });
       g.globalAlpha = 1;
