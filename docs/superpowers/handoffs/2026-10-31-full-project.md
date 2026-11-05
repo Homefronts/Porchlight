@@ -416,5 +416,5 @@ The user asked (2026-10-31) that **every change gets added to this write-up as i
 - **The project folder moved** to `C:\Users\sdand\Desktop\AI Projects\Porchlight\YTubic Plus`, so `node_modules` was reinstalled and `target/debug` cleared.
 - **A dev build is running** (`pnpm tauri dev` on `logo`) on the user's real data, by their choice. When they're done, stop it, the debug `porchlight.exe` and Vite on port 1420, then `reg import` `porchlight.reg` and `ytubic-plus.reg` from the backup below. Don't restore the data folders unless they ask.
 - **Backup:** `C:\Users\sdand\PorchlightDataBackup-20261104-2215-pre-logo`. Its `.reg` files were copied from the 2026-10-31 backup because fresh exports failed; they point at the installed exe. A Free test account may still be listed in the app's account menu, and the free-playback opt-in may still be on (it does nothing on Premium).
-- **Not yet tried by hand:** remove duplicates and the sleep timer menu.
-- **Tests:** 618 passing, tsc clean.
+- **Not yet tried by hand:** remove duplicates, the sleep timer menu, and playback speed. The visualizer was checked live with real audio on a clean dev build; after heavy live-reloading it can read flat until the dev build restarts.
+- **Tests:** 621 passing, tsc clean.
