@@ -56,6 +56,78 @@ export type WhatsNewEntry = {
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "1.2.0",
+    date: "November 4, 2026",
+    summary: "The turntable",
+    changes: [
+      {
+        type: "new",
+        title: "A new logo",
+        text: "Porchlight has its own mark: a P whose round part is a record. Inside the app it takes on your look's colours.",
+      },
+      {
+        type: "new",
+        title: "A visualizer in full screen",
+        text: "Three trailing lines move with the music, in colours from the cover. Turn it off in Settings > Appearance.",
+      },
+      {
+        type: "new",
+        title: "A turntable that feels real",
+        text: "In Crate, the arm puts the needle on the record when a song starts, then moves in toward the label as it plays. Drag the progress bar backward and the record winds backward. Choose the needle's speed and style in Settings > Appearance.",
+      },
+      {
+        type: "new",
+        title: "Sleep timer",
+        text: "Stop after 15 to 90 minutes, or at the end of the song. It's in the player's More menu.",
+      },
+      {
+        type: "new",
+        title: "Playback speed",
+        text: "Play at 0.75x to 1.5x with the pitch unchanged. It's in Settings > Playback.",
+      },
+      {
+        type: "new",
+        title: "Remove duplicates",
+        text: "Clear repeated songs from your own playlists. You'll see the list and confirm first.",
+      },
+      {
+        type: "new",
+        title: "Full-screen touches",
+        text: "Double-click the cover to like a song. Your screen stays on while the full-screen player is open.",
+      },
+      {
+        type: "improved",
+        title: "The dial stays put",
+        text: "The layout dial now sits in the title bar, in the same spot in every layout, so you can keep turning without moving your mouse. It also has a cleaner look.",
+      },
+      {
+        type: "improved",
+        title: "A softer layout change",
+        text: "Layouts now fade and settle into place instead of flipping.",
+      },
+      {
+        type: "improved",
+        title: "AI results hidden",
+        text: "Search now says how many AI results it hid, with a button to show AI music again.",
+      },
+      {
+        type: "improved",
+        title: "Softer records",
+        text: "Records have finer grooves and a softer rim.",
+      },
+      {
+        type: "improved",
+        title: "Play without Premium (experimental)",
+        text: "Porchlight is made for Music Premium and that's what we recommend. Free accounts can choose to play anyway, with no downloads. You're responsible for using it, and it may stop working.",
+      },
+      {
+        type: "fixed",
+        title: "Buttons in Ink",
+        text: "Main buttons like Sign in with Google are now readable on Ink's cream accent.",
+      },
+    ],
+  },
+  {
     version: "1.1.0",
     date: "October 31, 2026",
     summary: "Layouts",

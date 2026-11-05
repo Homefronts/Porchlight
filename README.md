@@ -80,7 +80,7 @@ Porchlight ships with five looks. Switch any time in Settings > Appearance.
 
 ## Layouts
 
-Porchlight has five layouts. Turn the little dial next to the logo, press Ctrl+L, or pick one in Settings > Appearance. Every look works on every layout, and every screen is there in each one. Sidebar, shown at the top, is the app as you know it.
+Porchlight has five layouts. Turn the little dial in the title bar, press Ctrl+L, or pick one in Settings > Appearance. Every look works on every layout, and every screen is there in each one. Sidebar, shown at the top, is the app as you know it.
 
 <table>
   <tr>
@@ -111,7 +111,7 @@ Porchlight has five layouts. Turn the little dial next to the logo, press Ctrl+L
 
 ## Make it yours
 
-Pick a look and a layout on first launch, with a live preview of your own library. Switch layouts any time with the turntable dial next to the logo or Ctrl+L. Then keep tweaking: change colours, fonts, corner shapes and the little record touches, give the player its own colour in the layouts that have one, and save the result as a custom look. Export a look as a theme file to share it, or import a friend's. A look file can suggest a layout too, and Porchlight asks before switching.
+Pick a look and a layout on first launch, with a live preview of your own library. Switch layouts any time with the turntable dial in the title bar or Ctrl+L. Then keep tweaking: change colours, fonts, corner shapes and the little record touches, give the player its own colour in the layouts that have one, and save the result as a custom look. Export a look as a theme file to share it, or import a friend's. A look file can suggest a layout too, and Porchlight asks before switching.
 
 <table>
   <tr>
@@ -125,10 +125,11 @@ Pick a look and a layout on first launch, with a live preview of your own librar
 ### Home and layout
 
 - **Five layouts**: Sidebar, Gatefold, Index, Crate and Panels. Every look works on every layout, and the floating player works in all of them.
-- **Turntable dial**: click, scroll or use the arrow keys on the dial next to the logo to switch layouts, or press Ctrl+L.
+- **Turntable dial**: click, scroll or use the arrow keys on the dial in the title bar to switch layouts, or press Ctrl+L. It stays in the same spot in every layout.
 - **Player colour**: give the player area of Index, Panels, Gatefold and Crate its own colour in the look editor. Text on it stays readable.
 - **Crate liner notes**: the front record's tracks as Side A and Side B. Click a song to play from there, or an artist name to open their page.
 - **Index shelf pages**: every numbered entry on Index's contents page opens the whole shelf on its own page.
+- **Needle drop**: in Crate, the arm puts the needle on the record when a song starts and moves in as it plays, and the record winds backward when you drag back. Pick its speed and style in Settings > Appearance.
 - **Like and dislike buttons**: swap the heart for a like and dislike pair, like on YouTube Music.
 - **Liked songs cover**: choose the cover for your Liked songs playlist.
 - **Resizable layout**: drag to resize the sidebar and the player panel.
@@ -146,6 +147,9 @@ Pick a look and a layout on first launch, with a live preview of your own librar
 - **Video that sticks**: video stays on as you skip, with quality from 360p to 4K.
 - **Flexible players**: dock the player at the bottom bar or as a right-side card, or pop it out into a compact always-on-top floating widget.
 - **Full-screen player**: a big-screen view of what's playing, with three layouts.
+- **Visualizer**: in full screen, three trailing lines move with the music in colours from the cover. Double-click the cover to like a song, and your screen stays on.
+- **Sleep timer**: stop after 15 to 90 minutes, or at the end of the song.
+- **Playback speed**: 0.75x to 1.5x, with the pitch unchanged.
 - **Playback settings**: crossfade, volume normalization, an equalizer with presets, and output device choice.
 - **Picks up where you left off**: the app remembers your song, queue and position across restarts and updates.
 - **Radio button**: start a mix from whatever is playing, and click again to return to your album or playlist where you left off.
@@ -160,6 +164,7 @@ Pick a look and a layout on first launch, with a live preview of your own librar
 
 - **Full library support**: your playlists, likes, albums and artists, plus search with filters.
 - **Sidebar playlists**: every playlist in your library is listed, and you can pin or hide them.
+- **Remove duplicates**: clear repeated songs from your own playlists, after you've seen the list and confirmed.
 - **Add to library**: add any playlist to the app's own library from the right-click menu or its page.
 - **Manage your playlists**: rename or delete your own playlists, and remove tracks from the track menu. Changes show in YouTube Music too.
 - **Playlist suggestions**: suggested tracks live in their own section at the end, with a Refresh button.
@@ -184,6 +189,7 @@ Pick a look and a layout on first launch, with a live preview of your own librar
 - **Private history**: your listening history stays on your computer and is never uploaded. Pause or clear it any time in Settings > Storage.
 - **AI music filter**: one button in the top bar hides AI-generated music from search, home, mixes and artist pages, and skips it in your library, where you can still choose Play anyway.
 - **AI tags**: songs by known AI artists carry an AI tag, and AI? marks an artist who only shares a name with a known AI act.
+- **AI results hidden**: search says how many AI results it hid, with a button to show AI music again.
 - **Your own calls**: right-click a song to mark its artist as AI or Not AI, or report an AI artist to the community list.
 - **Community lists**: detection uses community lists checked against Spotify, refreshed every day.
 
@@ -244,7 +250,7 @@ Download the latest installer from the [Releases](https://github.com/Homefronts/
 
 ## What's new in Porchlight
 
-- **Layouts**: four new ways to lay out the app (Gatefold, Index, Crate and Panels) next to the classic Sidebar. Turn the dial by the logo or press Ctrl+L to switch.
+- **Layouts**: four new ways to lay out the app (Gatefold, Index, Crate and Panels) next to the classic Sidebar. Turn the dial in the title bar or press Ctrl+L to switch.
 - **Radio button** — start a mix from whatever is playing, right next to the queue button. Click it again to stop and resume your album or playlist where you left off.
 - **Mood chips** — while a mix plays, the queue shows YouTube Music's chips (All, Familiar, Discover, Chill, …) to reshape what's coming up.
 - **Offline downloads** — a Spotify-style download toggle on every playlist, album and Liked Songs, plus "Download" on single songs. Downloaded playlists stay in sync with new songs automatically.
@@ -300,6 +306,34 @@ Complicated changes, some needing new servers or apps.
 
 Every release of Porchlight, and of YTubic Plus before it, newest first.
 
+#### 1.2.0 (November 4, 2026): The turntable
+
+**New**
+
+- **A new logo**: Porchlight has its own mark, a P whose round part is a record. Inside the app it takes on your look's colours.
+- **Visualizer**: in full screen, three trailing lines move with the music in colours from the cover. Turn it off in Settings > Appearance.
+- **Needle drop**: in Crate, the arm puts the needle on the record when a song starts, then moves in toward the label as it plays. Pick Gentle, Quick or Slow cue, with or without a needle head, in Settings > Appearance.
+- **Winding back**: drag the progress bar backward and Crate's record and Index's cassette reels wind backward with it.
+- **Sleep timer**: stop after 15 to 90 minutes, or at the end of the song, from the player's More menu.
+- **Playback speed**: 0.75x to 1.5x with the pitch unchanged, in Settings > Playback.
+- **Remove duplicates**: clear repeated songs from your own playlists. You'll see the list and confirm first.
+- **Full-screen touches**: double-click the cover to like a song, and your screen stays on while the full-screen player is open.
+
+**Improved**
+
+- **The dial stays put**: the layout dial now sits in the title bar, in the same spot in every layout, with a cleaner look.
+- **A softer layout change**: layouts fade and settle into place instead of flipping.
+- **AI results hidden**: search says how many AI results it hid, with a button to show AI music again.
+- **Softer records**: finer grooves and a softer rim.
+- **Play without Premium (experimental)**: Porchlight is made for Music Premium and that's what we recommend. Free accounts can choose to play anyway, with no downloads. You're responsible for using it, and it may stop working.
+- **Coming from YTubic Plus**: Porchlight now reminds you to update Plus from inside the app first, so your library moves over.
+
+**Fixed**
+
+- **Buttons in Ink**: main buttons like Sign in with Google are readable on Ink's cream accent.
+
+> Known issues: the visualizer has only been tested on Windows so far. On macOS or Linux, turn it off in Settings > Appearance if full-screen playback misbehaves.
+
 #### 1.1.0 (October 31, 2026): Layouts
 
 **New**
@@ -350,6 +384,9 @@ Every release of Porchlight, and of YTubic Plus before it, newest first.
 
 - **Getting ready for Porchlight**: saves a copy of your settings and library so the new app can pick them up.
 
+<details>
+<summary>Older versions</summary>
+
 #### 0.9.0 (October 29, 2026): Looks
 
 **New**
@@ -363,9 +400,6 @@ Every release of Porchlight, and of YTubic Plus before it, newest first.
 
 - **Back to Classic**: Classic is unchanged. Pick it in Settings > Appearance to go back.
 - **Remembers where you were**: keeps your song, queue and position across restarts and updates.
-
-<details>
-<summary>Older versions</summary>
 
 #### 0.8.1 (October 27, 2026): Your requests
 

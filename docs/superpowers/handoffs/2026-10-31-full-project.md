@@ -412,6 +412,7 @@ The user asked (2026-10-31) that **every change gets added to this write-up as i
 
 ## State right now
 
+- **1.2.0 is being prepared** (user said go, 2026-11-04): version bumped, What's New and changelog written on `logo`. Not merged, tagged or pushed. Known open items shipping with it: a Free account's failed downloads can still retry through `syncAllDownloads`, the visualizer is on by default and untested on macOS and Linux, and the README screenshots still show the old logo and dial.
 - **Current branch is `logo`**, 10+ commits ahead of `main`, nothing pushed. `main` and tag `v1.1.0` are at `2c05b2e`, and 1.1.0 is published. Next release is planned as 1.2.0: not bumped or tagged yet, with What's New, the changelog and the installed update check still to do.
 - **The project folder moved** to `C:\Users\sdand\Desktop\AI Projects\Porchlight\YTubic Plus`, so `node_modules` was reinstalled and `target/debug` cleared.
 - **A dev build is running** (`pnpm tauri dev` on `logo`) on the user's real data, by their choice. When they're done, stop it, the debug `porchlight.exe` and Vite on port 1420, then `reg import` `porchlight.reg` and `ytubic-plus.reg` from the backup below. Don't restore the data folders unless they ask.
