@@ -42,7 +42,9 @@ const APP_ID: &str = match option_env!("YTUBIC_DISCORD_APP_ID") {
 const DOWNLOAD_URL: &str = "https://github.com/Homefronts/Porchlight/releases/latest";
 
 const LOGO_URL: &str =
-    "https://raw.githubusercontent.com/Homefronts/Porchlight/main/src-tauri/icons/icon.png";
+    // The query names the logo version: Discord caches images by address, so a new
+    // logo needs a new one.
+    "https://raw.githubusercontent.com/Homefronts/Porchlight/main/src-tauri/icons/icon.png?logo=2";
 
 /// A track's presence as the frontend sees it. `start_ms`/`end_ms` are Unix
 /// milliseconds (per Discord's Activity spec) and are `None` while paused, so
