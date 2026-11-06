@@ -393,6 +393,10 @@ The user asked (2026-10-31) that **every change gets added to this write-up as i
    - **More looks.** Was framed as a content update before 1.1. 1.1.0 is already published, so this is a later content update if they still want it.
    - Roadmap ideas are in the README → Roadmap. Next up: sleep timer, remove duplicates, sort playlists by artist, and others.
 
+## Known bugs we are not fixing (user decision)
+
+- **A Free account can still retry downloads that failed while it was Premium** (decided 2026-11-05: staying as is). `syncAllDownloads` in `src/lib/downloads-sync.ts` calls `downloads_retry_failed` with no Premium check, so an account that drops from Premium to Free can finish downloads it had already queued. New downloads, collection sync and the buttons are blocked for Free accounts. Don't fix this unless the user asks.
+
 ## Parked minor leftovers (fine to ship)
 
 - PlayerBar's video card remounts on a layout switch. Audio is unaffected.
