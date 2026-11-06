@@ -56,6 +56,7 @@ export function PlaybackTab() {
         <CrossfadeRow />
         <NormalizeRow />
         <SpeedRow />
+        <SkipSilencesRow />
         <FreePlaybackRow />
       </Group>
       <EqualizerGroup />
@@ -248,6 +249,19 @@ function SpeedRow() {
           ))}
         </div>
       }
+    />
+  );
+}
+
+function SkipSilencesRow() {
+  const on = usePlaybackSettings((s) => s.skipSilences);
+  const set = usePlaybackSettings((s) => s.setSkipSilences);
+  return (
+    <SettingRow
+      icon={IconPlayerPlayFilled}
+      title="Skip Silences"
+      description="Play long quiet stretches fast, like the gap before a hidden track."
+      control={<Switch checked={on} onCheckedChange={set} aria-label="Skip Silences" />}
     />
   );
 }

@@ -1,4 +1,5 @@
 import { TurntableDial } from "@/components/theme/turntable-dial";
+import { PlaybackBadges } from "@/components/layout/playback-badges";
 import { useEffect, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -228,6 +229,7 @@ export function TopBar({ sidebarToggle = true }: { sidebarToggle?: boolean } = {
         {fullscreen ? null : (
           <>
             {/* In the title bar so it stays under the mouse from layout to layout. */}
+            <PlaybackBadges />
             <TurntableDial />
             {/* Always one click away; the ⋯ menu has the same item. */}
             <Tooltip>

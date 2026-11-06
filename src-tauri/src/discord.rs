@@ -20,7 +20,7 @@ use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-use discord_rich_presence::activity::{Activity, ActivityType, Assets, Timestamps};
+use discord_rich_presence::activity::{Activity, ActivityType, Assets, Button, Timestamps};
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient};
 use tauri::State;
 
@@ -39,6 +39,8 @@ const APP_ID: &str = match option_env!("YTUBIC_DISCORD_APP_ID") {
 // Dev Portal (referenced by an asset key) or a public URL Discord can proxy
 // server-side. So we reuse our own app icon straight from the public repo,
 // which means nothing to upload and no Dev Portal art assets to maintain.
+const DOWNLOAD_URL: &str = "https://github.com/Homefronts/Porchlight/releases/latest";
+
 const LOGO_URL: &str =
     "https://raw.githubusercontent.com/Homefronts/Porchlight/main/src-tauri/icons/icon.png";
 
@@ -57,6 +59,8 @@ struct Presence {
     start_ms: Option<i64>,
     end_ms: Option<i64>,
     paused: bool,
+    /// The song, for the "Listen on YouTube Music" button.
+    video_id: String,
 }
 
 impl Presence {
@@ -138,12 +142,20 @@ fn push(client: &mut DiscordIpcClient, p: &Presence) -> Result<(), Box<dyn std::
         activity = activity.timestamps(Timestamps::new().start(start).end(end));
     }
 
+    let song_url = format!("https://music.youtube.com/watch?v={}", p.video_id);
+    let mut buttons = Vec::new();
+    if !p.video_id.is_empty() {
+        buttons.push(Button::new("Listen on YouTube Music", &song_url));
+    }
+    buttons.push(Button::new("Get Porchlight", DOWNLOAD_URL));
+    activity = activity.buttons(buttons);
+
     set_activity_showing_details(client, activity)
 }
 
 /// Discord's `status_display_type` for an activity: which field the member
 /// list and the status line show after "Listening to". 0 is the app name
-/// (the default, "Listening to YTubic"), 1 the state, 2 the details.
+/// (the default, "Listening to Porchlight"), 1 the state, 2 the details.
 const STATUS_DISPLAY_DETAILS: u8 = 2;
 
 /// `set_activity`, with the song title shown where the app name would be.
@@ -317,6 +329,7 @@ pub fn discord_update(
     start_ms: Option<i64>,
     end_ms: Option<i64>,
     paused: bool,
+    video_id: Option<String>,
 ) {
     handle.send(Msg::Update(Presence {
         title,
@@ -326,6 +339,7 @@ pub fn discord_update(
         start_ms,
         end_ms,
         paused,
+        video_id: video_id.unwrap_or_default(),
     }));
 }
 

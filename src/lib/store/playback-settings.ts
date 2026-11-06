@@ -31,6 +31,9 @@ type State = {
   /** The nine band gains in dB, only meaningful while `eqPreset` is "custom". */
   eqCustomGains: number[];
   monoAudio: boolean;
+  /** Plays long silences fast (off by default). */
+  skipSilences: boolean;
+  setSkipSilences: (v: boolean) => void;
   /** `MediaDeviceInfo.deviceId`, or "" for the system default. */
   outputDeviceId: string;
   /** What Previous does part-way into a track. */
@@ -95,6 +98,8 @@ export const usePlaybackSettings = create<State>()(
       eqPreset: "flat",
       eqCustomGains: [...EQ_PRESETS.flat],
       monoAudio: false,
+      skipSilences: false,
+      setSkipSilences: (skipSilences) => set({ skipSilences }),
       outputDeviceId: "",
       backButton: "smart",
       smartBackSeconds: 3,

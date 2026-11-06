@@ -17,6 +17,7 @@ import { playbackAllowed, usePlaybackAllowed } from "@/lib/store/premium";
 import { useSettingsStore } from "@/lib/store/settings";
 import { useFullscreenStore } from "@/lib/store/fullscreen";
 import { takeEndOfSongStop, useSleepTimer } from "@/lib/store/sleep-timer";
+import { watchSilences } from "@/lib/skip-silences";
 import { openPremiumGate } from "@/lib/store/premium-gate";
 import { resolveStreamId, resumeOnSourceSwitch, useTrackSourceStore } from "@/lib/store/track-source";
 import { pickThumbnail } from "@/components/shared/thumbnail";
@@ -683,8 +684,19 @@ export function useAudioEngine() {
   const fullscreenOpen = useFullscreenStore((s) => s.open);
   const visualizerOn = useSettingsStore((s) => s.fullscreenVisualizer);
   const wantsVisualizer = fullscreenOpen && visualizerOn;
+  const skipSilences = usePlaybackSettings((s) => s.skipSilences);
   const wantsGraph =
-    eqEnabled || monoAudio || normalizeVolume || outputDeviceId !== "" || wantsVisualizer;
+    eqEnabled || monoAudio || normalizeVolume || outputDeviceId !== "" || wantsVisualizer || skipSilences;
+
+  // Long silences play fast while the setting is on; it reads the graph's analyser.
+  useEffect(() => {
+    if (!skipSilences) return;
+    return watchSilences({
+      active: () => audioRef.current,
+      wanted: () => usePlaybackSettings.getState().skipSilences && usePlaybackStore.getState().playing,
+      speed: () => usePlaybackSettings.getState().playbackSpeed,
+    });
+  }, [skipSilences]);
   useEffect(() => {
     const g = wantsGraph ? ensureGraph() : graphRef.current;
     if (!g) return;
@@ -1107,8 +1119,10 @@ export function useAudioEngine() {
     let startMs: number | null = null;
     let endMs: number | null = null;
     if (s.playing && dur > 0) {
-      startMs = Math.round(Date.now() - s.position * 1000);
-      endMs = Math.round(startMs + dur * 1000);
+      // At another speed a song takes longer or shorter in real time.
+      const speed = usePlaybackSettings.getState().playbackSpeed || 1;
+      startMs = Math.round(Date.now() - (s.position * 1000) / speed);
+      endMs = Math.round(startMs + (dur * 1000) / speed);
     }
     // `paused` rides along separately: a track still resolving its duration
     // has no timestamps either, and the worker must not read that as a pause.
@@ -1120,6 +1134,7 @@ export function useAudioEngine() {
       startMs,
       endMs,
       paused: !s.playing,
+      videoId: t.videoId,
     }).catch(() => {});
   }, [track, playing, duration, discordRp]);
 }

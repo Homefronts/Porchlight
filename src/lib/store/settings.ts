@@ -1,3 +1,4 @@
+import { IS_LINUX, IS_MAC } from "@/lib/platform";
 import { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { create } from "zustand";
@@ -124,7 +125,8 @@ export const useSettingsStore = create<State>()(
       interfaceFont: "system",
       ratingButtons: "heart",
       fullscreenLayout: "cover",
-      fullscreenVisualizer: true,
+      // Only tested on Windows so far.
+      fullscreenVisualizer: !IS_MAC && !IS_LINUX,
       cardLyrics: true,
       shareYtMusicLinks: false,
       playbackNotifications: false,
@@ -172,7 +174,15 @@ export const useSettingsStore = create<State>()(
           lastfmLoveSync: false,
         }),
     }),
-    { name: "ytm-settings" },
+    {
+      name: "ytm-settings",
+      version: 1,
+      // 1.2.0 turned the visualizer on everywhere; untested on macOS and Linux, it starts off there.
+      migrate: (stored, version) => {
+        const s = stored as Partial<State>;
+        return version < 1 && (IS_MAC || IS_LINUX) ? { ...s, fullscreenVisualizer: false } : s;
+      },
+    },
   ),
 );
 
