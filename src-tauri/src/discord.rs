@@ -24,17 +24,14 @@ use discord_rich_presence::activity::{Activity, ActivityType, Assets, Timestamps
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient};
 use tauri::State;
 
-// Discord Application ID. Create an application named "YTubic" at
-// https://discord.com/developers/applications — the name is exactly what
-// Discord renders after "Listening to". Then either set the env var at build
-// time (`YTUBIC_DISCORD_APP_ID=...`) or replace the "" default below with the
-// Application ID string. While this is empty the worker simply never connects,
-// so the feature is a no-op until a real ID is provided.
+// Discord Application ID: Porchlight's own application, made 2026-11-05 at
+// https://discord.com/developers/applications. Its name is what Discord shows
+// after "Listening to", so it must stay "Porchlight". Override at build time
+// with `YTUBIC_DISCORD_APP_ID=...`. An empty ID turns the feature off.
 const APP_ID: &str = match option_env!("YTUBIC_DISCORD_APP_ID") {
     Some(id) => id,
-    // Public "YTubic" application ID (client IDs are not secret — they ship in
-    // every client that renders the presence). Overridable via the env var.
-    None => "1525085261418074152",
+    // Public application ID; client IDs aren't secret, they ship in every client.
+    None => "1568085762841387258",
 };
 
 // Small logo badge shown in the corner of the cover art. Discord can't read a
