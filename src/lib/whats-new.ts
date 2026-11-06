@@ -56,6 +56,38 @@ export type WhatsNewEntry = {
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "1.2.1",
+    date: "November 5, 2026",
+    summary: "Little touches",
+    changes: [
+      {
+        type: "new",
+        title: "Skip silences",
+        text: "Long quiet stretches, like the gap before a hidden track, play fast until the music comes back. Turn it on in Settings > Playback.",
+      },
+      {
+        type: "new",
+        title: "Sleep and speed in the title bar",
+        text: "A small badge shows a running sleep timer, or a speed other than normal. Click it to cancel the timer or go back to normal speed.",
+      },
+      {
+        type: "improved",
+        title: "Porchlight on Discord",
+        text: "Your Discord status now says Listening to Porchlight, with the new logo, a button to open the song on YouTube Music and one to get Porchlight. The progress bar keeps up with your playback speed.",
+      },
+      {
+        type: "improved",
+        title: "Visualizer on macOS and Linux",
+        text: "The full-screen visualizer starts off on macOS and Linux, where it hasn't been tested yet. Turn it on in Settings > Appearance.",
+      },
+      {
+        type: "fixed",
+        title: "The new icon after updating",
+        text: "Windows now picks up Porchlight's new icon on your shortcuts after an update, instead of showing the old one.",
+      },
+    ],
+  },
+  {
     version: "1.2.0",
     date: "November 4, 2026",
     summary: "The turntable",

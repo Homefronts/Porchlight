@@ -150,6 +150,7 @@ Pick a look and a layout on first launch, with a live preview of your own librar
 - **Visualizer**: in full screen, three trailing lines move with the music in colours from the cover. Double-click the cover to like a song, and your screen stays on.
 - **Sleep timer**: stop after 15 to 90 minutes, or at the end of the song.
 - **Playback speed**: 0.75x to 1.5x, with the pitch unchanged.
+- **Skip silences**: long quiet stretches play fast until the music comes back, off unless you turn it on.
 - **Playback settings**: crossfade, volume normalization, an equalizer with presets, and output device choice.
 - **Picks up where you left off**: the app remembers your song, queue and position across restarts and updates.
 - **Radio button**: start a mix from whatever is playing, and click again to return to your album or playlist where you left off.
@@ -195,7 +196,7 @@ Pick a look and a layout on first launch, with a live preview of your own librar
 
 ### Integrations
 
-- **Discord Rich Presence**: show what you're listening to on your Discord profile, with album art and a progress bar.
+- **Discord Rich Presence**: show what you're listening to on your Discord profile, with album art, a progress bar, and buttons to open the song or get Porchlight.
 - **Last.fm**: scrobble every track you play, love and unlove songs from the app, and queue scrobbles made offline until you're back online.
 - **Share links**: Share copies a link that opens in Porchlight (old ytubic-plus:// links still work), or a plain music.youtube.com link if you prefer.
 - **Report a bug**: a bug icon in the top bar opens the report form, so it's always one click away.
@@ -270,7 +271,6 @@ Small, quick to build.
 
 - [ ] **Share your AI marks** — turn your Mark as AI choices into a one-click report to the community list.
 - [ ] **Skip non-music parts of videos** — optional [SponsorBlock](https://sponsor.ajay.app) skipping of intros and skits in music videos (its "Non-Music Section" category), credited per its CC BY-NC-SA licence.
-- [ ] **Skip silences** — trim long quiet stretches, like the gap before a hidden track.
 - [ ] **Libre.fm and ListenBrainz scrobbling** — next to Last.fm, with a switch per service.
 
 ### Later
@@ -305,6 +305,22 @@ Complicated changes, some needing new servers or apps.
 ## Changelog
 
 Every release of Porchlight, and of YTubic Plus before it, newest first.
+
+#### 1.2.1 (November 5, 2026): Little touches
+
+**New**
+
+- **Skip silences**: long quiet stretches, like the gap before a hidden track, play fast until the music comes back. Turn it on in Settings > Playback.
+- **Sleep and speed in the title bar**: a small badge shows a running sleep timer, or a speed other than normal. Click it to cancel the timer or go back to normal speed.
+
+**Improved**
+
+- **Porchlight on Discord**: your status says Listening to Porchlight, with the new logo, a button to open the song on YouTube Music and one to get Porchlight. The progress bar keeps up with your playback speed.
+- **Visualizer on macOS and Linux**: it starts off there until it's been tested. Turn it on in Settings > Appearance.
+
+**Fixed**
+
+- **The new icon after updating**: Windows picks up Porchlight's new icon on your shortcuts after an update.
 
 #### 1.2.0 (November 4, 2026): The turntable
 
@@ -378,14 +394,14 @@ Every release of Porchlight, and of YTubic Plus before it, newest first.
 
 > Known issues: Linux package users can remove the old YTubic Plus package themselves.
 
+<details>
+<summary>Older versions</summary>
+
 #### 0.9.1 (October 29, 2026): Getting ready for Porchlight
 
 **Improved**
 
 - **Getting ready for Porchlight**: saves a copy of your settings and library so the new app can pick them up.
-
-<details>
-<summary>Older versions</summary>
 
 #### 0.9.0 (October 29, 2026): Looks
 
