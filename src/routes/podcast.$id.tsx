@@ -114,6 +114,8 @@ function FollowButton({ showId }: { showId: string }) {
     } catch {
       // YouTube refused: keep the choice in the app only.
       (next ? sort.addLocalFollow : sort.removeLocalFollow)(showId);
+      // A failed unfollow of a show YouTube still follows: show the real state.
+      if (!next) setFollowing(!!library?.some((s) => s.id === showId));
     }
     // Unfollowing also clears any app-only follow.
     if (!next) sort.removeLocalFollow(showId);

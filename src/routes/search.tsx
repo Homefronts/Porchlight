@@ -446,7 +446,10 @@ function AllResults({ data }: { data: SearchResults }) {
                 key={t.videoId}
                 track={t}
                 index={i}
-                onPlay={() => usePlaybackStore.getState().setQueue(episodes.slice(i), 0)}
+                onPlay={() => {
+                  usePlaybackStore.getState().setQueue(episodes.slice(i), 0);
+                  usePlaybackStore.getState().setShuffle(false);
+                }}
               />
             ))}
           </div>

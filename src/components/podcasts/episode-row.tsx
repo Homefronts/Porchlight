@@ -30,7 +30,13 @@ export function EpisodeRow({ track, index, onPlay }: { track: QueueTrack; index:
         tabIndex={0}
         data-index={index}
         onClick={onPlay}
-        onKeyDown={(e) => e.key === "Enter" && onPlay()}
+        onKeyDown={(e) => {
+          // Ignore keys from the nested more-menu button.
+          if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            onPlay();
+          }
+        }}
         className="flex cursor-pointer items-center gap-4 border-b border-border/50 px-2 py-2.5 hover:bg-accent/60"
       >
         <span className={cn("w-16 shrink-0 font-mono text-[11px] uppercase tracking-wider text-muted-foreground", tag.status === "played" && "opacity-55")}>
