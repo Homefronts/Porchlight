@@ -748,23 +748,25 @@ export function useAudioEngine() {
   const skipSponsors = usePlaybackSettings((s) => s.skipSponsors);
   useEffect(() => {
     if (!skipSponsors) return;
-    let videoId = "";
+    let play = -1; // resolve token of the load being watched: changes on every new play
     let segments: Segment[] = [];
     let undone = new Set<string>();
     const timer = setInterval(() => {
       const el = audioRef.current;
       const s = usePlaybackStore.getState();
       const t = s.index >= 0 ? s.queue[s.index] : undefined;
-      if (!el || !t || !isEpisode(t) || !s.playing || el.paused) return;
-      if (t.videoId !== videoId) {
-        videoId = t.videoId;
+      const token = resolveTokenRef.current;
+      if (token !== play) {
+        play = token;
         segments = [];
         undone = new Set();
-        const id = videoId;
-        void fetchSponsorSegments(id).then((r) => {
-          if (videoId === id) segments = r;
-        });
+        if (t && isEpisode(t)) {
+          void fetchSponsorSegments(t.videoId).then((r) => {
+            if (play === token) segments = r;
+          });
+        }
       }
+      if (!el || !t || !isEpisode(t) || !s.playing || el.paused) return;
       const hit = segmentToSkip(el.currentTime, segments, undone);
       if (!hit) return;
       el.currentTime = hit.end;
@@ -773,8 +775,10 @@ export function useAudioEngine() {
         action: {
           label: "Undo",
           onClick: () => {
+            // Only on the play the skip happened in.
+            if (play !== token || !audioRef.current) return;
             undone.add(hit.uuid);
-            if (audioRef.current) audioRef.current.currentTime = hit.start;
+            audioRef.current.currentTime = hit.start;
           },
         },
       });
