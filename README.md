@@ -299,6 +299,7 @@ Complicated changes, some needing new servers or apps.
 - [ ] **QR code sign-in** — scan a code with your phone instead of typing a password. The TV-style sign-in this would use appears closed to apps like Porchlight, so it depends on that changing.
 - [ ] **Community add-ons** — browse and install add-ons and shared looks from inside the app, like [Spicetify](https://spicetify.app) for Spotify but built in. No patching the client.
 - [ ] **Listen together** — a Jams-style shared session with friends on Porchlight. Needs a small relay server, so maybe someday.
+- [ ] **Add any channel as a show**: a maybe. Pick Add as a show on a YouTube channel (a video essayist like Wendigoon, say) and its videos join Podcasts with resume, played marks and sponsor skipping. Only channels you add appear.
 - [ ] **Android TV app** — a remote-friendly Porchlight for the big screen. Voice search and the Now Playing tile on the ATV home screen come first, since the existing apps miss them. A separate app, so maybe someday.
 
 ## Changelog
