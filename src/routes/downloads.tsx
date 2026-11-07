@@ -17,6 +17,7 @@ import {
   SINGLE_REF,
   collectionProgress,
   doneEpisodes,
+  newestDownloadFirst,
   useDownloadsStore,
   type DlCollection,
 } from "@/lib/downloads";
@@ -64,9 +65,7 @@ function DownloadsPage() {
           ...t.meta,
           thumbnails: dlTrackToShelfItem(t, base).thumbnails,
         }))
-        .sort((a, b) =>
-          (b.episode?.published ?? "").localeCompare(a.episode?.published ?? ""),
-        ),
+        .sort(newestDownloadFirst),
     [index, base],
   );
 

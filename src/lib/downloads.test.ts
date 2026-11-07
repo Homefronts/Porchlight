@@ -3,6 +3,7 @@ import type { DlTrack, DownloadsIndex } from "@/lib/downloads";
 import {
   collectionProgress,
   downloadedCoverUrl,
+  newestDownloadFirst,
   trackDownloadState,
   trackToInput,
 } from "@/lib/downloads";
@@ -51,6 +52,12 @@ describe("downloads selectors", () => {
   it("collectionProgress counts done/failed against total", () => {
     expect(collectionProgress(index, "P1")).toEqual({ done: 1, failed: 1, total: 3 });
     expect(collectionProgress(index, "nope")).toBeNull();
+  });
+
+  it("episodes sort newest download first, no time last", () => {
+    const t = (videoId: string, downloadedAt?: number) => ({ videoId, title: videoId, thumbnails: [], downloadedAt });
+    const out = [t("none"), t("a", 1), t("c", 3), t("b", 2)].sort(newestDownloadFirst);
+    expect(out.map((x) => x.videoId)).toEqual(["c", "b", "a", "none"]);
   });
 
   it("episode info survives the download index", () => {

@@ -27,6 +27,8 @@ export type QueueTrack = {
   duration?: number;
   /** Set for podcast episodes; absent means music. */
   episode?: EpisodeInfo;
+  /** Ms timestamp stamped when an episode download is queued; orders Downloads. */
+  downloadedAt?: number;
 };
 
 export const isEpisode = (t: QueueTrack | undefined): boolean => !!t?.episode;

@@ -68,6 +68,10 @@ const EMPTY: DownloadsIndex = { version: 1, collections: {}, tracks: {} };
 export const doneEpisodes = (index: DownloadsIndex): DlTrack[] =>
   Object.values(index.tracks).filter((t) => t.state === "done" && t.meta.episode);
 
+/** Most recently downloaded first; no timestamp sorts last. */
+export const newestDownloadFirst = (a: QueueTrack, b: QueueTrack): number =>
+  (b.downloadedAt ?? 0) - (a.downloadedAt ?? 0);
+
 const doneEpisodeIds = (index: DownloadsIndex) => doneEpisodes(index).map((t) => t.videoId);
 
 /** Rust owns the index; this is a read-only mirror fed by `downloads-changed`. */
@@ -138,8 +142,9 @@ export function downloadedCoverUrl(
 }
 
 export function trackToInput(t: ShelfItem | QueueTrack): TrackInput | null {
-  const meta = shelfItemToTrack(t);
-  if (!meta) return null;
+  const found = shelfItemToTrack(t);
+  if (!found) return null;
+  const meta = found.episode ? { ...found, downloadedAt: found.downloadedAt ?? Date.now() } : found;
   const widest = [...meta.thumbnails].sort(
     (a, b) => (b.width ?? 0) - (a.width ?? 0),
   )[0];

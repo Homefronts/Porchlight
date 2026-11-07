@@ -51,8 +51,9 @@ export async function syncSponsorCache(ids: string[]): Promise<void> {
   for (const id of want) {
     if (kept[id]) continue;
     const segs = await fetchSponsorSegments(id);
-    // Empty may be a failed fetch; leave it out so a later sync retries.
-    if (segs.length && want.has(id)) useSponsorCache.setState((s) => ({ byId: { ...s.byId, [id]: segs } }));
+    // Empty may be a failed fetch; evict the session memo so a later sync retries.
+    if (!segs.length) cache.delete(id);
+    else if (want.has(id)) useSponsorCache.setState((s) => ({ byId: { ...s.byId, [id]: segs } }));
   }
 }
 
