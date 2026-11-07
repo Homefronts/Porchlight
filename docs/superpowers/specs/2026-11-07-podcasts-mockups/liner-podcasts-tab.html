@@ -1,0 +1,96 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Podcasts tab (Liner)</title></head><body style="background:#1a1816;color:#ddd;font-family:system-ui;padding:24px;max-width:1200px;margin:auto">
+<style>
+  .pl{background:#0f0e0d;color:#ece6dc;font-family:ui-sans-serif,system-ui,sans-serif;border-radius:10px;overflow:hidden;border:1px solid #2a2724;margin-bottom:28px}
+  .pl .top{display:flex;align-items:center;gap:22px;padding:14px 22px;border-bottom:1px solid #26231f}
+  .pl .logo{font-weight:900;font-size:13px;line-height:1;letter-spacing:.02em}
+  .pl .logo b{display:inline-grid;place-items:center;width:26px;height:26px;background:#e8344e;border-radius:6px;margin-right:8px;vertical-align:middle}
+  .pl nav{display:flex;gap:18px;font:600 10.5px ui-monospace,monospace;letter-spacing:.12em}
+  .pl nav span{color:#b9a98f;padding-bottom:4px}
+  .pl nav .on{color:#fff;border-bottom:2px solid #e8344e}
+  .pl nav .new{color:#fff;background:#e8344e33;outline:1px dashed #e8344e;padding:2px 5px;border-radius:3px}
+  .pl .body{padding:20px 22px 24px}
+  .pl h1{font-family:Georgia,serif;font-size:30px;font-weight:400;margin:0 0 4px}
+  .pl h1 i{color:#9b8f80}
+  .pl .lab{font:600 10.5px ui-monospace,monospace;letter-spacing:.14em;color:#e8344e;margin:22px 0 10px}
+  .pl .lab em{color:#8a8072;font-style:normal}
+  .pl .row{display:flex;gap:14px;overflow:hidden}
+  .pl .card{width:220px;flex:none}
+  .pl .card img{width:220px;height:124px;object-fit:cover;border-radius:4px;display:block}
+  .pl .bar{height:3px;background:#3a3530;margin-top:-3px;position:relative;border-radius:0 0 4px 4px}
+  .pl .bar i{position:absolute;inset:0 auto 0 0;background:#e8344e}
+  .pl .t{font-size:13px;margin-top:8px;line-height:1.3}
+  .pl .s{font-size:11.5px;color:#9b8f80;font-style:italic;font-family:Georgia,serif}
+  .pl .m{font:10.5px ui-monospace,monospace;color:#8a8072;margin-top:3px}
+  .pl .shows{display:flex;gap:18px}
+  .pl .show{text-align:center;width:96px;font-size:12px}
+  .pl .show img{width:84px;height:84px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 6px}
+  .pl .dot{display:inline-block;width:7px;height:7px;background:#e8344e;border-radius:50%;margin-right:4px}
+  .pl table{width:100%;border-collapse:collapse;font-size:13px}
+  .pl td{padding:9px 6px;border-bottom:1px solid #26231f;vertical-align:middle}
+  .pl td.n{font:10.5px ui-monospace,monospace;color:#8a8072;width:30px}
+  .pl td img{width:64px;height:36px;object-fit:cover;border-radius:3px;display:block}
+  .pl td.r{text-align:right;font:10.5px ui-monospace,monospace;color:#8a8072;white-space:nowrap}
+  .pl .chip{font:600 9.5px ui-monospace,monospace;letter-spacing:.1em;padding:3px 6px;border-radius:3px;border:1px solid #3a3530;color:#b9a98f}
+  .pl .chip.done{color:#7fc79a;border-color:#2f5a3e}
+  .pl .tabs{display:flex;gap:8px;margin:14px 0 4px}
+  .pl .tabs span{font:600 10.5px ui-monospace,monospace;letter-spacing:.12em;padding:7px 12px;border:1px solid #3a3530;color:#b9a98f}
+  .pl .tabs .on{background:#e8344e;border-color:#e8344e;color:#fff}
+  .note{font-size:13px;color:var(--text-secondary,#888);margin:-14px 0 26px}
+</style>
+
+<h2>Podcasts in Porchlight</h2>
+<p class="subtitle">Real shows and recent episodes. How far you've listened and the episode lengths are made up for the mockup. Dashed box = new tab.</p>
+
+<div class="pl">
+  <div class="top">
+    <div class="logo"><b>P</b>PORCH LIGHT.</div>
+    <nav><span>HOME</span><span>EXPLORE</span><span class="on new">PODCASTS</span><span>SEARCH</span><span>LIBRARY</span><span>DOWNLOADS</span><span>REWIND</span></nav>
+  </div>
+  <div class="body">
+    <h1>Podcasts</h1>
+
+    <div class="lab">PICK UP WHERE YOU LEFT OFF</div>
+    <div class="row">
+      <div class="card"><img src="https://i.ytimg.com/vi/N-D9F5ZTVvs/mqdefault.jpg"><div class="bar"><i style="width:62%"></i></div>
+        <div class="t">Police Stories from Junction Falls</div><div class="s">CreepCast</div><div class="m">48 min left</div></div>
+      <div class="card"><img src="https://i.ytimg.com/vi/pUl_HkKPhF0/mqdefault.jpg"><div class="bar"><i style="width:25%"></i></div>
+        <div class="t">Austen Alexander Confronts Donut Operator</div><div class="s">Unsubscribe Podcast</div><div class="m">1 hr 31 min left</div></div>
+      <div class="card"><img src="https://i.ytimg.com/vi/TbVQHSMevis/mqdefault.jpg"><div class="bar"><i style="width:80%"></i></div>
+        <div class="t">The Final Horrors of the Cryptid Iceberg</div><div class="s">Wendigoon</div><div class="m">22 min left</div></div>
+    </div>
+
+    <div class="lab">YOUR SHOWS</div>
+    <div class="shows">
+      <div class="show"><img src="https://i.ytimg.com/vi/IrXD_BmEleY/mqdefault.jpg"><span class="dot"></span>CreepCast</div>
+      <div class="show"><img src="https://i.ytimg.com/vi/rzfq13vaIqQ/mqdefault.jpg"><span class="dot"></span>Unsubscribe</div>
+      <div class="show"><img src="https://i.ytimg.com/vi/bWD16waSw90/mqdefault.jpg">Wendigoon</div>
+    </div>
+
+    <div class="lab">NEW FROM YOUR SHOWS <em>· NEWEST FIRST</em></div>
+    <table>
+      <tr><td class="n">NOV 5</td><td style="width:72px"><img src="https://i.ytimg.com/vi/j_KX6aLicWM/mqdefault.jpg"></td><td>The Navy Created A Water Gun Boat In Vietnam? <div class="s">Unsubscribe Podcast</div></td><td class="r">14 MIN &nbsp;<span class="chip">NEW</span></td></tr>
+      <tr><td class="n">NOV 2</td><td><img src="https://i.ytimg.com/vi/3UqyTf0b_Ns/mqdefault.jpg"></td><td>Why US Military Logistics Can't Be Beaten <div class="s">Unsubscribe Podcast</div></td><td class="r">19 MIN &nbsp;<span class="chip">NEW</span></td></tr>
+      <tr><td class="n">NOV 1</td><td><img src="https://i.ytimg.com/vi/N-D9F5ZTVvs/mqdefault.jpg"></td><td>Police Stories from Junction Falls <div class="s">CreepCast</div></td><td class="r">48 MIN LEFT</td></tr>
+      <tr><td class="n">OCT 25</td><td><img src="https://i.ytimg.com/vi/IrXD_BmEleY/mqdefault.jpg"></td><td>My Dad Finally Told Me <div class="s">CreepCast</div></td><td class="r"><span class="chip done">✓ PLAYED</span></td></tr>
+    </table>
+  </div>
+</div>
+<p class="note">Right-click or ⋯ on any episode: <b>Mark as played</b> / <b>Mark as unplayed</b> / Download / Open show.</p>
+
+<div class="pl">
+  <div class="top">
+    <div class="logo"><b>P</b>PORCH LIGHT.</div>
+    <nav><span>HOME</span><span>EXPLORE</span><span>PODCASTS</span><span>SEARCH</span><span>LIBRARY</span><span class="on">DOWNLOADS</span><span>REWIND</span></nav>
+  </div>
+  <div class="body">
+    <h1>Downloads</h1>
+    <div class="tabs"><span>SONGS</span><span class="on">DOWNLOADED EPISODES</span></div>
+    <table>
+      <tr><td style="width:72px"><img src="https://i.ytimg.com/vi/AcyIgytJm6Q/mqdefault.jpg"></td><td>Where the Caterpillars Die <div class="s">CreepCast</div></td><td class="r">AUDIO · 1 HR 52 MIN</td></tr>
+      <tr><td><img src="https://i.ytimg.com/vi/gywnmc1LBOA/mqdefault.jpg"></td><td>How Teams Secretly Cheat In Formula 1 <div class="s">Unsubscribe Podcast</div></td><td class="r">AUDIO · 21 MIN</td></tr>
+      <tr><td><img src="https://i.ytimg.com/vi/sGiimUaXE-k/mqdefault.jpg"></td><td>The Depths of the Cryptid Iceberg <div class="s">Wendigoon</div></td><td class="r">AUDIO · 2 HR 4 MIN</td></tr>
+    </table>
+  </div>
+</div>
+
+</body></html>

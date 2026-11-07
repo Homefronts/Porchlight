@@ -1,0 +1,117 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Podcasts in each layout</title>
+<style>
+  body{background:#1a1816;color:#ddd;font-family:system-ui,sans-serif;padding:24px;max-width:1240px;margin:auto}
+  h2{font-size:15px;font-weight:600;margin:30px 0 8px;color:#fff}
+  .cap{font-size:13px;color:#9a9086;margin:0 0 6px}
+  .f{background:#0f0e0d;color:#ece6dc;border:1px solid #2a2724;border-radius:10px;overflow:hidden;height:470px;display:flex;font-size:12.5px}
+  .mono{font:600 9.5px ui-monospace,monospace;letter-spacing:.13em}
+  .lab{font:600 9.5px ui-monospace,monospace;letter-spacing:.14em;color:#e8344e;margin:14px 0 8px}
+  .h{font-family:Georgia,serif;font-size:26px;margin:0}
+  .cards{display:flex;gap:10px}
+  .card{width:150px;flex:none}.card img{width:150px;height:84px;object-fit:cover;border-radius:3px;display:block}
+  .pb{height:3px;background:#3a3530}.pb i{display:block;height:3px;background:#e8344e}
+  .t{margin-top:5px;line-height:1.25}.s{font:italic 11px Georgia,serif;color:#9b8f80}
+  .shows{display:flex;gap:12px}.show{width:60px;text-align:center;font-size:11px}.show img{width:52px;height:52px;border-radius:50%;object-fit:cover;display:block;margin:0 auto 4px}
+  .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#e8344e;margin-right:3px}
+  .rows div{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #26231f}
+  .rows em{font:9.5px ui-monospace,monospace;color:#8a8072;font-style:normal}
+  .tabs{display:flex;gap:14px;padding:12px 18px;border-bottom:1px solid #26231f}.tabs span{color:#b9a98f}.tabs .on{color:#fff;border-bottom:2px solid #e8344e;padding-bottom:3px}
+  /* gatefold */
+  .gl{width:36%;border-right:2px solid #2a2724;padding:22px;display:flex;flex-direction:column;align-items:center;background:#141210}
+  .gl img{width:210px;height:210px;object-fit:cover;border-radius:4px}
+  .gr{flex:1;overflow:hidden}
+  /* index */
+  .ix{flex-direction:column}
+  .strip{background:#f2c84b;color:#1b1814;padding:10px 18px;display:flex;justify-content:space-between;align-items:center;font:700 11px ui-monospace,monospace;letter-spacing:.1em}
+  .ixb{display:flex;flex:1;overflow:hidden}
+  .appx{width:190px;border-left:1px solid #2a2724;padding:14px;color:#b9a98f}
+  /* crate */
+  .cr{flex-direction:column}
+  .tt{height:92px;border-top:1px solid #2a2724;background:#141210;display:flex;align-items:center;gap:16px;padding:0 18px}
+  .rec{width:74px;height:74px;border-radius:50%;background:repeating-radial-gradient(#111 0 2px,#1d1d1d 2px 3px);display:grid;place-items:center}
+  .rec img{width:26px;height:26px;border-radius:50%;object-fit:cover}
+  /* panels */
+  .pn{background:#000;flex-direction:column;padding:8px;gap:8px}
+  .pnb{display:flex;gap:8px;flex:1;overflow:hidden}
+  .panel{background:#151515;border-radius:12px;padding:14px;overflow:hidden}
+  .wash{background:linear-gradient(160deg,#3b2b4a 0%,#151515 55%)}
+  .pbar{background:#151515;border-radius:12px;height:62px;display:flex;align-items:center;gap:12px;padding:0 14px}
+  .pbar img{width:42px;height:42px;border-radius:6px;object-fit:cover}
+</style></head><body>
+<p class="cap">The Podcasts tab inside each layout's frame. Per the layouts spec, only Home is reshaped by a layout; Podcasts keeps the same three parts everywhere (Pick up where you left off, Your shows, New from your shows) inside the frame. Real shows and episodes; progress and lengths made up. Liner (Sidebar layout) is the approved liner-podcasts-tab.html.</p>
+
+<h2>Gatefold: the left page stays the playing record, Podcasts is a tab on the right page</h2>
+<div class="f">
+  <div class="gl"><img src="https://i.ytimg.com/vi/N-D9F5ZTVvs/hqdefault.jpg"><div style="margin-top:14px;font-size:16px;font-weight:700">Police Stories from Junction Falls</div><div class="s" style="font-size:13px">CreepCast</div><div class="pb" style="width:210px;margin-top:14px"><i style="width:62%"></i></div><div class="mono" style="margin-top:6px;color:#8a8072">1:17:40 · 48 MIN LEFT</div></div>
+  <div class="gr">
+    <div class="tabs mono"><span>HOME</span><span>EXPLORE</span><span class="on">PODCASTS</span><span>SEARCH</span><span>LIBRARY</span><span>DOWNLOADS</span><span>REWIND</span></div>
+    <div style="padding:14px 18px">
+      <p class="h">Podcasts</p>
+      <div class="lab">PICK UP WHERE YOU LEFT OFF</div>
+      <div class="cards">
+        <div class="card"><img src="https://i.ytimg.com/vi/pUl_HkKPhF0/mqdefault.jpg"><div class="pb"><i style="width:25%"></i></div><div class="t">Austen Alexander Confronts Donut Operator</div><div class="s">Unsubscribe Podcast</div></div>
+        <div class="card"><img src="https://i.ytimg.com/vi/mHcxRH6_OkE/mqdefault.jpg"><div class="pb"><i style="width:40%"></i></div><div class="t">The Antichrist Salesman</div><div class="s">CreepCast</div></div>
+      </div>
+      <div class="lab">YOUR SHOWS</div>
+      <div class="shows"><div class="show"><img src="https://i.ytimg.com/vi/IrXD_BmEleY/mqdefault.jpg"><span class="dot"></span>CreepCast</div><div class="show"><img src="https://i.ytimg.com/vi/rzfq13vaIqQ/mqdefault.jpg"><span class="dot"></span>Unsubscribe</div></div>
+      <div class="lab">NEW FROM YOUR SHOWS</div>
+      <div class="rows"><div>The Navy Created A Water Gun Boat In Vietnam? <em>NOV 5 · NEW</em></div><div>Why US Military Logistics Can't Be Beaten <em>NOV 2 · NEW</em></div></div>
+    </div>
+  </div>
+</div>
+
+<h2>Index: cassette-label strip on top, playlists in the Appendix column, Podcasts in the middle</h2>
+<div class="f ix">
+  <div class="strip"><span>▸ CREEPCAST · POLICE STORIES FROM JUNCTION FALLS</span><span>HOME · EXPLORE · <u>PODCASTS</u> · SEARCH · LIBRARY · DOWNLOADS · REWIND</span></div>
+  <div class="ixb">
+    <div style="flex:1;padding:16px 20px;overflow:hidden">
+      <p class="h" style="font-size:34px">Podcasts</p>
+      <div class="lab">01 · PICK UP WHERE YOU LEFT OFF</div>
+      <div class="cards">
+        <div class="card"><img src="https://i.ytimg.com/vi/N-D9F5ZTVvs/mqdefault.jpg"><div class="pb"><i style="width:62%"></i></div><div class="t">Police Stories from Junction Falls</div><div class="s">CreepCast</div></div>
+        <div class="card"><img src="https://i.ytimg.com/vi/pUl_HkKPhF0/mqdefault.jpg"><div class="pb"><i style="width:25%"></i></div><div class="t">Austen Alexander Confronts Donut Operator</div><div class="s">Unsubscribe Podcast</div></div>
+      </div>
+      <div class="lab">02 · YOUR SHOWS</div>
+      <div class="shows"><div class="show"><img src="https://i.ytimg.com/vi/IrXD_BmEleY/mqdefault.jpg"><span class="dot"></span>CreepCast</div><div class="show"><img src="https://i.ytimg.com/vi/rzfq13vaIqQ/mqdefault.jpg"><span class="dot"></span>Unsubscribe</div></div>
+      <div class="lab">03 · NEW FROM YOUR SHOWS</div>
+      <div class="rows"><div>The Navy Created A Water Gun Boat In Vietnam? <em>NOV 5 · NEW</em></div></div>
+    </div>
+    <div class="appx"><div class="mono" style="color:#e8344e;margin-bottom:8px">APPENDIX</div>Liked Music<br>Road trip<br>Late night<br>Camp songs</div>
+  </div>
+</div>
+
+<h2>Crate: Crate is Home only, so Podcasts is the usual page with the turntable along the bottom</h2>
+<div class="f cr">
+  <div class="tabs mono"><span>HOME</span><span>EXPLORE</span><span class="on">PODCASTS</span><span>SEARCH</span><span>LIBRARY</span><span>DOWNLOADS</span><span>REWIND</span></div>
+  <div style="flex:1;padding:12px 18px;overflow:hidden">
+    <p class="h">Podcasts</p>
+    <div class="lab">PICK UP WHERE YOU LEFT OFF</div>
+    <div class="cards">
+      <div class="card"><img src="https://i.ytimg.com/vi/pUl_HkKPhF0/mqdefault.jpg"><div class="pb"><i style="width:25%"></i></div><div class="t">Austen Alexander Confronts Donut Operator</div></div>
+      <div class="card"><img src="https://i.ytimg.com/vi/TbVQHSMevis/mqdefault.jpg"><div class="pb"><i style="width:80%"></i></div><div class="t">The Final Horrors of the Cryptid Iceberg</div></div>
+    </div>
+    <div class="lab">NEW FROM YOUR SHOWS</div>
+    <div class="rows"><div>The Navy Created A Water Gun Boat In Vietnam? <em>NOV 5 · NEW</em></div></div>
+  </div>
+  <div class="tt"><div class="rec"><img src="https://i.ytimg.com/vi/N-D9F5ZTVvs/mqdefault.jpg"></div><div><b>Police Stories from Junction Falls</b><div class="s">CreepCast · 48 min left</div></div></div>
+</div>
+
+<h2>Panels: rounded panels on black, the colour wash from the playing cover, the player bar along the bottom</h2>
+<div class="f pn">
+  <div class="pnb">
+    <div class="panel" style="width:150px"><div class="mono" style="color:#888;line-height:2.2">HOME<br>EXPLORE<br><span style="color:#fff">PODCASTS</span><br>SEARCH<br>LIBRARY<br>DOWNLOADS<br>REWIND</div></div>
+    <div class="panel wash" style="flex:1">
+      <p class="h">Podcasts</p>
+      <div class="lab">PICK UP WHERE YOU LEFT OFF</div>
+      <div class="cards">
+        <div class="card"><img src="https://i.ytimg.com/vi/N-D9F5ZTVvs/mqdefault.jpg" style="border-radius:8px"><div class="pb"><i style="width:62%"></i></div><div class="t">Police Stories from Junction Falls</div></div>
+        <div class="card"><img src="https://i.ytimg.com/vi/pUl_HkKPhF0/mqdefault.jpg" style="border-radius:8px"><div class="pb"><i style="width:25%"></i></div><div class="t">Austen Alexander Confronts Donut Operator</div></div>
+      </div>
+      <div class="lab">YOUR SHOWS</div>
+      <div class="shows"><div class="show"><img src="https://i.ytimg.com/vi/IrXD_BmEleY/mqdefault.jpg"><span class="dot"></span>CreepCast</div><div class="show"><img src="https://i.ytimg.com/vi/rzfq13vaIqQ/mqdefault.jpg"><span class="dot"></span>Unsubscribe</div></div>
+    </div>
+  </div>
+  <div class="pbar"><img src="https://i.ytimg.com/vi/N-D9F5ZTVvs/mqdefault.jpg"><div><b>Police Stories from Junction Falls</b><div class="s">CreepCast</div></div></div>
+</div>
+</body></html>

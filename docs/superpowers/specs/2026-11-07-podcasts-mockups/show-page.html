@@ -1,0 +1,73 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Show page</title>
+<style>
+  body{background:#1a1816;color:#ddd;font-family:system-ui,sans-serif;padding:24px;max-width:1200px;margin:auto}
+  .cap{font-size:13px;color:#9a9086;margin:0 0 18px}
+  .pl{background:#0f0e0d;color:#ece6dc;border-radius:10px;overflow:hidden;border:1px solid #2a2724}
+  .top{display:flex;align-items:center;gap:22px;padding:14px 22px;border-bottom:1px solid #26231f}
+  .logo{font-weight:900;font-size:13px}.logo b{display:inline-grid;place-items:center;width:26px;height:26px;background:#e8344e;border-radius:6px;margin-right:8px;vertical-align:middle}
+  nav{display:flex;gap:18px;font:600 10.5px ui-monospace,monospace;letter-spacing:.12em}
+  nav span{color:#b9a98f;padding-bottom:4px}nav .on{color:#fff;border-bottom:2px solid #e8344e}
+  .body{padding:24px 22px}
+  .head{display:flex;gap:28px;align-items:flex-end}
+  .head img{width:220px;height:220px;object-fit:cover;border-radius:6px}
+  .kind{font:600 10.5px ui-monospace,monospace;letter-spacing:.14em;color:#e8344e}
+  h1{font-size:44px;font-weight:900;margin:6px 0 4px;letter-spacing:-.01em}
+  .by{font-family:Georgia,serif;font-style:italic;color:#9b8f80;font-size:17px}
+  .meta{font:10.5px ui-monospace,monospace;color:#8a8072;margin-top:10px;letter-spacing:.08em}
+  .btns{display:flex;gap:10px;margin-top:16px}
+  .btn{font:600 11px ui-monospace,monospace;letter-spacing:.12em;padding:9px 14px;border:1px solid #3a3530;color:#ece6dc}
+  .btn.p{background:#ece6dc;color:#0f0e0d;border-color:#ece6dc}
+  .btn.f{border-color:#e8344e;color:#fff}
+  .bar{display:flex;justify-content:space-between;align-items:center;margin:28px 0 8px}
+  .lab{font:600 10.5px ui-monospace,monospace;letter-spacing:.14em;color:#e8344e}
+  .sort{display:flex;border:1px solid #3a3530}
+  .sort span{font:600 10px ui-monospace,monospace;letter-spacing:.12em;padding:6px 10px;color:#b9a98f}
+  .sort .on{background:#e8344e;color:#fff}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  td{padding:10px 6px;border-bottom:1px solid #26231f;vertical-align:middle}
+  td.n{font:10.5px ui-monospace,monospace;color:#8a8072;width:64px}
+  td img{width:96px;height:54px;object-fit:cover;border-radius:3px;display:block}
+  .prog{height:3px;background:#3a3530;margin-top:6px;width:240px}.prog i{display:block;height:3px;background:#e8344e}
+  td.r{text-align:right;font:10.5px ui-monospace,monospace;color:#8a8072;white-space:nowrap}
+  .chip{font:600 9.5px ui-monospace,monospace;letter-spacing:.1em;padding:3px 6px;border-radius:3px;border:1px solid #3a3530;color:#b9a98f}
+  .chip.done{color:#7fc79a;border-color:#2f5a3e}
+  tr.dim td:not(.r){opacity:.55}
+  .menu{position:absolute;right:120px;margin-top:-6px;background:#1d1a17;border:1px solid #3a3530;border-radius:6px;padding:6px 0;font-size:13px;width:200px;box-shadow:0 10px 30px #0008}
+  .menu div{padding:7px 14px}.menu div:first-child{background:#2a2622}
+</style></head><body>
+<p class="cap">Show page mockup. Real show and real episodes from CreepCast's channel; episode lengths, listened progress and played marks are made up. One row's ⋯ menu is shown open.</p>
+<div class="pl">
+  <div class="top"><div class="logo"><b>P</b>PORCH LIGHT.</div>
+    <nav><span>HOME</span><span>EXPLORE</span><span class="on">PODCASTS</span><span>SEARCH</span><span>LIBRARY</span><span>DOWNLOADS</span><span>REWIND</span></nav></div>
+  <div class="body">
+    <div class="head">
+      <img src="https://i.ytimg.com/vi/IrXD_BmEleY/hqdefault.jpg">
+      <div>
+        <div class="kind">PODCAST</div>
+        <h1>CREEPCAST</h1>
+        <div class="by">CreepCast</div>
+        <div class="meta">WEEKLY · 2 UNPLAYED</div>
+        <div class="btns"><span class="btn p">▸ PLAY</span><span class="btn f">✓ FOLLOWING</span></div>
+      </div>
+    </div>
+
+    <div class="bar"><div class="lab">EPISODES</div><div class="sort"><span class="on">NEWEST</span><span>OLDEST</span></div></div>
+    <table>
+      <tr><td class="n">NOV 1</td><td style="width:104px"><img src="https://i.ytimg.com/vi/N-D9F5ZTVvs/mqdefault.jpg"></td>
+        <td>Police Stories from Junction Falls<div class="prog"><i style="width:62%"></i></div></td><td class="r">48 MIN LEFT</td><td class="r">⋯</td></tr>
+      <tr><td class="n">OCT 25</td><td><img src="https://i.ytimg.com/vi/IrXD_BmEleY/mqdefault.jpg"></td>
+        <td>My Dad Finally Told Me</td><td class="r">2 HR 4 MIN &nbsp;<span class="chip">NEW</span></td><td class="r">⋯
+        <div class="menu"><div>Mark as played</div><div>Download</div><div>Open show</div></div></td></tr>
+      <tr class="dim"><td class="n">OCT 18</td><td><img src="https://i.ytimg.com/vi/AcyIgytJm6Q/mqdefault.jpg"></td>
+        <td>Where the Caterpillars Die</td><td class="r"><span class="chip done">✓ PLAYED</span></td><td class="r">⋯</td></tr>
+      <tr class="dim"><td class="n">OCT 11</td><td><img src="https://i.ytimg.com/vi/1WJS0aLDXhY/mqdefault.jpg"></td>
+        <td>The Lurker on the Stairway</td><td class="r"><span class="chip done">✓ PLAYED</span></td><td class="r">⋯</td></tr>
+      <tr><td class="n">OCT 4</td><td><img src="https://i.ytimg.com/vi/mHcxRH6_OkE/mqdefault.jpg"></td>
+        <td>The Antichrist Salesman</td><td class="r">1 HR 41 MIN &nbsp;<span class="chip">NEW</span></td><td class="r">⋯</td></tr>
+      <tr class="dim"><td class="n">SEP 27</td><td><img src="https://i.ytimg.com/vi/B13EF7vjfL8/mqdefault.jpg"></td>
+        <td>Waffle House Horror</td><td class="r"><span class="chip done">✓ PLAYED</span></td><td class="r">⋯</td></tr>
+    </table>
+  </div>
+</div>
+</body></html>
