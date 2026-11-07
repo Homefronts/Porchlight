@@ -29,6 +29,7 @@ import { ShelfCarousel } from "@/components/shared/shelf-carousel";
 import { ShelfCard } from "@/components/shared/shelf-card";
 import { TrackList } from "@/components/shared/track-list";
 import { EpisodeRow } from "@/components/podcasts/episode-row";
+import { playEpisodes } from "@/lib/play-episodes";
 import { shelfItemToTrack } from "@/lib/queue-track";
 import type { QueueTrack } from "@/lib/store/playback";
 import { Thumbnail } from "@/components/shared/thumbnail";
@@ -446,10 +447,7 @@ function AllResults({ data }: { data: SearchResults }) {
                 key={t.videoId}
                 track={t}
                 index={i}
-                onPlay={() => {
-                  usePlaybackStore.getState().setQueue(episodes.slice(i), 0);
-                  usePlaybackStore.getState().setShuffle(false);
-                }}
+                onPlay={() => playEpisodes(episodes.slice(i), 0)}
               />
             ))}
           </div>

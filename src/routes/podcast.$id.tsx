@@ -10,7 +10,7 @@ import { fetchLibraryShows, fetchShow } from "@/lib/innertube/podcasts";
 import { followShow, unfollowShow } from "@/lib/innertube/mutations";
 import { firstUnplayed } from "@/lib/episode-view";
 import { useEpisodesStore } from "@/lib/store/episodes";
-import { usePlaybackStore } from "@/lib/store/playback";
+import { playEpisodes } from "@/lib/play-episodes";
 import { useShowSortStore } from "@/lib/store/show-sort";
 import { cn } from "@/lib/utils";
 
@@ -49,8 +49,7 @@ function ShowPageView() {
   // fetchShow gives newest first.
   const shown = order === "newest" ? episodes : [...episodes].reverse();
   const play = (from: number) => {
-    usePlaybackStore.getState().setQueue(shown.slice(from), 0);
-    usePlaybackStore.getState().setShuffle(false);
+    playEpisodes(shown.slice(from), 0);
   };
   const unplayed = episodes.filter((e) => !byId[e.videoId]?.played).length;
 

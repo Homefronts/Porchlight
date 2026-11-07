@@ -405,3 +405,15 @@ describe("next() and AI music", () => {
     expect(usePlaybackStore.getState().index).toBe(1);
   });
 });
+
+describe("playEpisodes", () => {
+  it("queues in order even with shuffle on", async () => {
+    const { playEpisodes } = await import("@/lib/play-episodes");
+    setup({ shuffle: true });
+    const ids = Array.from({ length: 20 }, (_, i) => `e${i}`);
+    playEpisodes(ids.map(track), 0);
+    const s = usePlaybackStore.getState();
+    expect(s.queue.map((t) => t.videoId)).toEqual(ids);
+    expect(s.shuffle).toBe(false);
+  });
+});
