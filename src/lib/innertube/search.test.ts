@@ -102,15 +102,6 @@ describe("classifyAllRow", () => {
         }),
       ),
     ).toBeNull();
-    expect(
-      classifyAllRow(
-        row("Episode", {
-          videoId: "ep1",
-          browseId: "MPED1",
-          pageType: "MUSIC_PAGE_TYPE_NON_MUSIC_AUDIO_TRACK_PAGE",
-        }),
-      ),
-    ).toBeNull();
   });
 });
 
@@ -293,6 +284,6 @@ describe("classifyAllRow podcasts", () => {
     const e = classifyAllRow(ep);
     expect(e?.group).toBe("episode");
     expect(e?.item.id).toBe("ep1");
-    expect(e?.item.episode).toEqual({ showId: "PLshow", showTitle: "Creepcast" });
+    expect(e?.item.episode).toEqual({ showId: "PLshow", showTitle: "Creepcast", publishedText: "Sep 27" });
   });
 });

@@ -41,8 +41,13 @@ function mapEpisode(
   const showId = ownId?.startsWith(SHOW_PREFIX)
     ? showIdFromBrowseId(ownId)
     : show?.id;
-  const showTitle = own?.text ?? show?.title;
+  const showTitle = show?.title ?? own?.text;
   if (!showId || !showTitle) return null;
+  // Show rows read "636K views • 23h ago", new-episode rows just "23h ago".
+  const publishedText = (row.subtitle?.runs ?? [])
+    .map((r: YtNode) => String(r.text ?? "").trim())
+    .filter((t: string) => t && t !== "•" && !/views?$/i.test(t))
+    .pop();
   return {
     videoId,
     title,
@@ -54,7 +59,7 @@ function mapEpisode(
         row.playbackProgress?.musicPlaybackProgressRenderer?.durationText,
       ),
     ),
-    episode: { showId, showTitle },
+    episode: { showId, showTitle, publishedText },
   };
 }
 

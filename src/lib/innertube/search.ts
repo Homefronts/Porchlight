@@ -136,9 +136,15 @@ export function classifyAllRow(
     const showId = showIdFromBrowseId(
       show.navigationEndpoint.browseEndpoint.browseId,
     );
+    const publishedText = runs
+      .slice(1)
+      .find((r) => r !== show && r.text.trim() && r.text.trim() !== "•")?.text;
     return {
       group,
-      item: { ...item, episode: { showId, showTitle: show.text } },
+      item: {
+        ...item,
+        episode: { showId, showTitle: show.text, publishedText },
+      },
     };
   }
   return { group, item };

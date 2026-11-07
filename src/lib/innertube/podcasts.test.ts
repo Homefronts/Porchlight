@@ -68,7 +68,9 @@ describe("podcasts", () => {
       expect(e.duration).toBeGreaterThan(0);
       expect(e.episode?.showId).toBe(show.id);
       expect(e.episode?.showTitle).toBe(show.title);
+      expect(e.episode?.publishedText).toBeTruthy();
     }
+    expect(episodes[0].episode?.publishedText).toBe("23h ago");
     expect(episodes[0].duration).toBe(2 * 3600 + 18 * 60);
   });
 
@@ -78,6 +80,7 @@ describe("podcasts", () => {
     for (const t of eps) {
       expect(isEpisode(t)).toBe(true);
       expect(t.episode?.showId).toBe(SHOW_ID);
+      expect(t.episode?.publishedText).toBeTruthy();
     }
   });
 });

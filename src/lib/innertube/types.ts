@@ -13,7 +13,13 @@ export type ShelfItemKind =
   "song" | "video" | "album" | "playlist" | "artist" | "category" | "podcast";
 
 /** Which show a podcast episode belongs to. `published` is an ISO date when known. */
-export type EpisodeInfo = { showId: string; showTitle: string; published?: string };
+export type EpisodeInfo = {
+  showId: string;
+  showTitle: string;
+  published?: string;
+  /** YouTube's own date label as shown on the row ("Oct 25", "23h ago"). */
+  publishedText?: string;
+};
 
 export type ShelfItem = {
   kind: ShelfItemKind;
