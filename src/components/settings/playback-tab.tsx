@@ -57,6 +57,7 @@ export function PlaybackTab() {
         <NormalizeRow />
         <SpeedRow />
         <SkipSilencesRow />
+        <SkipSponsorsRow />
         <FreePlaybackRow />
       </Group>
       <EqualizerGroup />
@@ -262,6 +263,19 @@ function SkipSilencesRow() {
       title="Skip Silences"
       description="Play long quiet stretches fast, like the gap before a hidden track."
       control={<Switch checked={on} onCheckedChange={set} aria-label="Skip Silences" />}
+    />
+  );
+}
+
+function SkipSponsorsRow() {
+  const on = usePlaybackSettings((s) => s.skipSponsors);
+  const set = usePlaybackSettings((s) => s.setSkipSponsors);
+  return (
+    <SettingRow
+      icon={IconPlayerPlayFilled}
+      title="Skip sponsors in podcasts"
+      description="Uses SponsorBlock to jump past sponsor reads. Episodes only."
+      control={<Switch checked={on} onCheckedChange={set} aria-label="Skip sponsors in podcasts" />}
     />
   );
 }

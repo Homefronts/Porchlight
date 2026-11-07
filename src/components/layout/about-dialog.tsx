@@ -242,6 +242,9 @@ export function AboutDialog({
             (spotify-ai-blocker), gounetmusic (loved-music-ai-artists) and
             CevvalKoala (CevvalYoutubeAIBlocklist). Thank you!
           </p>
+          <p className="text-[12.5px] leading-[1.5] text-t4 text-pretty">
+            Sponsor skipping uses data from SponsorBlock (sponsor.ajay.app), CC BY-NC-SA 4.0.
+          </p>
 
           {IS_BETA_PLATFORM && (
             <p className="text-[13.5px] leading-[1.55] text-t4 text-pretty">

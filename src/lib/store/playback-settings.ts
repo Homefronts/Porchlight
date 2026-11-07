@@ -34,6 +34,9 @@ type State = {
   /** Plays long silences fast (off by default). */
   skipSilences: boolean;
   setSkipSilences: (v: boolean) => void;
+  /** Jumps past SponsorBlock sponsor segments in podcast episodes (off by default). */
+  skipSponsors: boolean;
+  setSkipSponsors: (v: boolean) => void;
   /** `MediaDeviceInfo.deviceId`, or "" for the system default. */
   outputDeviceId: string;
   /** What Previous does part-way into a track. */
@@ -100,6 +103,8 @@ export const usePlaybackSettings = create<State>()(
       monoAudio: false,
       skipSilences: false,
       setSkipSilences: (skipSilences) => set({ skipSilences }),
+      skipSponsors: false,
+      setSkipSponsors: (skipSponsors) => set({ skipSponsors }),
       outputDeviceId: "",
       backButton: "smart",
       smartBackSeconds: 3,

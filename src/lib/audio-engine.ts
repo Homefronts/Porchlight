@@ -20,6 +20,7 @@ import { useSettingsStore } from "@/lib/store/settings";
 import { useFullscreenStore } from "@/lib/store/fullscreen";
 import { takeEndOfSongStop, useSleepTimer } from "@/lib/store/sleep-timer";
 import { watchSilences } from "@/lib/skip-silences";
+import { fetchSponsorSegments, segmentToSkip, type Segment } from "@/lib/sponsorblock";
 import { openPremiumGate } from "@/lib/store/premium-gate";
 import { resolveStreamId, resumeOnSourceSwitch, useTrackSourceStore } from "@/lib/store/track-source";
 import { pickThumbnail } from "@/components/shared/thumbnail";
@@ -743,6 +744,43 @@ export function useAudioEngine() {
       speed: () => usePlaybackSettings.getState().playbackSpeed,
     });
   }, [skipSilences]);
+  // Optional sponsor skipping for episodes: jump past SponsorBlock segments, with an Undo.
+  const skipSponsors = usePlaybackSettings((s) => s.skipSponsors);
+  useEffect(() => {
+    if (!skipSponsors) return;
+    let videoId = "";
+    let segments: Segment[] = [];
+    let undone = new Set<string>();
+    const timer = setInterval(() => {
+      const el = audioRef.current;
+      const s = usePlaybackStore.getState();
+      const t = s.index >= 0 ? s.queue[s.index] : undefined;
+      if (!el || !t || !isEpisode(t) || !s.playing || el.paused) return;
+      if (t.videoId !== videoId) {
+        videoId = t.videoId;
+        segments = [];
+        undone = new Set();
+        const id = videoId;
+        void fetchSponsorSegments(id).then((r) => {
+          if (videoId === id) segments = r;
+        });
+      }
+      const hit = segmentToSkip(el.currentTime, segments, undone);
+      if (!hit) return;
+      el.currentTime = hit.end;
+      const len = Math.round(hit.end - hit.start);
+      toast(`Skipped sponsor (${Math.floor(len / 60)}:${String(len % 60).padStart(2, "0")})`, {
+        action: {
+          label: "Undo",
+          onClick: () => {
+            undone.add(hit.uuid);
+            if (audioRef.current) audioRef.current.currentTime = hit.start;
+          },
+        },
+      });
+    }, 250);
+    return () => clearInterval(timer);
+  }, [skipSponsors]);
   useEffect(() => {
     const g = wantsGraph ? ensureGraph() : graphRef.current;
     if (!g) return;

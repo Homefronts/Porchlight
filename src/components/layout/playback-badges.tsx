@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { IconMoonFilled } from "@tabler/icons-react";
 import { cancelSleepTimer, useSleepTimer } from "@/lib/store/sleep-timer";
 import { usePlaybackSettings } from "@/lib/store/playback-settings";
+import { isEpisode, usePlaybackStore } from "@/lib/store/playback";
 
 const CHIP =
   "flex h-7 items-center gap-1 rounded-md px-2 font-meta text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
@@ -15,6 +16,9 @@ export function PlaybackBadges() {
   const { endsAt, endOfSong } = useSleepTimer();
   const speed = usePlaybackSettings((s) => s.playbackSpeed);
   const setSpeed = usePlaybackSettings((s) => s.setPlaybackSpeed);
+  const sponsors = usePlaybackSettings((s) => s.skipSponsors);
+  const setSponsors = usePlaybackSettings((s) => s.setSkipSponsors);
+  const episode = usePlaybackStore((s) => isEpisode(s.queue[s.index]));
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!endsAt) return;
@@ -23,7 +27,7 @@ export function PlaybackBadges() {
   }, [endsAt]);
 
   const sleeping = endsAt !== null || endOfSong;
-  if (!sleeping && speed === 1) return null;
+  if (!sleeping && speed === 1 && !episode) return null;
   const sleepLabel = endOfSong ? "end of song" : `${minutesLeft(endsAt!, now)} min`;
   return (
     <div className="flex items-center gap-1 me-1">
@@ -37,6 +41,17 @@ export function PlaybackBadges() {
         >
           <IconMoonFilled className="size-3.5" />
           {sleepLabel}
+        </button>
+      )}
+      {episode && (
+        <button
+          type="button"
+          className={`${CHIP} ${sponsors ? "bg-accent text-foreground" : ""}`}
+          aria-pressed={sponsors}
+          onClick={() => setSponsors(!sponsors)}
+          title="Skip sponsors"
+        >
+          Skip sponsors
         </button>
       )}
       {speed !== 1 && (
