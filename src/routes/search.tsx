@@ -28,6 +28,9 @@ import { fetchWatchQueue } from "@/lib/innertube/radio";
 import { ShelfCarousel } from "@/components/shared/shelf-carousel";
 import { ShelfCard } from "@/components/shared/shelf-card";
 import { TrackList } from "@/components/shared/track-list";
+import { EpisodeRow } from "@/components/podcasts/episode-row";
+import { shelfItemToTrack } from "@/lib/queue-track";
+import type { QueueTrack } from "@/lib/store/playback";
 import { Thumbnail } from "@/components/shared/thumbnail";
 import { TrackContextMenu } from "@/components/shared/track-context-menu";
 import { SectionLabel } from "@/components/theme/section-label";
@@ -358,7 +361,14 @@ function AllResults({ data }: { data: SearchResults }) {
     };
   });
 
-  const hasAny = Boolean(topResult) || sections.some((s) => s.items.length > 0);
+  // Podcasts and episodes only come from the "all" response (no filter tab).
+  const podcasts = data.shelves.find((sh) => sh.id === "all-podcast");
+  const episodes = (data.shelves.find((sh) => sh.id === "all-episode")?.items ?? [])
+    .map((it) => shelfItemToTrack(it))
+    .filter((t): t is QueueTrack => !!t);
+
+  const hasAny =
+    Boolean(topResult) || Boolean(podcasts) || episodes.length > 0 || sections.some((s) => s.items.length > 0);
   const stillLoading = sections.some((s) => s.loading);
   if (!hasAny && !stillLoading) {
     // Nothing to show and every section settled — distinguish a genuine empty
@@ -425,6 +435,23 @@ function AllResults({ data }: { data: SearchResults }) {
           />
         );
       })}
+
+      {podcasts ? <ShelfCarousel shelf={podcasts} /> : null}
+      {episodes.length ? (
+        <section className="flex flex-col gap-3">
+          <SectionLabel>Episodes</SectionLabel>
+          <div>
+            {episodes.map((t, i) => (
+              <EpisodeRow
+                key={t.videoId}
+                track={t}
+                index={i}
+                onPlay={() => usePlaybackStore.getState().setQueue(episodes.slice(i), 0)}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

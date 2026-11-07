@@ -343,6 +343,14 @@ export function ShelfCard({ item, className, vinyl, number }: Props) {
     );
   }
 
+  if (item.kind === "podcast") {
+    return (
+      <Link to="/podcast/$id" params={{ id: item.id }} className={cn(CARD_CLASS, className)}>
+        {body}
+      </Link>
+    );
+  }
+
   if (item.kind === "playlist") {
     // Long-form video masquerading as a playlist (description-timestamp
     // chapters). Our /playlist/$id can't render it; play the video instead.
