@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 vi.hoisted(() => {
   const m = new Map<string, string>();
   Object.defineProperty(globalThis, "localStorage", {
@@ -23,6 +23,28 @@ const rec = (t: QueueTrack, p: number, d?: number) => useEpisodesStore.getState(
 beforeEach(() => {
   useEpisodesStore.setState({ byId: {} });
   useShowSortStore.setState({ byShow: {}, localFollows: [] });
+});
+
+afterEach(() => vi.restoreAllMocks());
+
+it("duration 0 is unknown", () => {
+  rec(ep("a"), 0, 0);
+  expect(episodeStatus(get("a"))).toBe("new");
+  expect(get("a").played).toBe(false);
+  expect(minutesLeft(get("a"))).toBeNull();
+});
+
+it("short episode uses only the 95 percent rule", () => {
+  rec(ep("a"), 5, 20);
+  expect(get("a").played).toBe(false);
+  rec(ep("a"), 19, 20);
+  expect(get("a").played).toBe(true);
+});
+
+it("keeps a known duration when a record omits it", () => {
+  rec(ep("a"), 100, 3600);
+  rec(ep("a"), 200);
+  expect(minutesLeft(get("a"))).toBe(57);
 });
 
 it("30 seconds makes it started", () => {
@@ -71,7 +93,6 @@ it("pick up lists newest first and skips played", () => {
   rec(ep("c"), 100, 1000);
   rec(ep("d"), 990, 1000);
   expect(inProgress(useEpisodesStore.getState().byId).map((s) => s.track.videoId)).toEqual(["b", "c", "a"]);
-  vi.restoreAllMocks();
 });
 
 it("remembers the order per show", () => {

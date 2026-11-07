@@ -22,9 +22,14 @@ export const useEpisodesStore = create<State>()(
       record: (track, position, duration) => {
         if (!isEpisode(track)) return;
         set((s) => {
-          const done = duration !== undefined && (position >= duration * PLAYED_FRACTION || position >= duration - PLAYED_TAIL_SEC);
-          const played = done || (s.byId[track.videoId]?.played ?? false);
-          return { byId: { ...s.byId, [track.videoId]: { position, duration, played, updatedAt: Date.now(), track } } };
+          const prev = s.byId[track.videoId];
+          // 0 means the player has not loaded metadata yet: unknown, not "zero length".
+          const known = duration !== undefined && duration > 0 ? duration : prev?.duration;
+          const done =
+            known !== undefined &&
+            (position >= known * PLAYED_FRACTION || (known > PLAYED_TAIL_SEC && position >= known - PLAYED_TAIL_SEC));
+          const played = done || (prev?.played ?? false);
+          return { byId: { ...s.byId, [track.videoId]: { position, duration: known, played, updatedAt: Date.now(), track } } };
         });
       },
       markPlayed: (track) => {
