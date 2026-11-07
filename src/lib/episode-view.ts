@@ -8,10 +8,16 @@ export function spokenLength(sec?: number): string {
   return [h ? `${h} HR` : "", m ? `${m} MIN` : ""].filter(Boolean).join(" ") || "1 MIN";
 }
 
+/** "50 MIN LEFT"; empty when the duration is unknown. */
+export function leftLabel(s?: EpisodeState): string {
+  const m = s ? minutesLeft(s) : null;
+  return m === null ? "" : `${m} MIN LEFT`;
+}
+
 export function episodeTag(s: EpisodeState | undefined, duration?: number) {
   const status = episodeStatus(s);
   if (status === "played") return { status, label: "", chip: "✓ PLAYED" };
-  if (status === "started") return { status, label: `${s ? (minutesLeft(s) ?? "") : ""} MIN LEFT`.trim() };
+  if (status === "started") return { status, label: leftLabel(s) };
   return { status, label: spokenLength(duration), chip: "NEW" };
 }
 

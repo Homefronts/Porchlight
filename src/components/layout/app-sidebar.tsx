@@ -165,7 +165,9 @@ export function AppSidebar() {
   // nothing to separate and the rule is just noise.
   const [playlistsScroll, setPlaylistsScroll] = useState(false);
 
-  const isOn = (to: string) => location.pathname === to;
+  // Show pages belong to Podcasts.
+  const isOn = (to: string) =>
+    location.pathname === to || (to === "/podcasts" && location.pathname.startsWith("/podcast/"));
   const isPlaylistOn = (id: string) => location.pathname === `/playlist/${id}`;
 
   return (

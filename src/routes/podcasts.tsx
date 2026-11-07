@@ -7,7 +7,8 @@ import { PageTitle } from "@/components/theme/look-type";
 import { fetchLibraryShows, fetchNewEpisodes, fetchShow } from "@/lib/innertube/podcasts";
 import { mergeShows, showsWithNew, sortNewEpisodes } from "@/lib/podcasts-tab";
 import { playEpisodes } from "@/lib/play-episodes";
-import { inProgress, minutesLeft, useEpisodesStore } from "@/lib/store/episodes";
+import { leftLabel } from "@/lib/episode-view";
+import { inProgress, useEpisodesStore } from "@/lib/store/episodes";
 import { useShowSortStore } from "@/lib/store/show-sort";
 import { cn } from "@/lib/utils";
 
@@ -63,7 +64,7 @@ function PodcastsPage() {
                     />
                   </div>
                   <div className="mt-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                    {minutesLeft(s) ?? ""} MIN LEFT
+                    {leftLabel(s)}
                   </div>
                 </div>
               </button>

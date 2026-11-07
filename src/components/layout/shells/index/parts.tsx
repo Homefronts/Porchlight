@@ -53,7 +53,7 @@ export function BrowseTabs({ className }: { className?: string }) {
     >
       {NAV_ITEMS.map(({ to, label }) => {
         // A shelf page is part of Home's contents.
-        const on = pathname === to || (to === "/" && pathname.startsWith("/shelf/"));
+        const on = pathname === to || (to === "/podcasts" && pathname.startsWith("/podcast/")) || (to === "/" && pathname.startsWith("/shelf/"));
         return (
           <Link
             key={to}

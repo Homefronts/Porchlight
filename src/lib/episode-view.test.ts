@@ -14,6 +14,7 @@ it("formats lengths", () => {
 
 it("tags new, started and played", () => {
   expect(episodeTag(undefined, 2880)).toEqual({ status: "new", label: "48 MIN", chip: "NEW" });
+  expect(episodeTag(st({ position: 600 }), undefined)).toEqual({ status: "started", label: "" });
   expect(episodeTag(st({ position: 600, duration: 3600 }), 3600)).toEqual({ status: "started", label: "50 MIN LEFT" });
   expect(episodeTag(st({ played: true }), 3600)).toEqual({ status: "played", label: "", chip: "✓ PLAYED" });
 });
