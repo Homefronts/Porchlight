@@ -5,6 +5,8 @@ import {
   mapShelfWrapper,
   pageTypeToKind,
   rawSearch,
+  SHOW_PREFIX,
+  showIdFromBrowseId,
   readRuns,
   readThumbnails,
   type YtNode,
@@ -29,7 +31,14 @@ export type SearchFilter = keyof typeof SEARCH_FILTERS;
  * The "all" tab groups its flat result list into these buckets, rendered in
  * this order. Each maps to the dedicated filter tab that shows the full list.
  */
-export type SearchGroup = "song" | "artist" | "album" | "video" | "playlist";
+export type SearchGroup =
+  | "song"
+  | "artist"
+  | "album"
+  | "video"
+  | "playlist"
+  | "podcast"
+  | "episode";
 
 const GROUP_ORDER: SearchGroup[] = [
   "song",
@@ -37,6 +46,8 @@ const GROUP_ORDER: SearchGroup[] = [
   "album",
   "video",
   "playlist",
+  "podcast",
+  "episode",
 ];
 
 const GROUP_TITLE: Record<SearchGroup, string> = {
@@ -45,10 +56,12 @@ const GROUP_TITLE: Record<SearchGroup, string> = {
   album: "Albums & singles",
   video: "Videos",
   playlist: "Community playlists",
+  podcast: "Podcasts",
+  episode: "Episodes",
 };
 
-/** Group id (`all-<group>`) → the filter tab that shows its full list. */
-export const GROUP_FILTER: Record<SearchGroup, SearchFilter> = {
+/** Group id (`all-<group>`) → the filter tab that shows its full list (podcasts have none yet). */
+export const GROUP_FILTER: Partial<Record<SearchGroup, SearchFilter>> = {
   song: "songs",
   artist: "artists",
   album: "albums",
@@ -61,9 +74,11 @@ export const GROUP_FILTER: Record<SearchGroup, SearchFilter> = {
 // `itemSectionRenderer`) rather than titled shelves. The row's *type* lives in
 // the first token of its subtitle ("Song • …", "Album • …", "Artist • …"). We
 // pin `hl=en` in the client context, so these tokens are stable English. Types
-// the app has no destination for (Profile / Episode / Podcast) are absent from
-// this map and get skipped.
+// the app has no destination for (Profile) are absent from this map and get
+// skipped.
 const TOKEN_TO_GROUP: Record<string, SearchGroup> = {
+  Podcast: "podcast",
+  Episode: "episode",
   Song: "song",
   Video: "video",
   Album: "album",
@@ -102,6 +117,29 @@ export function classifyAllRow(
   // authoritative, so correct the kind for videos.
   if (group === "video" && item.kind === "song") {
     return { group, item: { ...item, kind: "video" } };
+  }
+  if (group === "podcast") {
+    return {
+      group,
+      item: { ...item, kind: "podcast", id: showIdFromBrowseId(item.id) },
+    };
+  }
+  if (group === "episode") {
+    // The show is a link in the subtitle ("Episode • Oct 25 • Show").
+    const runs: YtNode[] =
+      mrli.flexColumns?.[1]?.musicResponsiveListItemFlexColumnRenderer?.text
+        ?.runs ?? [];
+    const show = runs.find((r) =>
+      r.navigationEndpoint?.browseEndpoint?.browseId?.startsWith(SHOW_PREFIX),
+    );
+    if (!show) return null;
+    const showId = showIdFromBrowseId(
+      show.navigationEndpoint.browseEndpoint.browseId,
+    );
+    return {
+      group,
+      item: { ...item, episode: { showId, showTitle: show.text } },
+    };
   }
   return { group, item };
 }

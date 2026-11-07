@@ -1,7 +1,7 @@
 import { create, type StateCreator } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { emit } from "@tauri-apps/api/event";
-import type { ShelfItem, Thumbnail } from "@/lib/innertube/types";
+import type { EpisodeInfo, ShelfItem, Thumbnail } from "@/lib/innertube/types";
 import type { RadioChip } from "@/lib/innertube/radio";
 import { shelfItemToTrack } from "@/lib/queue-track";
 import { isFloatingPlayerWindow } from "@/lib/floating-player";
@@ -24,7 +24,11 @@ export type QueueTrack = {
   thumbnails: Thumbnail[];
   /** Original duration from browse responses, may be undefined until /player resolves. */
   duration?: number;
+  /** Set for podcast episodes; absent means music. */
+  episode?: EpisodeInfo;
 };
+
+export const isEpisode = (t: QueueTrack | undefined): boolean => !!t?.episode;
 
 export const isHeldAi = (t: QueueTrack): boolean => !t.aiAllowed && isAiBlocked(t);
 

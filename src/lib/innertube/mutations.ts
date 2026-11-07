@@ -16,18 +16,19 @@ export type LikeStatus = "LIKE" | "DISLIKE" | "INDIFFERENT";
 
 async function rate(
   endpoint: "like/like" | "like/dislike" | "like/removelike",
-  videoId: string,
+  id: string,
+  target: Record<string, string> = { videoId: id },
 ): Promise<void> {
   try {
-    const resp = await innertubePost(endpoint, { target: { videoId } });
+    const resp = await innertubePost(endpoint, { target });
     if (import.meta.env.DEV) {
-      console.debug(`[mutations] ${endpoint} ${videoId} →`, resp);
+      console.debug(`[mutations] ${endpoint} ${id} →`, resp);
     }
   } catch (e) {
     // Surface the body text from `innertubePost` (it embeds the
     // YouTube error JSON in the message) so a DevTools peek tells us
     // immediately whether it's auth, throttling, or a malformed body.
-    console.error(`[mutations] ${endpoint} ${videoId} failed:`, e);
+    console.error(`[mutations] ${endpoint} ${id} failed:`, e);
     throw e;
   }
 }
@@ -43,6 +44,15 @@ export function dislikeTrack(videoId: string): Promise<void> {
 /** Clear whatever rating the user has on a track (undo like OR dislike). */
 export function removeRating(videoId: string): Promise<void> {
   return rate("like/removelike", videoId);
+}
+
+/** Follow / unfollow a podcast show (a show's id is its playlistId). */
+export function followShow(id: string): Promise<void> {
+  return rate("like/like", id, { playlistId: id });
+}
+
+export function unfollowShow(id: string): Promise<void> {
+  return rate("like/removelike", id, { playlistId: id });
 }
 
 export type UserPlaylist = {

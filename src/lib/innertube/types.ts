@@ -10,7 +10,10 @@ export type MinimalArtist = {
 };
 
 export type ShelfItemKind =
-  "song" | "video" | "album" | "playlist" | "artist" | "category";
+  "song" | "video" | "album" | "playlist" | "artist" | "category" | "podcast";
+
+/** Which show a podcast episode belongs to. `published` is an ISO date when known. */
+export type EpisodeInfo = { showId: string; showTitle: string; published?: string };
 
 export type ShelfItem = {
   kind: ShelfItemKind;
@@ -26,6 +29,8 @@ export type ShelfItem = {
   albumId?: string;
   /** For songs/videos: duration in seconds */
   duration?: number;
+  /** Set on search rows that are podcast episodes. */
+  episode?: EpisodeInfo;
   /** Explicit-content badge present on the row */
   explicit?: boolean;
   /** Pre-formatted play count text from YT Music ("1.2M plays"). Album rows. */

@@ -111,14 +111,6 @@ describe("classifyAllRow", () => {
         }),
       ),
     ).toBeNull();
-    expect(
-      classifyAllRow(
-        row("Podcast", {
-          browseId: "MPSP1",
-          pageType: "MUSIC_PAGE_TYPE_PODCAST_SHOW_DETAIL_PAGE",
-        }),
-      ),
-    ).toBeNull();
   });
 });
 
@@ -262,5 +254,45 @@ describe("extractCardAction", () => {
         buttons: [{ buttonRenderer: { text: { runs: [] } } }],
       }),
     ).toBeUndefined();
+  });
+});
+
+describe("classifyAllRow podcasts", () => {
+  it("classifies podcast and episode rows", () => {
+    const p = classifyAllRow(
+      row("Podcast", {
+        browseId: "MPSPPLabc",
+        pageType: "MUSIC_PAGE_TYPE_PODCAST_SHOW_DETAIL_PAGE",
+        title: "Creepscast",
+      }),
+    );
+    expect(p?.group).toBe("podcast");
+    expect(p?.item.kind).toBe("podcast");
+    expect(p?.item.id).toBe("PLabc");
+
+    const ep = row("Episode", { videoId: "ep1", title: "Waffle House Horror" });
+    ep.flexColumns[1].musicResponsiveListItemFlexColumnRenderer.text.runs = [
+      { text: "Episode" },
+      { text: " • " },
+      { text: "Sep 27" },
+      { text: " • " },
+      {
+        text: "Creepcast",
+        navigationEndpoint: {
+          browseEndpoint: {
+            browseId: "MPSPPLshow",
+            browseEndpointContextSupportedConfigs: {
+              browseEndpointContextMusicConfig: {
+                pageType: "MUSIC_PAGE_TYPE_PODCAST_SHOW_DETAIL_PAGE",
+              },
+            },
+          },
+        },
+      },
+    ];
+    const e = classifyAllRow(ep);
+    expect(e?.group).toBe("episode");
+    expect(e?.item.id).toBe("ep1");
+    expect(e?.item.episode).toEqual({ showId: "PLshow", showTitle: "Creepcast" });
   });
 });

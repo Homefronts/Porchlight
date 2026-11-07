@@ -653,6 +653,11 @@ export function parseDuration(text: string): number | undefined {
   return undefined;
 }
 
+/** A podcast show's browseId is `MPSP` + its playlistId; the app keys shows by the latter. */
+export const SHOW_PREFIX = "MPSP";
+export const showIdFromBrowseId = (browseId: string): string =>
+  browseId.startsWith(SHOW_PREFIX) ? browseId.slice(SHOW_PREFIX.length) : browseId;
+
 export function pageTypeToKind(pageType: string): ShelfItem["kind"] | null {
   if (pageType.includes("ARTIST")) return "artist";
   if (pageType.includes("ALBUM")) return "album";

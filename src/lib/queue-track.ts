@@ -14,6 +14,7 @@ export function shelfItemToTrack(item: ShelfItem | QueueTrack): QueueTrack | nul
     albumId: item.albumId,
     thumbnails: item.thumbnails,
     duration: item.duration,
+    episode: item.episode,
   };
 }
 
