@@ -418,6 +418,22 @@ The user asked (2026-10-31) that **every change gets added to this write-up as i
 
 - **1.2.0 is being prepared** (user said go, 2026-11-04): version bumped, What's New and changelog written on `logo`. Not merged, tagged or pushed. Known open items shipping with it: a Free account's failed downloads can still retry through `syncAllDownloads`, the visualizer is on by default and untested on macOS and Linux. The README screenshots were retaken signed out with the new logo and dial; the full-screen shot shows the visualizer at rest.
 - **Update check, local installer 1.1.0 to 1.2.0 (2026-11-04):** version, look, layout, 2 custom looks, queue and settings all matched, and What's New opened. Not checked in the installed build: the visualizer with real audio, sign-in by hand, and the real signed updater path. The exe holds the new icon, but the user still saw the old one, which points at Windows' icon cache on existing shortcuts, so updaters may hit this too. `ie4uinit -show` was run to refresh it. Porchlight now asks Windows to refresh shell icons once per version at launch (`refresh_shell_icons_once`), which can't be fully proven on this PC since its cache is already refreshed. Data backup: `C:\Users\sdand\PorchlightDataBackup-20261104-2343-pre-1.2.0`.
+- **Podcasts build DONE (2026-11-07, branch `podcasts`, not merged or pushed):**
+  - **Plan complete:** all 9 tasks done. Each had a task review, and fixes went in where found.
+  - **Mockups:** show page and layouts, approved by the user ("seems fine to me").
+  - **Real-app check in the dev build:** passed for the tab, play, save, resume, played, next episode, SponsorBlock skip and Undo, downloaded episodes, and the menu. It found that big shows (JRE, 2568 episodes) took about 36 s to load.
+  - **Final opus review, then one fix wave (re-review clean):**
+    - Big shows page in.
+    - Infinite durations count as unknown.
+    - The next episode comes from the same show; lists queue only the chosen episode.
+    - No SponsorBlock request storm.
+    - No radio or AI report items on episodes.
+    - Podcast cards open the show page (they had opened /playlist/MPSP...).
+    - A quit at a track change keeps the saved spot.
+    - README features line added.
+  - **Tests:** 684 passing.
+  - **Rulings and deferred minors:** in `docs/superpowers/handoffs/2026-11-07-podcasts-rulings.md`.
+  - **Not checked in the app:** the show page paging after the fix, and offline playback with the network off.
 - **Podcasts build in progress (2026-11-07, branch `podcasts`, subagent-driven, the user's choice):**
   - **Mockups:** for the show page and the four layouts, in `docs/superpowers/specs/2026-11-07-podcasts-mockups/`. Waiting on the user.
   - **Fixtures:** real podcast data captured from the user's account, with name and avatar removed. Data backup in `C:\Users\sdand\PorchlightDataBackup-20261107-pre-podcasts`; links restored.
