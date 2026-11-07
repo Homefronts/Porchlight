@@ -106,3 +106,14 @@ it("saves on pause and on quit", () => {
   rec(ep("a"), 240, 1000);
   expect(JSON.parse(localStorage.getItem("ytm-episodes")!).state.byId.a.position).toBe(240);
 });
+
+it("an endless (Infinity) duration counts as unknown", () => {
+  rec(ep("live"), 100, Infinity);
+  expect(get("live").duration).toBeUndefined();
+  expect(get("live").played).toBe(false);
+  expect(minutesLeft(get("live"))).toBeNull();
+  expect(minutesLeft({ ...get("live"), duration: Infinity })).toBeNull();
+  // A non-finite position (onEnded on a stream) is not a spot to keep.
+  rec(ep("live"), Infinity, 3600);
+  expect(get("live").position).toBe(100);
+});

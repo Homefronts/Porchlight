@@ -184,7 +184,7 @@ export function useAudioEngine() {
     const el = audioRef.current;
     const s = usePlaybackStore.getState();
     const t = s.index >= 0 ? s.queue[s.index] : undefined;
-    if (!el || !t || !isEpisode(t) || loadedTokenRef.current !== resolveTokenRef.current || !(el.duration > 0)) return;
+    if (!el || !t || !isEpisode(t) || loadedTokenRef.current !== resolveTokenRef.current || !Number.isFinite(el.duration) || !(el.duration > 0)) return;
     episodeSavedAtRef.current = Date.now();
     useEpisodesStore.getState().record(t, at ?? el.currentTime, el.duration);
   };

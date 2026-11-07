@@ -20,11 +20,11 @@ export const useEpisodesStore = create<State>()(
     (set) => ({
       byId: {},
       record: (track, position, duration) => {
-        if (!isEpisode(track)) return;
+        if (!isEpisode(track) || !Number.isFinite(position)) return;
         set((s) => {
           const prev = s.byId[track.videoId];
-          // 0 means the player has not loaded metadata yet: unknown, not "zero length".
-          const known = duration !== undefined && duration > 0 ? duration : prev?.duration;
+          // 0 means the player has not loaded metadata yet, Infinity a stream (null once persisted): unknown, not a length.
+          const known = knownLength(duration) ?? knownLength(prev?.duration);
           const done =
             known !== undefined &&
             (position >= known * PLAYED_FRACTION || (known > PLAYED_TAIL_SEC && position >= known - PLAYED_TAIL_SEC));
@@ -50,6 +50,10 @@ export const useEpisodesStore = create<State>()(
   ),
 );
 
+function knownLength(d: number | null | undefined): number | undefined {
+  return typeof d === "number" && Number.isFinite(d) && d > 0 ? d : undefined;
+}
+
 export function episodeStatus(s: EpisodeState | undefined): "new" | "started" | "played" {
   if (!s) return "new";
   if (s.played) return "played";
@@ -57,7 +61,7 @@ export function episodeStatus(s: EpisodeState | undefined): "new" | "started" | 
 }
 
 export function minutesLeft(s: EpisodeState): number | null {
-  return s.duration === undefined ? null : Math.max(1, Math.ceil((s.duration - s.position) / 60));
+  return s.duration === undefined || !Number.isFinite(s.duration) ? null : Math.max(1, Math.ceil((s.duration - s.position) / 60));
 }
 
 export function inProgress(byId: Record<string, EpisodeState>): EpisodeState[] {

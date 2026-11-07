@@ -21,7 +21,8 @@ const mem = new Map<string, string>();
   },
 };
 
-const { usePlaybackStore, persistedRadio } = await import("@/lib/store/playback");
+const { usePlaybackStore, persistedRadio, flushPlaybackSave } = await import("@/lib/store/playback");
+const { useEpisodesStore } = await import("@/lib/store/episodes");
 const { usePlaybackSettings } = await import("@/lib/store/playback-settings");
 
 function track(videoId: string): QueueTrack {
@@ -415,5 +416,16 @@ describe("playEpisodes", () => {
     const s = usePlaybackStore.getState();
     expect(s.queue.map((t) => t.videoId)).toEqual(ids);
     expect(s.shuffle).toBe(false);
+  });
+});
+
+describe("flushPlaybackSave", () => {
+  const ep: QueueTrack = { videoId: "new", title: "new", thumbnails: [], episode: { showId: "s", showTitle: "S" } };
+  it("a quit right at a track change keeps the new episode's spot", () => {
+    useEpisodesStore.setState({ byId: { new: { position: 600, duration: 3600, played: false, updatedAt: 0, track: ep } } });
+    // Adopted at a crossfade: ready already, but no time has played yet.
+    usePlaybackStore.setState({ queue: [ep], index: 0, status: "ready", position: 0, duration: 1800 });
+    flushPlaybackSave();
+    expect(useEpisodesStore.getState().byId.new.position).toBe(600);
   });
 });
