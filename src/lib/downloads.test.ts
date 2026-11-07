@@ -53,6 +53,16 @@ describe("downloads selectors", () => {
     expect(collectionProgress(index, "nope")).toBeNull();
   });
 
+  it("episode info survives the download index", () => {
+    const input = trackToInput({
+      videoId: "e1",
+      title: "Ep",
+      thumbnails: [],
+      episode: { showId: "s", showTitle: "The Show" },
+    });
+    expect(input?.meta.episode?.showTitle).toBe("The Show");
+  });
+
   it("trackToInput keeps playable rows and picks the widest cover", () => {
     expect(
       trackToInput({ kind: "album", id: "x", title: "x", thumbnails: [] }),

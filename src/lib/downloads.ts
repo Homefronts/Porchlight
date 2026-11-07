@@ -5,6 +5,7 @@ import { listen } from "@tauri-apps/api/event";
 import type { ShelfItem } from "@/lib/innertube/types";
 import type { QueueTrack } from "@/lib/store/playback";
 import { shelfItemToTrack } from "@/lib/queue-track";
+import { syncSponsorCache } from "@/lib/sponsorblock";
 
 // Mirrors src-tauri/src/downloads.rs (serde camelCase; Option → null).
 
@@ -64,13 +65,21 @@ export const SINGLE_REF = "single";
 
 const EMPTY: DownloadsIndex = { version: 1, collections: {}, tracks: {} };
 
+export const doneEpisodes = (index: DownloadsIndex): DlTrack[] =>
+  Object.values(index.tracks).filter((t) => t.state === "done" && t.meta.episode);
+
+const doneEpisodeIds = (index: DownloadsIndex) => doneEpisodes(index).map((t) => t.videoId);
+
 /** Rust owns the index; this is a read-only mirror fed by `downloads-changed`. */
 export const useDownloadsStore = create<{
   index: DownloadsIndex;
   setIndex: (index: DownloadsIndex) => void;
 }>()((set) => ({
   index: EMPTY,
-  setIndex: (index) => set({ index }),
+  setIndex: (index) => {
+    set({ index });
+    void syncSponsorCache(doneEpisodeIds(index));
+  },
 }));
 
 /** Mount once in AppShell. Listener first so no change is missed. */

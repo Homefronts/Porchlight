@@ -1,6 +1,9 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useShallow } from "zustand/react/shallow";
+import { EpisodeRow } from "@/components/podcasts/episode-row";
+import { AnimatedTabs } from "@/components/ui/animated-tabs";
+import { playEpisodes } from "@/lib/play-episodes";
 import { Thumbnail } from "@/components/shared/thumbnail";
 import { TrackList } from "@/components/shared/track-list";
 import {
@@ -13,6 +16,7 @@ import { cn } from "@/lib/utils";
 import {
   SINGLE_REF,
   collectionProgress,
+  doneEpisodes,
   useDownloadsStore,
   type DlCollection,
 } from "@/lib/downloads";
@@ -34,6 +38,7 @@ function DownloadsPage() {
   const family = useLookFamily();
   const index = useDownloadsStore((s) => s.index);
   const base = useCoverBase();
+  const [tab, setTab] = useState("songs");
 
   const collections = useMemo(
     () =>
@@ -47,28 +52,67 @@ function DownloadsPage() {
   const singles = useMemo(
     () =>
       Object.values(index.tracks)
-        .filter((t) => t.refs.includes(SINGLE_REF))
+        .filter((t) => t.refs.includes(SINGLE_REF) && !t.meta.episode)
         .map((t) => dlTrackToShelfItem(t, base)),
     [index.tracks, base],
+  );
+
+  const episodes = useMemo(
+    () =>
+      doneEpisodes(index)
+        .map((t) => ({
+          ...t.meta,
+          thumbnails: dlTrackToShelfItem(t, base).thumbnails,
+        }))
+        .sort((a, b) =>
+          (b.episode?.published ?? "").localeCompare(a.episode?.published ?? ""),
+        ),
+    [index, base],
   );
 
   return (
     <div className="flex flex-col gap-6 px-6 pb-6 pt-3">
       <PageTitle>Downloads</PageTitle>
-      {collections.length === 0 && singles.length === 0 ? (
+      <AnimatedTabs
+        activeTab={tab}
+        onChange={setTab}
+        tabs={[
+          { id: "songs", label: "Songs" },
+          { id: "episodes", label: "Downloaded episodes" },
+        ]}
+      />
+      {tab === "episodes" ? (
+        episodes.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No downloaded episodes yet.
+          </p>
+        ) : (
+          <div>
+            {episodes.map((t, i) => (
+              <EpisodeRow
+                key={t.videoId}
+                track={t}
+                index={i}
+                onPlay={() => playEpisodes(episodes, i)}
+              />
+            ))}
+          </div>
+        )
+      ) : null}
+      {tab === "songs" && collections.length === 0 && singles.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           Nothing downloaded yet. Use the download button on any playlist or
           album.
         </p>
       ) : null}
-      {collections.length > 0 ? (
+      {tab === "songs" && collections.length > 0 ? (
         <div className="grid w-full gap-2 grid-cols-[repeat(auto-fill,minmax(min(100%,11rem),1fr))] [&>*]:max-w-[20rem]">
           {collections.map((c) => (
             <CollectionCard key={c.id} c={c} base={base} />
           ))}
         </div>
       ) : null}
-      {singles.length > 0 ? (
+      {tab === "songs" && singles.length > 0 ? (
         <section className="flex flex-col gap-2">
           {/* Classic's heading here is looser than SectionLabel's (no
               tracking, no inset), so it stays as it was. */}

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const fetchMock = vi.fn();
 vi.mock("@tauri-apps/plugin-http", () => ({ fetch: (...a: unknown[]) => fetchMock(...a) }));
 
-import { fetchSponsorSegments, segmentToSkip } from "./sponsorblock";
+import { fetchSponsorSegments, segmentToSkip, syncSponsorCache, useSponsorCache } from "./sponsorblock";
 
 const seg = (start: number, end: number, uuid = `u${start}`) => ({ start, end, uuid });
 
@@ -50,5 +50,28 @@ describe("fetchSponsorSegments", () => {
   it("a 404 gives []", async () => {
     fetchMock.mockResolvedValue({ ok: false, status: 404 });
     expect(await fetchSponsorSegments("nf1")).toEqual([]);
+  });
+});
+
+describe("persisted sponsor cache", () => {
+  beforeEach(() => {
+    fetchMock.mockReset();
+    useSponsorCache.setState({ byId: {} });
+  });
+
+  it("uses the persisted map without fetching", async () => {
+    useSponsorCache.setState({ byId: { off1: [seg(1, 9)] } });
+    expect(await fetchSponsorSegments("off1")).toEqual([seg(1, 9)]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("syncSponsorCache saves new ids and drops removed ones", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => [{ videoID: "new1", segments: [{ segment: [5, 25], UUID: "a" }] }],
+    });
+    useSponsorCache.setState({ byId: { gone: [seg(1, 2)] } });
+    await syncSponsorCache(["new1"]);
+    expect(useSponsorCache.getState().byId).toEqual({ new1: [{ start: 5, end: 25, uuid: "a" }] });
   });
 });
