@@ -176,6 +176,7 @@ Pick a look and a layout on first launch, with a live preview of your own librar
 - **Downloads stay in sync**: downloaded playlists pick up new songs automatically, and failed songs show the reason and retry on their own.
 - **Offline for 30 days**: downloads keep playing without a connection until your next Premium check-in.
 - **Storage settings**: move the cache folder, see real song titles for cached tracks, and see when the next auto-clean is due.
+- **Podcasts**: a Podcasts tab with your shows, pick up where you left off, new episodes and downloaded episodes; episodes remember your spot, mark as played, and the next one plays. Optional sponsor skipping with SponsorBlock.
 
 ### Lyrics
 
