@@ -11,7 +11,9 @@ import { toggleLiked } from "@/lib/like-actions";
 import { fetchRadio, fetchWatchQueueContinuation } from "@/lib/innertube/radio";
 import { prefetchStream, saveTrackMeta, streamUrlFor } from "@/lib/stream";
 import { AudioGraph, canSelectOutputDevice } from "@/lib/audio-graph";
-import { SNIPPET_FADE_SEC, isHeldAi, snippetWindow, usePlaybackStore, type QueueTrack } from "@/lib/store/playback";
+import { SNIPPET_FADE_SEC, isEpisode, isHeldAi, snippetWindow, usePlaybackStore, type QueueTrack } from "@/lib/store/playback";
+import { useEpisodesStore } from "@/lib/store/episodes";
+import { queueNextEpisode } from "@/lib/next-episode";
 import { eqGains, usePlaybackSettings } from "@/lib/store/playback-settings";
 import { playbackAllowed, usePlaybackAllowed } from "@/lib/store/premium";
 import { useSettingsStore } from "@/lib/store/settings";
@@ -67,6 +69,9 @@ type Fade = {
   to: HTMLAudioElement;
   timer: number;
 };
+
+/** An episode's place is saved at most this often while it plays. */
+const EPISODE_SAVE_MS = 5000;
 
 /** Perceived-loudness curve for the volume slider (see the volume effect). */
 const elementVolume = (volume: number) => Math.max(0, Math.min(1, volume)) ** 3;
@@ -165,6 +170,18 @@ export function useAudioEngine() {
     };
   }, []);
 
+  const episodeSavedAtRef = useRef(0);
+  /** Save the playing episode's place (no-op for music). Skipped until the
+   *  element knows its duration, so a load or a pause mid-load never writes 0. */
+  const saveEpisode = (at?: number) => {
+    const el = audioRef.current;
+    const s = usePlaybackStore.getState();
+    const t = s.index >= 0 ? s.queue[s.index] : undefined;
+    if (!el || !t || !isEpisode(t) || !(el.duration > 0)) return;
+    episodeSavedAtRef.current = Date.now();
+    useEpisodesStore.getState().record(t, at ?? el.currentTime, el.duration);
+  };
+
   /** Drop whatever the standby element was preloading. */
   const clearPending = () => {
     const p = pendingRef.current;
@@ -234,6 +251,8 @@ export function useAudioEngine() {
       }
       // A held AI track is skipped by next() on `ended`; don't fade into it.
       if (isHeldAi(s.queue[nextIndex])) return;
+      // Episodes start and end cleanly: no fade into or out of one.
+      if (isEpisode(s.queue[s.index]) || isEpisode(s.queue[nextIndex])) return;
       const dur = el.duration;
       if (!Number.isFinite(dur) || dur <= 0) return;
       const remaining = (s.snippets ? snippetWindow(dur)[1] : dur) - el.currentTime;
@@ -327,6 +346,7 @@ export function useAudioEngine() {
       if (!isActive(e)) return;
       const el = e.currentTarget as HTMLAudioElement;
       store().setPosition(el.currentTime);
+      if (!el.paused && Date.now() - episodeSavedAtRef.current >= EPISODE_SAVE_MS) saveEpisode();
       maybeCrossfade(el);
     };
     const onDurationChange = (e: Event) => {
@@ -340,6 +360,8 @@ export function useAudioEngine() {
       // The outgoing half of a crossfade ends on its own; the store has
       // already moved on.
       if (!isActive(e)) return;
+      // A finished episode is played: save it at its full length.
+      saveEpisode((e.currentTarget as HTMLAudioElement).duration);
       // Sleep timer: move on to the next song, but don't let it start.
       const sleeping = takeEndOfSongStop();
       store().next();
@@ -544,6 +566,23 @@ export function useAudioEngine() {
     const token = ++resolveTokenRef.current;
     usePlaybackStore.getState().setStatus("loading");
 
+    // Where this load picks up: an episode at its saved place (from the
+    // start once played), anything else at the last session's position.
+    // Read now, before this track's first save can overwrite it.
+    const resume = resumeRef.current;
+    resumeRef.current = null;
+    let resumeAt: number | null = null;
+    {
+      const st = usePlaybackStore.getState();
+      const cur = st.index >= 0 ? st.queue[st.index] : undefined;
+      if (isEpisode(cur)) {
+        const saved = useEpisodesStore.getState().byId[videoId ?? ""];
+        resumeAt = saved && !saved.played && saved.position > 0 ? saved.position : null;
+      } else if (resume && resume.videoId === videoId && resume.index === index) {
+        resumeAt = resume.seconds;
+      }
+    }
+
     // Persist this track's title/artist beside its cache file so the
     // Storage tab can name it without depending on the library walk.
     // Read from the store imperatively (like the rest of this effect) so
@@ -569,18 +608,16 @@ export function useAudioEngine() {
         el.src = src;
         usePlaybackStore.getState().setStreamUrl(src);
         el.load();
-        // First load of the track the last session ended on: pick up
-        // where it left off once the element knows its duration.
-        const resume = resumeRef.current;
-        resumeRef.current = null;
-        if (resume && resume.videoId === videoId && resume.index === index) {
+        // Pick up at `resumeAt` once the element knows its duration.
+        if (resumeAt !== null) {
+          const seconds = resumeAt;
           el.addEventListener(
             "loadedmetadata",
             () => {
               if (token !== resolveTokenRef.current) return;
               const dur = el.duration;
-              if (Number.isFinite(dur) && resume.seconds < dur - 1) {
-                el.currentTime = resume.seconds;
+              if (Number.isFinite(dur) && seconds < dur - 1) {
+                el.currentTime = seconds;
               }
             },
             { once: true },
@@ -644,6 +681,7 @@ export function useAudioEngine() {
       // Pausing mid-fade cuts the outgoing track rather than leaving it
       // to keep playing on its own.
       cancelFade();
+      saveEpisode();
       el.pause();
     }
   }, [playing, premiumOk]);
@@ -740,6 +778,7 @@ export function useAudioEngine() {
     if (!el || pendingSeek === undefined) return;
     try {
       el.currentTime = pendingSeek;
+      saveEpisode(pendingSeek);
     } catch {
       /* seek failed — non-fatal */
     }
@@ -968,10 +1007,6 @@ export function useAudioEngine() {
 
   const radioFetchedForRef = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (!autoRadio) return;
-    // A pending shuffle continuation owns the tail; radio only takes over
-    // once it's exhausted (the drain effect clears it).
-    if (queueContinuation) return;
     if (qIndex < 0 || !seedVideoId) return;
     // Only fire when the current track is the last queued one.
     if (qIndex < qLen - 1) return;
@@ -979,6 +1014,20 @@ export function useAudioEngine() {
     // same track is the tail again and gets a fresh batch.
     const seedKey = `${seedVideoId}#${radioEpoch}`;
     if (radioFetchedForRef.current === seedKey) return;
+    // After an episode comes the show's next episode, whatever the radio
+    // switch says, and never music radio.
+    const seed = usePlaybackStore.getState().queue[qIndex];
+    if (isEpisode(seed)) {
+      radioFetchedForRef.current = seedKey;
+      queueNextEpisode(seed).catch(() => {
+        radioFetchedForRef.current = undefined;
+      });
+      return;
+    }
+    if (!autoRadio) return;
+    // A pending shuffle continuation owns the tail; radio only takes over
+    // once it's exhausted (the drain effect clears it).
+    if (queueContinuation) return;
     radioFetchedForRef.current = seedKey;
     fetchRadio(seedVideoId)
       .then((tracks) => {
@@ -1128,7 +1177,7 @@ export function useAudioEngine() {
     // has no timestamps either, and the worker must not read that as a pause.
     void invoke("discord_update", {
       title: t.title,
-      artist: buildArtistLabel(t),
+      artist: t.episode?.showTitle ?? buildArtistLabel(t),
       album: t.album ?? "",
       imageUrl: pickThumbnail(t.thumbnails, 512) ?? "",
       startMs,

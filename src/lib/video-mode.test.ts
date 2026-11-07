@@ -68,6 +68,14 @@ describe("followVideoMode", () => {
     expect(find).toHaveBeenCalledTimes(1);
   });
 
+  it("video mode keeps position", async () => {
+    // An episode is its own video: no lookup, so no stream switch to restart it.
+    useTrackSourceStore.setState({ videoMode: true });
+    await followVideoMode({ ...track("p"), episode: { showId: "s", showTitle: "Show" } });
+    expect(find).not.toHaveBeenCalled();
+    expect(selected("p")).toBe("song");
+  });
+
   it("drops a late lookup if video mode was switched off meanwhile", async () => {
     useTrackSourceStore.setState({ videoMode: true });
     find.mockImplementation(async () => {

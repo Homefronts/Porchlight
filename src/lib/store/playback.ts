@@ -6,6 +6,7 @@ import type { RadioChip } from "@/lib/innertube/radio";
 import { shelfItemToTrack } from "@/lib/queue-track";
 import { isFloatingPlayerWindow } from "@/lib/floating-player";
 import { usePlaybackSettings } from "./playback-settings";
+import { useEpisodesStore } from "./episodes";
 import { safeLocalStorage } from "./safe-storage";
 import { createThrottledStorage } from "./throttled-storage";
 import { isAiBlocked } from "@/lib/ai/use-ai";
@@ -231,6 +232,10 @@ const playbackStorage = createThrottledStorage(5000, safeLocalStorage);
 
 /** Save the queue and position now, before the app goes away. */
 export function flushPlaybackSave(): void {
+  // The playing episode's place too (its store writes at once). Only once it
+  // has loaded, so a quit mid-load keeps the place it had.
+  const s = usePlaybackStore.getState();
+  if (s.status === "ready") useEpisodesStore.getState().record(s.queue[s.index], s.position, s.duration);
   playbackStorage.flush();
 }
 

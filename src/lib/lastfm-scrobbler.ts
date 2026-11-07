@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { usePlaybackStore } from "@/lib/store/playback";
+import { isEpisode, usePlaybackStore } from "@/lib/store/playback";
 import { useSettingsStore } from "@/lib/store/settings";
 import { lastfmArtist } from "@/lib/lastfm";
 
@@ -63,7 +63,8 @@ export function useLastfmScrobbler(): void {
     }
     const s = usePlaybackStore.getState();
     const t = s.index >= 0 ? s.queue[s.index] : undefined;
-    if (!t) {
+    // Episodes aren't music: no now playing, no scrobble.
+    if (!t || isEpisode(t)) {
       timingRef.current = null;
       return;
     }

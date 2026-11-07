@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { usePlaybackStore, type PlaybackState, type QueueTrack } from "@/lib/store/playback";
+import { isEpisode, usePlaybackStore, type PlaybackState, type QueueTrack } from "@/lib/store/playback";
 import { useSettingsStore } from "@/lib/store/settings";
 import { rewindLog } from "./log";
 import { PlayTimer, type TimedPlay } from "./timing";
@@ -108,7 +108,8 @@ export function useRewindLogger(): void {
       const on = useSettingsStore.getState().rewindHistory;
       // The Rewind's own soundtrack (snippet mode) isn't listening: like no track at
       // all, so the play before it is logged as it ends, and nothing during it.
-      const cur = on && !s.snippets && s.index >= 0 ? s.queue[s.index] : undefined;
+      // Episodes aren't music: they never reach Rewind either.
+      const cur = on && !s.snippets && s.index >= 0 && !isEpisode(s.queue[s.index]) ? s.queue[s.index] : undefined;
       // Loading or buffering isn't listening.
       const audible = s.playing && s.status === "ready";
       if (cur?.videoId !== track?.videoId) {

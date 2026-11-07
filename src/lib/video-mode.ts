@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { findAlternateVideoId } from "@/lib/innertube/alternate-source";
-import { usePlaybackStore, type QueueTrack } from "@/lib/store/playback";
+import { isEpisode, usePlaybackStore, type QueueTrack } from "@/lib/store/playback";
 import { useTrackSourceStore, type SourceKind } from "@/lib/store/track-source";
 
 // Lookups by "kind:videoId": a running one is shared by everyone who asks, and
@@ -27,7 +27,8 @@ export function lookupAlternate(track: QueueTrack, kind: SourceKind): Promise<st
  * video while the mode is on (its song when it has none), its song when off.
  */
 export async function followVideoMode(track: QueueTrack | undefined): Promise<void> {
-  if (!track) return;
+  // An episode is its own video: a lookup would only switch streams and lose the place.
+  if (!track || isEpisode(track)) return;
   const src = useTrackSourceStore.getState();
   const rec = src.byVideoId[track.videoId];
   // A Rewind's soundtrack (snippet mode) plays songs, whatever the saved mode.
