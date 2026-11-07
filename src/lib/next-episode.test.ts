@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 const fetchShow = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/innertube/podcasts", () => ({ fetchShow }));
 
-const { pickNextEpisode, queueNextEpisode } = await import("./next-episode");
+const { pickNextEpisode, queueNextEpisode, startPosition } = await import("./next-episode");
 const { usePlaybackStore } = await import("@/lib/store/playback");
 
 const ep = (videoId: string) => ({ videoId, title: videoId, thumbnails: [], episode: { showId: "s", showTitle: "Show" } });
@@ -46,5 +46,20 @@ describe("queueNextEpisode", () => {
     usePlaybackStore.setState({ queue: [ep("e3"), ep("x")], index: 0 });
     await queueNextEpisode(ep("e3"));
     expect(usePlaybackStore.getState().queue.map((t) => t.videoId)).toEqual(["e3", "x"]);
+  });
+});
+
+describe("startPosition", () => {
+  it("resumes at the saved place once the duration is known", () => {
+    expect(startPosition(600, null, 3600)).toBe(600);
+    expect(startPosition(600, null, NaN)).toBeNull();
+    expect(startPosition(3599.5, null, 3600)).toBeNull();
+    expect(startPosition(null, null, 3600)).toBeNull();
+  });
+
+  it("a seek made while loading wins over the saved place", () => {
+    expect(startPosition(600, 1200, 3600)).toBe(1200);
+    expect(startPosition(600, 0, 3600)).toBe(0);
+    expect(startPosition(null, 90, 3600)).toBe(90);
   });
 });

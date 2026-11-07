@@ -34,3 +34,12 @@ export async function queueNextEpisode(current: QueueTrack): Promise<void> {
   if (!next || s.queue[s.index]?.videoId !== current.videoId || s.index < s.queue.length - 1) return;
   s.appendToQueue([next]);
 }
+
+/**
+ * Where a freshly loaded track starts once its metadata is in: a seek the
+ * user made while it loaded, else the saved place (unless it is at the very end).
+ */
+export function startPosition(resumeAt: number | null, userSeek: number | null, duration: number): number | null {
+  if (userSeek !== null) return userSeek;
+  return resumeAt !== null && Number.isFinite(duration) && resumeAt < duration - 1 ? resumeAt : null;
+}

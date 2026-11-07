@@ -13,7 +13,7 @@ import { prefetchStream, saveTrackMeta, streamUrlFor } from "@/lib/stream";
 import { AudioGraph, canSelectOutputDevice } from "@/lib/audio-graph";
 import { SNIPPET_FADE_SEC, isEpisode, isHeldAi, snippetWindow, usePlaybackStore, type QueueTrack } from "@/lib/store/playback";
 import { useEpisodesStore } from "@/lib/store/episodes";
-import { queueNextEpisode } from "@/lib/next-episode";
+import { queueNextEpisode, startPosition } from "@/lib/next-episode";
 import { eqGains, usePlaybackSettings } from "@/lib/store/playback-settings";
 import { playbackAllowed, usePlaybackAllowed } from "@/lib/store/premium";
 import { useSettingsStore } from "@/lib/store/settings";
@@ -171,13 +171,19 @@ export function useAudioEngine() {
   }, []);
 
   const episodeSavedAtRef = useRef(0);
-  /** Save the playing episode's place (no-op for music). Skipped until the
-   *  element knows its duration, so a load or a pause mid-load never writes 0. */
+  // The load (resolve token) whose metadata the active element has. Until it
+  // matches the current load, the element's time and duration belong to the
+  // previous track or to nothing yet.
+  const loadedTokenRef = useRef(0);
+  // A seek made while the current load had no metadata yet; it wins over the resume.
+  const loadSeekRef = useRef<{ token: number; seconds: number } | null>(null);
+  /** Save the playing episode's place (no-op for music). Skipped until this
+   *  load's metadata is in, so a load or a pause mid-load never writes over it. */
   const saveEpisode = (at?: number) => {
     const el = audioRef.current;
     const s = usePlaybackStore.getState();
     const t = s.index >= 0 ? s.queue[s.index] : undefined;
-    if (!el || !t || !isEpisode(t) || !(el.duration > 0)) return;
+    if (!el || !t || !isEpisode(t) || loadedTokenRef.current !== resolveTokenRef.current || !(el.duration > 0)) return;
     episodeSavedAtRef.current = Date.now();
     useEpisodesStore.getState().record(t, at ?? el.currentTime, el.duration);
   };
@@ -566,11 +572,8 @@ export function useAudioEngine() {
     const token = ++resolveTokenRef.current;
     usePlaybackStore.getState().setStatus("loading");
 
-    // Where this load picks up: an episode at its saved place (from the
-    // start once played), anything else at the last session's position.
+    // An episode picks up at its saved place (from the start once played).
     // Read now, before this track's first save can overwrite it.
-    const resume = resumeRef.current;
-    resumeRef.current = null;
     let resumeAt: number | null = null;
     {
       const st = usePlaybackStore.getState();
@@ -578,8 +581,6 @@ export function useAudioEngine() {
       if (isEpisode(cur)) {
         const saved = useEpisodesStore.getState().byId[videoId ?? ""];
         resumeAt = saved && !saved.played && saved.position > 0 ? saved.position : null;
-      } else if (resume && resume.videoId === videoId && resume.index === index) {
-        resumeAt = resume.seconds;
       }
     }
 
@@ -608,21 +609,28 @@ export function useAudioEngine() {
         el.src = src;
         usePlaybackStore.getState().setStreamUrl(src);
         el.load();
-        // Pick up at `resumeAt` once the element knows its duration.
-        if (resumeAt !== null) {
-          const seconds = resumeAt;
-          el.addEventListener(
-            "loadedmetadata",
-            () => {
-              if (token !== resolveTokenRef.current) return;
-              const dur = el.duration;
-              if (Number.isFinite(dur) && seconds < dur - 1) {
-                el.currentTime = seconds;
-              }
-            },
-            { once: true },
-          );
+        // First load of the track the last session ended on: pick up where
+        // it left off. Read here, after the token check, so a load that was
+        // superseded (source switch, retry) leaves it for the next one.
+        const resume = resumeRef.current;
+        resumeRef.current = null;
+        if (resumeAt === null && resume && resume.videoId === videoId && resume.index === index) {
+          resumeAt = resume.seconds;
         }
+        // Once the element knows its duration: a seek made meanwhile, else the resume.
+        el.addEventListener(
+          "loadedmetadata",
+          () => {
+            if (token !== resolveTokenRef.current) return;
+            loadedTokenRef.current = token;
+            const seek = loadSeekRef.current?.token === token ? loadSeekRef.current.seconds : null;
+            loadSeekRef.current = null;
+            const at = startPosition(resumeAt, seek, el.duration);
+            if (at !== null) el.currentTime = at;
+            if (seek !== null) saveEpisode(seek);
+          },
+          { once: true },
+        );
         if (usePlaybackStore.getState().playing) {
           graphRef.current?.resume();
           void el.play().catch((e) => {
@@ -778,6 +786,10 @@ export function useAudioEngine() {
     if (!el || pendingSeek === undefined) return;
     try {
       el.currentTime = pendingSeek;
+      // Mid-load the seek is held for the metadata, where it beats the resume.
+      if (loadedTokenRef.current !== resolveTokenRef.current) {
+        loadSeekRef.current = { token: resolveTokenRef.current, seconds: pendingSeek };
+      }
       saveEpisode(pendingSeek);
     } catch {
       /* seek failed — non-fatal */
