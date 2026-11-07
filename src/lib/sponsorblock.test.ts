@@ -74,4 +74,27 @@ describe("persisted sponsor cache", () => {
     await syncSponsorCache(["new1"]);
     expect(useSponsorCache.getState().byId).toEqual({ new1: [{ start: 5, end: 25, uuid: "a" }] });
   });
+
+  it("an ok answer with no segments is kept, so it isn't asked again", async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: async () => [] });
+    await syncSponsorCache(["clean1"]);
+    expect(useSponsorCache.getState().byId).toEqual({ clean1: [] });
+    await syncSponsorCache(["clean1", "clean2"]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("a failure is not kept, and an unchanged set doesn't fetch again", async () => {
+    fetchMock.mockRejectedValue(new Error("offline"));
+    await syncSponsorCache(["off2"]);
+    await syncSponsorCache(["off2"]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(useSponsorCache.getState().byId).toEqual({});
+  });
+
+  it("overlapping syncs run one at a time", async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: async () => [{ videoID: "lap1", segments: [{ segment: [5, 25], UUID: "a" }] }] });
+    await Promise.all([syncSponsorCache(["lap1"]), syncSponsorCache([])]);
+    // The later sync (nothing downloaded) wins, whatever order the fetches land in.
+    expect(useSponsorCache.getState().byId).toEqual({});
+  });
 });
