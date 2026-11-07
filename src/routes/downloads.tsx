@@ -92,7 +92,7 @@ function DownloadsPage() {
                 key={t.videoId}
                 track={t}
                 index={i}
-                onPlay={() => playEpisodes(episodes, i)}
+                onPlay={() => playEpisodes([t], 0)}
               />
             ))}
           </div>

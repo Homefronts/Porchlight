@@ -1,14 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { AlertCircleIcon, CheckIcon, PlusIcon } from "lucide-react";
+import { IconLoader2 } from "@tabler/icons-react";
 import { EntityHeader } from "@/components/shared/entity-header";
 import { EpisodeRow } from "@/components/podcasts/episode-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { fetchLibraryShows, fetchShow } from "@/lib/innertube/podcasts";
+import { fetchLibraryShows } from "@/lib/innertube/podcasts";
 import { followShow, unfollowShow } from "@/lib/innertube/mutations";
-import { firstUnplayed } from "@/lib/episode-view";
+import { firstUnplayed, playFromHere } from "@/lib/episode-view";
+import { showPagesQuery } from "@/lib/next-episode";
 import { useEpisodesStore } from "@/lib/store/episodes";
 import { playEpisodes } from "@/lib/play-episodes";
 import { useShowSortStore } from "@/lib/store/show-sort";
@@ -16,23 +18,37 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/podcast/$id")({
   component: ShowPageView,
-  loader: ({ context, params }) =>
-    context.queryClient.ensureQueryData({
-      queryKey: ["show", params.id],
-      queryFn: () => fetchShow(params.id),
-    }),
 });
 
 function ShowPageView() {
   const { id } = Route.useParams();
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["show", id],
-    queryFn: () => fetchShow(id),
-  });
+  const { data, isLoading, error, hasNextPage, isFetchingNextPage, fetchNextPage } = useInfiniteQuery(showPagesQuery(id));
   const order = useShowSortStore((s) => s.byShow[id] ?? "newest");
   const byId = useEpisodesStore((s) => s.byId);
 
-  if (error) {
+  // Page in more as the end of the list comes into view (as playlist.$id.tsx does).
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasNextPage || error) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting) && !isFetchingNextPage) void fetchNextPage();
+      },
+      { rootMargin: "600px 0px" },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, error]);
+
+  // Oldest first needs the whole list: page in the rest, spaced so YouTube doesn't rate-limit.
+  useEffect(() => {
+    if (order !== "oldest" || !hasNextPage || isFetchingNextPage || error) return;
+    const t = setTimeout(() => void fetchNextPage(), 250);
+    return () => clearTimeout(t);
+  }, [order, hasNextPage, isFetchingNextPage, fetchNextPage, error]);
+
+  if (error && !data) {
     return (
       <div className="flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm">
         <AlertCircleIcon className="size-5 shrink-0 text-destructive" />
@@ -45,12 +61,12 @@ function ShowPageView() {
   }
   if (isLoading || !data) return <ShowSkeleton />;
 
-  const { show, episodes } = data;
-  // fetchShow gives newest first.
-  const shown = order === "newest" ? episodes : [...episodes].reverse();
-  const play = (from: number) => {
-    playEpisodes(shown.slice(from), 0);
-  };
+  const show = data.pages[0].show!;
+  const episodes = data.pages.flatMap((p) => p.episodes);
+  // Pages come newest first; oldest shows nothing until the whole list is in.
+  const loadingAll = order === "oldest" && hasNextPage && !error;
+  const shown = order === "newest" ? episodes : loadingAll ? [] : [...episodes].reverse();
+  const play = (from: number) => playEpisodes(playFromHere(shown, from, byId), 0);
   const unplayed = episodes.filter((e) => !byId[e.videoId]?.played).length;
 
   return (
@@ -58,7 +74,7 @@ function ShowPageView() {
       <EntityHeader
         title={show.title}
         subtitle={show.author}
-        metadata={`PODCAST · ${unplayed} UNPLAYED`}
+        metadata={hasNextPage ? "PODCAST" : `PODCAST · ${unplayed} UNPLAYED`}
         thumbnails={show.thumbnails}
         onPlay={() => {
           if (shown.length) play(firstUnplayed(shown.map((e) => e.videoId), byId));
@@ -88,6 +104,18 @@ function ShowPageView() {
         {shown.map((t, i) => (
           <EpisodeRow key={t.videoId} track={t} index={i} onPlay={() => play(i)} />
         ))}
+        {hasNextPage ? (
+          <div ref={sentinelRef} className="flex items-center justify-center py-6 text-sm text-muted-foreground">
+            {loadingAll || isFetchingNextPage ? (
+              <>
+                <IconLoader2 className="mr-2 size-4 animate-spin" />
+                {loadingAll ? "Loading every episode for oldest first" : "Loading more"}
+              </>
+            ) : (
+              <span className="sr-only">Scroll to load more</span>
+            )}
+          </div>
+        ) : null}
       </div>
     </div>
   );

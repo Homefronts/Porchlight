@@ -13,7 +13,7 @@ vi.mock("@tauri-apps/api/core", () => ({
   invoke: () => Promise.reject(new Error("no tauri in tests")),
 }));
 
-const { fetchLibraryShows, fetchNewEpisodes, fetchShow } = await import("./podcasts");
+const { fetchLibraryShows, fetchNewEpisodes, fetchShowContinuation, fetchShowFirstPage } = await import("./podcasts");
 const { isEpisode } = await import("@/lib/store/playback");
 
 const SHOW_ID = "PLk1Sqn_f33KuWf3tW9BBe_4TP7x8l0m3T";
@@ -58,7 +58,10 @@ describe("podcasts", () => {
   });
 
   it("parses a show's episodes", async () => {
-    const { show, episodes } = await fetchShow(SHOW_ID);
+    const { show, episodes, continuationToken } = await fetchShowFirstPage(SHOW_ID);
+    // Page one only: the walk stops at the first page.
+    expect(continuationToken).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(show.id).toBe(SHOW_ID);
     expect(show.title).toBe("The Joe Rogan Experience");
     expect(episodes).toHaveLength(3);
@@ -72,6 +75,19 @@ describe("podcasts", () => {
     }
     expect(episodes[0].episode?.publishedText).toBe("23h ago");
     expect(episodes[0].duration).toBe(2 * 3600 + 18 * 60);
+  });
+
+  it("pages in more of a show's episodes", async () => {
+    const { show, episodes } = await fetchShowFirstPage(SHOW_ID);
+    const rows = (showPage as any).contents.twoColumnBrowseResultsRenderer.secondaryContents.sectionListRenderer
+      .contents[0].musicShelfRenderer.contents;
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(respond({ continuationContents: { musicShelfContinuation: { contents: rows.slice(0, 2), continuations: [{ nextContinuationData: { continuation: "p3" } }] } } })),
+    );
+    const page = await fetchShowContinuation(show, "p2");
+    expect(page.episodes.map((e) => e.videoId)).toEqual(episodes.slice(0, 2).map((e) => e.videoId));
+    expect(page.episodes[0].episode?.showTitle).toBe(show.title);
+    expect(page.continuationToken).toBe("p3");
   });
 
   it("new episodes are marked as episodes", async () => {

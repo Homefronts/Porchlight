@@ -2,7 +2,9 @@ import type { Thumbnail } from "./types";
 import type { QueueTrack } from "@/lib/store/playback";
 import {
   collectContinuationItems,
+  parseContinuationPage,
   rawBrowse,
+  rawBrowseContinuation,
   readPagingToken,
   readRuns,
   readThumbnails,
@@ -63,21 +65,25 @@ function mapEpisode(
   };
 }
 
-/** The episode shelf of a show / auto-playlist page, plus every continuation page. */
-async function readEpisodes(
-  json: YtNode,
-  show?: Pick<Show, "id" | "title">,
-): Promise<QueueTrack[]> {
-  const shelf: YtNode | undefined =
-    json?.contents?.twoColumnBrowseResultsRenderer?.secondaryContents
-      ?.sectionListRenderer?.contents?.[0]?.musicShelfRenderer;
-  const rows: YtNode[] = [
-    ...(shelf?.contents ?? []),
-    ...(await collectContinuationItems(readPagingToken(shelf))),
-  ];
+function mapEpisodes(rows: YtNode[], show?: Pick<Show, "id" | "title">): QueueTrack[] {
   return rows
     .map((r) => mapEpisode(r.musicMultiRowListItemRenderer ?? {}, show))
     .filter((t): t is QueueTrack => !!t);
+}
+
+/** The episode shelf of a show / auto-playlist page. */
+function episodeShelf(json: YtNode): YtNode | undefined {
+  return json?.contents?.twoColumnBrowseResultsRenderer?.secondaryContents
+    ?.sectionListRenderer?.contents?.[0]?.musicShelfRenderer;
+}
+
+/** The episode shelf plus every continuation page. */
+async function readEpisodes(json: YtNode): Promise<QueueTrack[]> {
+  const shelf = episodeShelf(json);
+  return mapEpisodes([
+    ...(shelf?.contents ?? []),
+    ...(await collectContinuationItems(readPagingToken(shelf))),
+  ]);
 }
 
 /** Shows the user follows. */
@@ -112,10 +118,12 @@ export async function fetchLibraryShows(): Promise<Show[]> {
   return out;
 }
 
-/** A show and all its episodes, newest first. */
-export async function fetchShow(
+export type ShowPage = { episodes: QueueTrack[]; continuationToken?: string };
+
+/** A show and its first page of episodes, newest first; `fetchShowContinuation` pages in the rest. */
+export async function fetchShowFirstPage(
   id: string,
-): Promise<{ show: Show; episodes: QueueTrack[] }> {
+): Promise<ShowPage & { show: Show }> {
   const json = await rawBrowse(SHOW_PREFIX + id);
   const header: YtNode | undefined =
     json?.contents?.twoColumnBrowseResultsRenderer?.tabs?.[0]?.tabRenderer
@@ -129,7 +137,22 @@ export async function fetchShow(
       header?.thumbnail?.musicThumbnailRenderer?.thumbnail,
     ),
   };
-  return { show, episodes: await readEpisodes(json, show) };
+  const shelf = episodeShelf(json);
+  return {
+    show,
+    episodes: mapEpisodes(shelf?.contents ?? [], show),
+    continuationToken: readPagingToken(shelf),
+  };
+}
+
+/** The next page of a show's episodes. */
+export async function fetchShowContinuation(
+  show: Pick<Show, "id" | "title">,
+  token: string,
+): Promise<ShowPage> {
+  const { items, token: next } = parseContinuationPage(await rawBrowseContinuation(token));
+  // A token that hands itself back would page forever.
+  return { episodes: mapEpisodes(items, show), continuationToken: next === token ? undefined : next };
 }
 
 /** The "New episodes" auto playlist. */

@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { episodeTag, firstUnplayed, spokenLength } from "./episode-view";
+import { episodeTag, firstUnplayed, playFromHere, spokenLength } from "./episode-view";
 import type { EpisodeState } from "@/lib/store/episodes";
 import type { QueueTrack } from "@/lib/store/playback";
 
@@ -24,4 +24,17 @@ it("finds the first unplayed episode in shown order", () => {
   const byId = { a: st({ played: true }), b: st({ position: 100 }) };
   expect(firstUnplayed(ids, byId)).toBe(1);
   expect(firstUnplayed(ids, { a: byId.a, b: st({ played: true }), c: st({ played: true }) })).toBe(0);
+});
+
+it("unknown or endless lengths read as nothing", () => {
+  expect(spokenLength(Infinity)).toBe("");
+  expect(spokenLength(NaN)).toBe("");
+});
+
+it("plays from the clicked row on, leaving out played ones", () => {
+  const t = (videoId: string) => ({ videoId, title: videoId, thumbnails: [] }) as QueueTrack;
+  const shown = [t("a"), t("b"), t("c"), t("d")];
+  const byId = { b: st({ played: true }), c: st({ played: true }) };
+  expect(playFromHere(shown, 1, byId).map((e) => e.videoId)).toEqual(["b", "d"]);
+  expect(playFromHere(shown, 0, byId).map((e) => e.videoId)).toEqual(["a", "d"]);
 });

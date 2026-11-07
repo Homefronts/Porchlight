@@ -4,7 +4,7 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { EpisodeRow } from "@/components/podcasts/episode-row";
 import { Thumbnail } from "@/components/shared/thumbnail";
 import { PageTitle } from "@/components/theme/look-type";
-import { fetchLibraryShows, fetchNewEpisodes, fetchShow } from "@/lib/innertube/podcasts";
+import { fetchLibraryShows, fetchNewEpisodes, fetchShowFirstPage } from "@/lib/innertube/podcasts";
 import { mergeShows, showsWithNew, sortNewEpisodes } from "@/lib/podcasts-tab";
 import { playEpisodes } from "@/lib/play-episodes";
 import { leftLabel } from "@/lib/episode-view";
@@ -24,9 +24,9 @@ function PodcastsPage() {
   const [order, setOrder] = useState<"newest" | "oldest">("newest");
   const library = useQuery({ queryKey: ["library-shows"], queryFn: fetchLibraryShows });
   const fresh = useQuery({ queryKey: ["new-episodes"], queryFn: fetchNewEpisodes });
-  // App-only follows are just ids: fetch each show lazily (same cache key as the show page).
+  // App-only follows are just ids: fetch each show's header (its first page is enough).
   const locals = useQueries({
-    queries: localIds.map((id) => ({ queryKey: ["show", id], queryFn: () => fetchShow(id) })),
+    queries: localIds.map((id) => ({ queryKey: ["show-first", id], queryFn: () => fetchShowFirstPage(id) })),
   });
 
   const shows = mergeShows(
@@ -117,7 +117,7 @@ function PodcastsPage() {
           </div>
           <div>
             {shown.map((t, i) => (
-              <EpisodeRow key={t.videoId} track={t} index={i} onPlay={() => playEpisodes(shown, i)} />
+              <EpisodeRow key={t.videoId} track={t} index={i} onPlay={() => playEpisodes([t], 0)} />
             ))}
           </div>
         </section>

@@ -1,8 +1,9 @@
 import { episodeStatus, minutesLeft, type EpisodeState } from "@/lib/store/episodes";
+import type { QueueTrack } from "@/lib/store/playback";
 
 /** 7440 → "2 HR 4 MIN"; unknown → "". */
 export function spokenLength(sec?: number): string {
-  if (!sec) return "";
+  if (!sec || !Number.isFinite(sec)) return "";
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
   return [h ? `${h} HR` : "", m ? `${m} MIN` : ""].filter(Boolean).join(" ") || "1 MIN";
@@ -25,4 +26,9 @@ export function episodeTag(s: EpisodeState | undefined, duration?: number) {
 export function firstUnplayed(ids: string[], byId: Record<string, EpisodeState>): number {
   const i = ids.findIndex((id) => episodeStatus(byId[id]) !== "played");
   return i < 0 ? 0 : i;
+}
+
+/** The queue for a row click: that row, then the ones after it that are not played yet. */
+export function playFromHere(shown: QueueTrack[], from: number, byId: Record<string, EpisodeState>): QueueTrack[] {
+  return shown.slice(from).filter((e, i) => i === 0 || !byId[e.videoId]?.played);
 }
