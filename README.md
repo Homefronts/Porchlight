@@ -270,7 +270,6 @@ Ideas for future Porchlight releases. Not promises.
 Small, quick to build.
 
 - [ ] **Share your AI marks** — turn your Mark as AI choices into a one-click report to the community list.
-- [ ] **Skip non-music parts of videos** — optional [SponsorBlock](https://sponsor.ajay.app) skipping of intros and skits in music videos (its "Non-Music Section" category), credited per its CC BY-NC-SA licence.
 - [ ] **Libre.fm and ListenBrainz scrobbling** — next to Last.fm, with a switch per service.
 
 ### Later
