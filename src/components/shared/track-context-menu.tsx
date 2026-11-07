@@ -74,6 +74,8 @@ import {
   useDownloadsStore,
 } from "@/lib/downloads";
 import { useCanDownload } from "@/lib/store/premium";
+import { EpisodeMenuItems } from "@/components/podcasts/episode-menu";
+import { shelfItemToTrack } from "@/lib/queue-track";
 import { fetchLikedSongs } from "@/lib/innertube/library";
 import {
   addToPlaylist,
@@ -317,6 +319,7 @@ export function TrackMenuItems({
   } = controller;
 
   const albumBrowseId = undefined;
+  const episodeTrack = item.episode ? shelfItemToTrack(item) : null;
 
   return (
     <>
@@ -389,6 +392,7 @@ export function TrackMenuItems({
           Remove download
         </Item>
       ) : null}
+      {episodeTrack ? <EpisodeMenuItems track={episodeTrack} Item={Item} /> : null}
 
       <Separator />
 
