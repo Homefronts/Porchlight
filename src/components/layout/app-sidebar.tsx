@@ -28,6 +28,7 @@ import {
   IconLogout,
   IconExternalLink,
   IconCheck,
+  IconMicrophone2,
 } from "@tabler/icons-react";
 import {
   IconBrandSafariFilled,
@@ -105,6 +106,13 @@ export const NAV_ITEMS = [
     label: "Explore",
     icon: IconBrandSafari,
     iconOn: IconBrandSafariFilled,
+  },
+  // Tabler has no filled microphone glyph.
+  {
+    to: "/podcasts",
+    label: "Podcasts",
+    icon: IconMicrophone2,
+    iconOn: IconMicrophone2,
   },
   {
     to: "/search",

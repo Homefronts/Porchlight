@@ -81,7 +81,7 @@ it("renders the crate, the tabs, the menu and an empty platter", async () => {
   usePlaybackStore.setState({ queue: [], index: -1 });
   const { container, unmount } = await render(false);
   const tabs = [...container.querySelectorAll('nav[aria-label="Browse"] a')].map((a) => a.textContent);
-  expect(tabs).toEqual(["Home", "Explore", "Search", "Library", "Downloads", "Rewind"]);
+  expect(tabs).toEqual(["Home", "Explore", "Podcasts", "Search", "Library", "Downloads", "Rewind"]);
   expect(container.textContent).toContain("MENU");
   const deck = container.querySelector('footer[aria-label="Turntable"]')!;
   expect(deck.textContent).toContain("Nothing playing");

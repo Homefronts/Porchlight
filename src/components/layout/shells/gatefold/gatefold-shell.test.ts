@@ -85,7 +85,7 @@ it("renders the empty sleeve with picks from Home, the tabs and the page", async
   expect(left.textContent).toContain("Pick one");
   expect(left.textContent).toContain("Pick two");
   const tabs = [...container.querySelectorAll('nav[aria-label="Browse"] a')].map((a) => a.textContent);
-  expect(tabs).toEqual(["Home", "Explore", "Search", "Library", "Downloads", "Rewind"]);
+  expect(tabs).toEqual(["Home", "Explore", "Podcasts", "Search", "Library", "Downloads", "Rewind"]);
   expect(container.querySelector("#page")).not.toBeNull();
   expect(document.documentElement.style.getPropertyValue("--shell-left-inset")).toBe("50vw");
   unmount();
