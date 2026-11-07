@@ -191,7 +191,7 @@ export function mapTopResultCard(card: YtNode): ShelfItem | null {
     if (!kind) return null;
     return {
       kind,
-      id: browse.browseId,
+      id: kind === "podcast" ? showIdFromBrowseId(browse.browseId) : browse.browseId,
       title,
       subtitle: subtitle || undefined,
       thumbnails,

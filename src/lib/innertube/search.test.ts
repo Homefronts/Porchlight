@@ -125,6 +125,24 @@ function card(opts: {
 }
 
 describe("mapTopResultCard", () => {
+  it("a podcast top result opens the show page", () => {
+    const item = mapTopResultCard(
+      card({
+        title: "The Joe Rogan Experience",
+        subtitle: "Podcast",
+        onTap: {
+          browseEndpoint: {
+            browseId: "MPSPPLk1Sqn",
+            browseEndpointContextSupportedConfigs: {
+              browseEndpointContextMusicConfig: { pageType: "MUSIC_PAGE_TYPE_PODCAST_SHOW_DETAIL_PAGE" },
+            },
+          },
+        },
+      }),
+    );
+    expect(item).toMatchObject({ kind: "podcast", id: "PLk1Sqn" });
+  });
+
   it("extracts an artist entity from a browse onTap (was lost → 'Section 1')", () => {
     const item = mapTopResultCard(
       card({

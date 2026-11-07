@@ -447,7 +447,7 @@ function AllResults({ data }: { data: SearchResults }) {
                 key={t.videoId}
                 track={t}
                 index={i}
-                onPlay={() => playEpisodes(episodes.slice(i), 0)}
+                onPlay={() => playEpisodes([t], 0)}
               />
             ))}
           </div>
@@ -472,7 +472,10 @@ function TopResultHero({
       ? "rounded-[var(--radius-cover,var(--radius-lg))]"
       : "rounded-[var(--radius-cover,var(--radius-md))]";
   const isEntity =
-    item.kind === "artist" || item.kind === "album" || item.kind === "playlist";
+    item.kind === "artist" ||
+    item.kind === "album" ||
+    item.kind === "playlist" ||
+    item.kind === "podcast";
 
   const runAction = async () => {
     if (!action || pending) return;
@@ -518,6 +521,13 @@ function TopResultHero({
     ) : item.kind === "playlist" ? (
       <Link
         to="/playlist/$id"
+        params={{ id: item.id }}
+        aria-label={item.title}
+        className={overlayCls}
+      />
+    ) : item.kind === "podcast" ? (
+      <Link
+        to="/podcast/$id"
         params={{ id: item.id }}
         aria-label={item.title}
         className={overlayCls}

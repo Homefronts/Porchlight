@@ -113,6 +113,8 @@ function OpenLink({ item, className, children }: { item: ShelfItem; className?: 
       return <Link to="/album/$id" params={{ id: item.id }} {...p} />;
     case "playlist":
       return <Link to="/playlist/$id" params={{ id: item.id }} {...p} />;
+    case "podcast":
+      return <Link to="/podcast/$id" params={{ id: item.id }} {...p} />;
     case "artist":
       return <Link to="/artist/$id" params={{ id: item.id }} {...p} />;
     case "category":

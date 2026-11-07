@@ -161,6 +161,24 @@ describe("artist ids on cards (AI filter needs them)", () => {
     expect(item?.artists).toEqual([{ id: "UCai", name: "Robot" }]);
   });
 
+  it("a podcast card opens the show, keyed without the MPSP prefix", () => {
+    const showNav = {
+      browseEndpoint: {
+        browseId: "MPSPPLk1Sqn",
+        browseEndpointContextSupportedConfigs: {
+          browseEndpointContextMusicConfig: { pageType: "MUSIC_PAGE_TYPE_PODCAST_SHOW_DETAIL_PAGE" },
+        },
+      },
+    };
+    const card = mapTwoRowItem({ title: { runs: [{ text: "JRE" }] }, navigationEndpoint: showNav });
+    expect(card).toMatchObject({ kind: "podcast", id: "PLk1Sqn" });
+    const row = mapResponsiveListItem({
+      flexColumns: [{ musicResponsiveListItemFlexColumnRenderer: { text: { runs: [{ text: "JRE" }] } } }],
+      navigationEndpoint: showNav,
+    });
+    expect(row).toMatchObject({ kind: "podcast", id: "PLk1Sqn" });
+  });
+
   it("mapResponsiveListItem keeps artists on album rows", () => {
     const item = mapResponsiveListItem({
       flexColumns: [

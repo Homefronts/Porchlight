@@ -661,8 +661,8 @@ export const showIdFromBrowseId = (browseId: string): string =>
 export function pageTypeToKind(pageType: string): ShelfItem["kind"] | null {
   if (pageType.includes("ARTIST")) return "artist";
   if (pageType.includes("ALBUM")) return "album";
-  if (pageType.includes("PLAYLIST") || pageType.includes("PODCAST_SHOW"))
-    return "playlist";
+  if (pageType.includes("PODCAST_SHOW")) return "podcast";
+  if (pageType.includes("PLAYLIST")) return "playlist";
   return null;
 }
 
@@ -775,6 +775,7 @@ export function mapTwoRowItem(raw: YtNode): ShelfItem | null {
     if (mapped) {
       kind = mapped;
       if (mapped === "artist") round = true;
+      if (mapped === "podcast") id = showIdFromBrowseId(id);
     }
   }
 
@@ -962,7 +963,7 @@ export function mapResponsiveListItem(raw: YtNode): ShelfItem | null {
     if (!kind) return null;
     return {
       kind,
-      id: navBrowseId,
+      id: kind === "podcast" ? showIdFromBrowseId(navBrowseId) : navBrowseId,
       title,
       subtitle: subtitleText || undefined,
       thumbnails,

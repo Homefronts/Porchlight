@@ -353,6 +353,7 @@ export function TrackMenuItems({
         <IconPlaylistAddFilled />
         Add to queue
       </Item>
+      {item.episode ? null : (
       <Item
         onSelect={() => {
           // Stop only a mix that is already running on this track. Starting
@@ -375,6 +376,7 @@ export function TrackMenuItems({
         <IconRadioFilled />
         {radioHere ? "Stop radio" : "Start radio"}
       </Item>
+      )}
       {dlState === "none" && !canDownload ? null : dlState === "none" ? (
         <Item
           onSelect={() =>
@@ -501,7 +503,7 @@ export function TrackMenuItems({
           Reset AI marking
         </Item>
       ) : null}
-      {aiCls !== "ai" ? (
+      {aiCls !== "ai" && !item.episode ? (
         <Item onSelect={() => void openUrl(AI_REPORT_URL)}>
           <IconFlag />
           Report AI artist to the community list
