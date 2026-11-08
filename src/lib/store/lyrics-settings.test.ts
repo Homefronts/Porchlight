@@ -24,6 +24,7 @@ describe("lyrics settings", () => {
     const s = u.getState();
     expect(s.off).toEqual(expect.arrayContaining(["kugou", "netease"]));
     expect(s.chineseConsent).toBe("unasked");
+    expect([s.wordByWord, s.romanize, s.translate, s.targetLang]).toEqual([true, true, true, "en"]);
     expect(enabledSources(s)).not.toContain("kugou");
     expect(enabledSources(s)).not.toContain("netease");
   });
