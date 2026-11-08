@@ -25,25 +25,36 @@ export function mergeEnrichment(
   };
 }
 
+/** Cheap FNV-1a hash of the line texts; in the query keys so a replaced lyrics file for the same song is re-enriched. */
+export function linesFingerprint(lines: { text: string }[]): string {
+  let h = 0x811c9dc5;
+  for (const l of lines) {
+    for (let i = 0; i < l.text.length; i++) h = Math.imul(h ^ l.text.charCodeAt(i), 0x01000193);
+    h = Math.imul(h ^ 10, 0x01000193); // line separator
+  }
+  return (h >>> 0).toString(36);
+}
+
 export function useEnrichedLyrics(lyrics: Lyrics | null, videoId: string | undefined): Lyrics | null {
   const romanize = useLyricsSettings((s) => s.romanize);
   const translate = useLyricsSettings((s) => s.translate);
   const targetLang = useLyricsSettings((s) => s.targetLang);
   const timed = lyrics?.kind === "timed" ? lyrics : null;
   const source = lyrics?.source;
+  const fp = useMemo(() => (timed ? linesFingerprint(timed.lines) : ""), [timed]);
   const common = { staleTime: Infinity, gcTime: DAY, retry: false } as const;
 
   // bg lines are nested under `bg`, so they never reach either service.
   const { data: roman } = useQuery({
     ...common,
-    queryKey: ["lyrics-roman", videoId, source],
+    queryKey: ["lyrics-roman", videoId, source, fp],
     // Lines that already have a source roman are sent blank so indexes line up.
     queryFn: () => romanizeLines(timed!.lines.map((x) => (x.roman ? "" : x.text))),
     enabled: !!timed && !!videoId && romanize,
   });
   const { data: tr } = useQuery({
     ...common,
-    queryKey: ["lyrics-tr", videoId, source, targetLang],
+    queryKey: ["lyrics-tr", videoId, source, targetLang, fp],
     queryFn: () => translateLines(timed!.lines.map((x) => x.text), targetLang),
     enabled: !!timed && !!videoId && translate,
   });

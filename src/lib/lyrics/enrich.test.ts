@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeEnrichment } from "./enrich";
+import { linesFingerprint, mergeEnrichment } from "./enrich";
 import type { Lyrics } from "./types";
 
 const timed = (): Lyrics => ({
@@ -41,5 +41,13 @@ describe("mergeEnrichment", () => {
     const l = timed();
     mergeEnrichment(l, [null, "y", null], [null, "t", null], on);
     expect(l.kind === "timed" && l.lines[1].roman).toBeUndefined();
+  });
+});
+
+describe("linesFingerprint", () => {
+  it("changes when the lines change, so a replaced lyrics file gets fresh enrichment", () => {
+    const a = [{ start: 0, text: "one" }, { start: 1, text: "two" }];
+    expect(linesFingerprint(a)).toBe(linesFingerprint(a.map((l) => ({ ...l, start: l.start + 5 }))));
+    expect(linesFingerprint(a)).not.toBe(linesFingerprint([{ start: 0, text: "one" }, { start: 1, text: "three" }]));
   });
 });
