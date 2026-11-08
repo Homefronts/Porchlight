@@ -50,3 +50,34 @@ export function extrapolate(
 ): number {
   return playing ? base + Math.min(1, Math.max(0, (now - at) / 1000)) : base;
 }
+
+/** How long before a line's actual start time we flip it to active.
+ *  At this moment the previous line's CSS transition begins fading it
+ *  out and the new line's transition begins fading it in. The
+ *  `duration-*` value on the line element controls how long that
+ *  cross-fade takes — set a touch longer than the lookahead so the
+ *  handoff feels smooth rather than crisp. */
+const ACTIVE_LOOKAHEAD_S = 0.72;
+
+/** With word timing on, a line stays active until its last word ends (capped
+ *  at the next line's start), so a held last word still fills. */
+export function findActiveIdx(lines: TimedLine[], position: number, wordByWord: boolean): number {
+  let active = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const start = lines[i].start - ACTIVE_LOOKAHEAD_S;
+    if (start > position) break;
+    const nextStart = lines[i + 1]?.start;
+    const words = wordByWord ? lines[i].words : undefined;
+    const lastWordEnd = words?.[words.length - 1]?.end;
+    const end =
+      nextStart !== undefined
+        ? Math.min(nextStart, Math.max(nextStart - ACTIVE_LOOKAHEAD_S, lastWordEnd ?? -Infinity))
+        : (lines[i].end ?? Infinity);
+    if (position < end) {
+      active = i;
+      break;
+    }
+    active = i;
+  }
+  return active;
+}

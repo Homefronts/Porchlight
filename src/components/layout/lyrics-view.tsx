@@ -39,6 +39,7 @@ import {
 import {
   availabilityBadge,
   extrapolate,
+  findActiveIdx,
   firstAgentOf,
   singerLabelAt,
 } from "@/components/layout/lyrics-view-words";
@@ -187,33 +188,6 @@ export function LyricsBody({
   return <PlainLyrics text={state.active.text} large={large} />;
 }
 
-/** How long before a line's actual start time we flip it to active.
- *  At this moment the previous line's CSS transition begins fading it
- *  out and the new line's transition begins fading it in. The
- *  `duration-*` value on the line element controls how long that
- *  cross-fade takes — set a touch longer than the lookahead so the
- *  handoff feels smooth rather than crisp. */
-const ACTIVE_LOOKAHEAD_S = 0.72;
-
-function findActiveIdx(lines: TimedLine[], position: number): number {
-  let active = -1;
-  for (let i = 0; i < lines.length; i++) {
-    const start = lines[i].start - ACTIVE_LOOKAHEAD_S;
-    if (start > position) break;
-    const nextStart = lines[i + 1]?.start;
-    const end =
-      nextStart !== undefined
-        ? nextStart - ACTIVE_LOOKAHEAD_S
-        : (lines[i].end ?? Infinity);
-    if (position < end) {
-      active = i;
-      break;
-    }
-    active = i;
-  }
-  return active;
-}
-
 /** How far from the top of the viewport the active line should sit,
  *  as a fraction of the visible height. 0.5 = perfectly centered;
  *  smaller pushes the active line up and reveals more upcoming text. */
@@ -293,7 +267,7 @@ function TimedLyrics({
   const wordByWord = useLyricsSettings((s) => s.wordByWord);
   const firstAgent = useMemo(() => firstAgentOf(lines), [lines]);
 
-  const activeIdx = findActiveIdx(lines, position);
+  const activeIdx = findActiveIdx(lines, position, wordByWord);
   const prevActiveRef = useRef(activeIdx);
   const prevPositionRef = useRef(position);
 
@@ -309,6 +283,7 @@ function TimedLyrics({
     const idx = findActiveIdx(
       lines,
       useScrubStore.getState().scrub ?? usePlaybackStore.getState().position,
+      useLyricsSettings.getState().wordByWord,
     );
     prevActiveRef.current = idx;
     if (idx < 0) {

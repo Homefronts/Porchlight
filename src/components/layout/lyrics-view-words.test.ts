@@ -3,6 +3,7 @@ import type { TimedLine } from "@/lib/lyrics/types";
 import {
   availabilityBadge,
   extrapolate,
+  findActiveIdx,
   firstAgentOf,
   singerLabelAt,
 } from "./lyrics-view-words";
@@ -66,5 +67,24 @@ describe("extrapolate", () => {
   });
   it("never runs backwards on a clock that is ahead", () => {
     expect(extrapolate(10, 2000, 1000, true)).toBe(10);
+  });
+});
+
+describe("findActiveIdx", () => {
+  const held = (lastEnd: number): TimedLine[] => [
+    { start: 10, text: "a b", words: [{ start: 10, end: 11, text: "a " }, { start: 11, end: lastEnd, text: "b" }] },
+    { start: 15, text: "c" },
+  ];
+  it("keeps a word-timed line active until its held last word ends", () => {
+    expect(findActiveIdx(held(14.9), 14.5, true)).toBe(0);
+    expect(findActiveIdx(held(14.9), 14.95, true)).toBe(1);
+  });
+  it("never past the next line's start", () => {
+    expect(findActiveIdx(held(20), 14.99, true)).toBe(0);
+    expect(findActiveIdx(held(20), 15, true)).toBe(1);
+  });
+  it("uses the lookahead alone when word-by-word is off or the line has no words", () => {
+    expect(findActiveIdx(held(14.9), 14.5, false)).toBe(1);
+    expect(findActiveIdx([{ start: 10, text: "a" }, { start: 15, text: "c" }], 14.5, true)).toBe(1);
   });
 });
