@@ -7,7 +7,7 @@ import type { Lyrics } from "@/lib/lyrics/types";
 
 const DAY = 24 * 60 * 60 * 1000;
 
-/** Pure merge; arrays are indexed by line. Source roman wins over device roman. */
+/** Pure merge; arrays are indexed by line. Source roman wins over device roman; a switch off strips that field entirely. */
 export function mergeEnrichment(
   l: Lyrics,
   roman: (string | null)[] | undefined,
@@ -17,14 +17,10 @@ export function mergeEnrichment(
   if (l.kind !== "timed") return l;
   return {
     ...l,
-    lines: l.lines.map((line, i) => {
-      const r = opts.romanize ? roman?.[i] : null;
+    lines: l.lines.map(({ roman: src, translation: _old, ...line }, i) => {
+      const r = opts.romanize ? src || roman?.[i] : null;
       const t = opts.translate ? tr?.[i] : null;
-      return {
-        ...line,
-        ...(!line.roman && r ? { roman: r } : {}),
-        ...(t ? { translation: t } : {}),
-      };
+      return { ...line, ...(r ? { roman: r } : {}), ...(t ? { translation: t } : {}) };
     }),
   };
 }

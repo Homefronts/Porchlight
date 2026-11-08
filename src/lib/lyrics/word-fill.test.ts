@@ -18,6 +18,9 @@ describe("wordFill", () => {
     expect(wordFill(w(2, 2), 2)).toBe(1);
     expect(wordFill(w(2, 2), 3)).toBe(1);
   });
+  it("NaN position is 0", () => {
+    expect(wordFill(w(1, 3), NaN)).toBe(0);
+  });
   it("end < start never yields NaN", () => {
     for (const p of [0, 2, 3, 5]) {
       const v = wordFill(w(3, 2), p);
@@ -37,6 +40,9 @@ describe("lineAlign", () => {
     expect(lineAlign("v1000", agents, "v1")).toBe("center");
     expect(lineAlign("x", { x: "" }, "v1")).toBe("center");
     expect(lineAlign("x", { x: "group" }, "v1")).toBe("center");
+  });
+  it("an agent recorded as group by the TTML parser is centered", () => {
+    expect(lineAlign("g1", { v1: "A", g1: "group" }, "v1")).toBe("center");
   });
   it("no agent or no agents is left", () => {
     expect(lineAlign(undefined, agents, "v1")).toBe("left");

@@ -2,6 +2,7 @@ import type { TimedWord } from "@/lib/lyrics/types";
 
 /** 0..1 fill of a word at `position` seconds; NaN-safe for zero or negative length. */
 export function wordFill(w: TimedWord, position: number): number {
+  if (!Number.isFinite(position)) return 0;
   const len = w.end - w.start;
   if (!(len > 0)) return position >= w.start ? 1 : 0;
   return Math.min(1, Math.max(0, (position - w.start) / len));

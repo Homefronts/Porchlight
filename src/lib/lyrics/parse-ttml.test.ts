@@ -80,4 +80,14 @@ describe("parseTTML", () => {
       }),
     ).toBe(true);
   });
+
+  it("records a nameless group agent as 'group'", () => {
+    const r = parseTTML(
+      wrap(
+        `<ttm:agent xml:id="g1" type="group"/>`,
+        `<p begin="00:01.000" end="00:03.000" ttm:agent="g1">Hi</p>`,
+      ),
+    );
+    expect(r?.kind === "timed" && r.agents).toEqual({ g1: "group" });
+  });
 });

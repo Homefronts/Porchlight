@@ -16,10 +16,14 @@ describe("mergeEnrichment", () => {
   it("adds nothing when both switches are off", () => {
     const out = mergeEnrichment(timed(), ["x", "y", "z"], ["1", "2", "3"], { romanize: false, translate: false });
     expect(out.kind === "timed" && out.lines.map((l) => [l.roman, l.translation])).toEqual([
-      ["src", undefined],
+      [undefined, undefined],
       [undefined, undefined],
       [undefined, undefined],
     ]);
+  });
+  it("romanize off hides source roman", () => {
+    const out = mergeEnrichment(timed(), ["dev", "y", "z"], undefined, { romanize: false, translate: true });
+    expect(out.kind === "timed" && out.lines.every((l) => !("roman" in l))).toBe(true);
   });
   it("keeps source roman over device roman", () => {
     const out = mergeEnrichment(timed(), ["dev", "y", null], undefined, on);

@@ -55,7 +55,7 @@ export function parseTTML(xml: string): Lyrics | null {
   for (const a of Array.from(doc.getElementsByTagName("ttm:agent"))) {
     const id = a.getAttribute("xml:id");
     const name = a.getElementsByTagName("ttm:name")[0]?.textContent?.trim();
-    if (id && name) agents[id] = name;
+    if (id) agents[id] = name || (a.getAttribute("type") === "group" ? "group" : id);
   }
   const lines = ps
     .map((p) => readLine(p, p.getAttribute("ttm:agent") ?? undefined))
