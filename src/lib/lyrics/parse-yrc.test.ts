@@ -18,4 +18,10 @@ describe("parseYRC", () => {
       },
     ]);
   });
+
+  it("keeps parenthesised word text", () => {
+    const [l] = parseYRC("[1000,2000](1000,500,0)(oh) (1500,1500,0)sun");
+    expect(l.text).toBe("(oh) sun");
+    expect(l.words?.map((w) => w.text)).toEqual(["(oh) ", "sun"]);
+  });
 });
