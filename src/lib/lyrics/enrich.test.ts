@@ -48,6 +48,7 @@ describe("linesFingerprint", () => {
   it("changes when the lines change, so a replaced lyrics file gets fresh enrichment", () => {
     const a = [{ start: 0, text: "one" }, { start: 1, text: "two" }];
     expect(linesFingerprint(a)).toBe(linesFingerprint(a.map((l) => ({ ...l, start: l.start + 5 }))));
-    expect(linesFingerprint(a)).not.toBe(linesFingerprint([{ start: 0, text: "one" }, { start: 1, text: "three" }]));
+    const b = [{ start: 0, text: "one" }, { start: 1, text: "three" }];
+    expect(linesFingerprint(a)).not.toBe(linesFingerprint(b));
   });
 });
