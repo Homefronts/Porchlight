@@ -19,7 +19,8 @@ export function singerLabelAt(
   const agent = lines[i]?.agent;
   if (!agent || !agents) return null;
   const name = agents[agent];
-  if (!name || name === agent || name === "group" || agent === "v1000") return null;
+  if (!name || name === agent || name === "group" || agent === "v1000")
+    return null;
   for (let j = i - 1; j >= 0; j--) {
     if (lines[j].agent) return lines[j].agent === agent ? null : name;
   }
@@ -27,5 +28,25 @@ export function singerLabelAt(
 }
 
 export function availabilityBadge(a: Availability): string | null {
-  return a === "word" ? "WORD" : a === "line" ? "LINE" : a === "plain" ? "TEXT" : null;
+  return a === "word"
+    ? "WORD"
+    : a === "line"
+      ? "LINE"
+      : a === "plain"
+        ? "TEXT"
+        : null;
+}
+
+/**
+ * Playback position `now` ms after the store last ticked `base` at `at` ms.
+ * The store ticks a few times a second; the cap covers stalled ticks. The
+ * caller resets `at` on play/pause, or a resume would start up to a second ahead.
+ */
+export function extrapolate(
+  base: number,
+  at: number,
+  now: number,
+  playing: boolean,
+): number {
+  return playing ? base + Math.min(1, Math.max(0, (now - at) / 1000)) : base;
 }

@@ -6,7 +6,7 @@ import {
   useRef,
   type ChangeEvent,
 } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { IconCheck, IconRefresh } from "@tabler/icons-react";
 import { IconMicrophoneFilled } from "@tabler/icons-react";
@@ -31,9 +31,14 @@ import { useLyricsSources } from "@/lib/lyrics/sources";
 import type { Availability } from "@/lib/lyrics/pick";
 import { useEnrichedLyrics } from "@/lib/lyrics/enrich";
 import { lineAlign, wordFill } from "@/lib/lyrics/word-fill";
-import { removeLyricsFile, saveLyricsFile } from "@/lib/lyrics/user-files";
+import {
+  loadLyricsFile,
+  removeLyricsFile,
+  saveLyricsFile,
+} from "@/lib/lyrics/user-files";
 import {
   availabilityBadge,
+  extrapolate,
   firstAgentOf,
   singerLabelAt,
 } from "@/components/layout/lyrics-view-words";
@@ -419,16 +424,14 @@ function TimedLyrics({
     const spans = el.querySelectorAll<HTMLElement>(":scope > [data-w]");
     const painted: string[] = [];
     // The store's position moves a few times a second; between ticks it is
-    // extrapolated while playing (capped at a second, in case ticks stall).
+    // extrapolated while playing (see `extrapolate`).
     let base = usePlaybackStore.getState().position;
     let at = performance.now();
     let raf: number | null = null;
     const paint = () => {
       const { playing } = usePlaybackStore.getState();
       const scrub = useScrubStore.getState().scrub;
-      const pos =
-        scrub ??
-        (playing ? base + Math.min(1, (performance.now() - at) / 1000) : base);
+      const pos = scrub ?? extrapolate(base, at, performance.now(), playing);
       spans.forEach((span, j) => {
         const w = words[j];
         if (!w) return;
@@ -445,11 +448,13 @@ function TimedLyrics({
       if (raf === null) paint();
     };
     const offPlayback = usePlaybackStore.subscribe((s, prev) => {
-      if (s.position !== prev.position) {
+      // Play/pause restarts the clock too, or a resume would extrapolate
+      // from the stale pre-pause tick and start up to a second ahead.
+      if (s.position !== prev.position || s.playing !== prev.playing) {
         base = s.position;
         at = performance.now();
+        kick();
       }
-      if (s.position !== prev.position || s.playing !== prev.playing) kick();
     });
     const offScrub = useScrubStore.subscribe(kick);
     paint();
@@ -658,7 +663,15 @@ export function LyricsSourceButton({
   const picked = pref !== "auto" && sources.includes(pref) ? pref : "auto";
   const langLabel =
     TARGET_LANGS.find((l) => l.code === targetLang)?.label ?? targetLang;
-  const hasFile = availabilityBadge(availability.file) !== null;
+  // Same key and loader as the file source in sources.ts, so this shares its
+  // cache; unlike that query it also runs while the source is switched off.
+  const { data: storedFile } = useQuery({
+    queryKey: ["lyrics", "file", videoId],
+    queryFn: () => loadLyricsFile(videoId!),
+    enabled: !!videoId,
+    staleTime: Infinity,
+  });
+  const hasFile = !!storedFile;
 
   const refreshFile = () =>
     queryClient.invalidateQueries({ queryKey: ["lyrics", "file", videoId] });
@@ -673,6 +686,10 @@ export function LyricsSourceButton({
         text: await file.text(),
       });
       if (!lyrics) throw new Error("unreadable");
+      // A file the user just added should show, even if they had switched
+      // the file source off in Settings.
+      const settings = useLyricsSettings.getState();
+      if (settings.off.includes("file")) settings.setOn("file", true);
       await refreshFile();
       setPref("file");
       toast("Lyrics file added");
@@ -683,9 +700,13 @@ export function LyricsSourceButton({
 
   const onRemoveFile = async () => {
     if (!videoId) return;
-    await removeLyricsFile(videoId);
-    if (pref === "file") setPref("auto");
-    await refreshFile();
+    try {
+      await removeLyricsFile(videoId);
+      if (pref === "file") setPref("auto");
+      await refreshFile();
+    } catch {
+      toast.error("That lyrics file couldn't be removed");
+    }
   };
 
   return (
