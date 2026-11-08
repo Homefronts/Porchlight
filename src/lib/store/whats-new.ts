@@ -12,6 +12,8 @@ type State = {
    */
   lastSeenVersion: string | null;
   open: boolean;
+  /** True once the launch version check settled; ephemeral, so other dialogs can wait for it. */
+  checked: boolean;
   /** Which entry's version the dialog is currently showing. */
   version: string | null;
   setLastSeen: (v: string) => void;
@@ -24,6 +26,7 @@ export const useWhatsNewStore = create<State>()(
     (set) => ({
       lastSeenVersion: null,
       open: false,
+      checked: false,
       version: null,
       setLastSeen: (lastSeenVersion) => set({ lastSeenVersion }),
       setOpen: (open) => set({ open }),
@@ -65,7 +68,10 @@ export async function openWhatsNew(version?: string): Promise<void> {
  */
 export function useWhatsNewOnUpdate(): void {
   useEffect(() => {
-    if (import.meta.env.DEV) return;
+    if (import.meta.env.DEV) {
+      useWhatsNewStore.setState({ checked: true });
+      return;
+    }
     let cancelled = false;
     void getVersion()
       .then((current) => {
@@ -75,7 +81,10 @@ export function useWhatsNewOnUpdate(): void {
         if (whatsNewFor(current)) store.show(current);
         store.setLastSeen(current);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) useWhatsNewStore.setState({ checked: true });
+      });
     return () => {
       cancelled = true;
     };

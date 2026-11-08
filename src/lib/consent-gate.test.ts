@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { shouldShowConsent } from "./consent-gate";
 
-const clear = { consent: "unasked", pickerSeen: true, whatsNewOpen: false, makeItYoursOpen: false } as const;
+const clear = { consent: "unasked", pickerSeen: true, whatsNewOpen: false, whatsNewChecked: true, makeItYoursOpen: false } as const;
 
 describe("shouldShowConsent", () => {
   it("shows when unasked and nothing else is open", () => {
@@ -13,6 +13,9 @@ describe("shouldShowConsent", () => {
   });
   it("waits for What's New", () => {
     expect(shouldShowConsent({ ...clear, whatsNewOpen: true })).toBe(false);
+  });
+  it("waits for the What's New check to settle", () => {
+    expect(shouldShowConsent({ ...clear, whatsNewChecked: false })).toBe(false);
   });
   it("waits for the first-launch picker", () => {
     expect(shouldShowConsent({ ...clear, pickerSeen: false, makeItYoursOpen: true })).toBe(false);

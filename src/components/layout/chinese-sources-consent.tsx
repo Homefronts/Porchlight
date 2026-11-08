@@ -17,8 +17,9 @@ export function ChineseSourcesConsent() {
   const consent = useLyricsSettings((s) => s.chineseConsent);
   const answer = useLyricsSettings((s) => s.answerConsent);
   const whatsNewOpen = useWhatsNewStore((s) => s.open);
+  const whatsNewChecked = useWhatsNewStore((s) => s.checked);
   const pickerSeen = useThemeStore((s) => s.pickerSeen);
-  const open = shouldShowConsent({ consent, pickerSeen, whatsNewOpen, makeItYoursOpen: !pickerSeen });
+  const open = shouldShowConsent({ consent, pickerSeen, whatsNewOpen, whatsNewChecked, makeItYoursOpen: !pickerSeen });
   return (
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent
