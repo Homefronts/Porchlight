@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { IconCheck, IconRefresh } from "@tabler/icons-react";
 import { IconMicrophoneFilled } from "@tabler/icons-react";
 import { playerIconButton } from "@/components/layout/player-chrome";
@@ -17,46 +17,27 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { Lyrics, TimedLine } from "@/lib/lyrics/types";
+import { useLyricsSources } from "@/lib/lyrics/sources";
+import type { Availability } from "@/lib/lyrics/pick";
 import {
+  DEFAULT_ORDER,
   SOURCE_LABELS,
-  SOURCE_ORDER,
-  useLyricsSources,
+  useLyricsSettings,
   type LyricsSource,
-} from "@/lib/lyrics/sources";
+} from "@/lib/store/lyrics-settings";
 import { usePlaybackStore } from "@/lib/store/playback";
 import type { QueueTrack } from "@/lib/store/playback";
 import { useScrubStore } from "@/lib/store/scrub";
 import { useLookFamily } from "@/components/theme/look-type";
 import { cn } from "@/lib/utils";
 
-const PREF_KEY = "ytm:lyrics-source";
-
 type Pref = LyricsSource | "auto";
-/** "none" means the source answered and has nothing. "error" means it never
- *  answered. Keeping them apart is the whole point of the provider change:
- *  an unreachable source must stay selectable so the user can retry it. */
-type Availability = "lrc" | "plain" | "loading" | "none" | "error";
 
-function loadPref(): Pref {
-  try {
-    const v = localStorage.getItem(PREF_KEY);
-    if (v === "auto") return "auto";
-    // Checked against SOURCE_ORDER rather than a hardcoded list of names.
-    // The list version silently dropped any source added later: pinning
-    // one and restarting reverted you to "auto" with no explanation.
-    if (v && (SOURCE_ORDER as string[]).includes(v)) return v as Pref;
-  } catch {
-    /* noop */
-  }
-  return "auto";
-}
-
-function savePref(p: Pref) {
-  try {
-    localStorage.setItem(PREF_KEY, p);
-  } catch {
-    /* noop */
-  }
+// The old global pin; per-song picks replace it.
+try {
+  localStorage.removeItem("ytm:lyrics-source");
+} catch {
+  /* noop */
 }
 
 export type LyricsViewState = {
@@ -78,38 +59,24 @@ export type LyricsViewState = {
  * Drives the inline lyrics panel: fires queries to all three sources,
  * tracks the user's source preference, and exposes a render-ready
  * state. Auto-pick rule: any timed source > any plain source, ordered
- * by `SOURCE_ORDER`.
+ * by the user's source order.
  *
  * Used by the player bar to render `<LyricsBody>` (the flowing area)
  * and `<LyricsSourceButton>` (the mic-icon dropdown) from the same
  * state — without running the underlying queries twice.
  */
 export function useLyricsView(track: QueueTrack | undefined): LyricsViewState {
-  const [pref, setPrefState] = useState<Pref>(loadPref);
+  const videoId = track?.videoId;
+  const pref: Pref = useLyricsSettings((s) =>
+    videoId ? (s.perSong[videoId] ?? "auto") : "auto",
+  );
+  const pickForSong = useLyricsSettings((s) => s.pickForSong);
   const setPref = (p: Pref) => {
-    setPrefState(p);
-    savePref(p);
+    if (videoId) pickForSong(videoId, p === "auto" ? null : p);
   };
 
-  const { queries, best, isLoading, failed, isRetrying, retryFailed } =
+  const { queries, availability, best, isLoading, failed, isRetrying, retryFailed } =
     useLyricsSources(track, !!track);
-
-  const availability = useMemo(() => {
-    const acc = {} as Record<LyricsSource, Availability>;
-    for (const s of SOURCE_ORDER) {
-      const q = queries[s];
-      acc[s] = q.data
-        ? q.data.kind === "timed"
-          ? "lrc"
-          : "plain"
-        : q.isLoading
-          ? "loading"
-          : q.isError
-            ? "error"
-            : "none";
-    }
-    return acc;
-  }, [queries]);
 
   const activeSource: LyricsSource | null = pref === "auto" ? best : pref;
   const active = activeSource ? (queries[activeSource].data ?? null) : null;
@@ -565,10 +532,10 @@ export function LyricsSourceButton({
           ) : null}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        {SOURCE_ORDER.map((s) => {
+        {DEFAULT_ORDER.map((s) => {
           const a = availability[s];
           const dot =
-            a === "lrc"
+            a === "word" || a === "line"
               ? "bg-brand"
               : a === "plain"
                 ? "bg-muted-foreground/60"

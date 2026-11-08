@@ -7,28 +7,17 @@ import { fetchYtMusicLyrics } from "@/lib/lyrics/ytmusic";
 import { shouldRetryLyricsQuery } from "@/lib/lyrics/http";
 import { cleanTrackTitle, lyricsArtist } from "@/lib/track-meta";
 import type { Lyrics } from "@/lib/lyrics/types";
+import { fetchKugouLyrics } from "@/lib/lyrics/kugou";
+import { fetchNeteaseLyrics } from "@/lib/lyrics/netease";
+import { loadLyricsFile } from "@/lib/lyrics/user-files";
+import { availabilityOf, pickSource, type Availability } from "@/lib/lyrics/pick";
+import {
+  DEFAULT_ORDER,
+  enabledSources,
+  useLyricsSettings,
+  type LyricsSource,
+} from "@/lib/store/lyrics-settings";
 import { usePlaybackStore, type QueueTrack } from "@/lib/store/playback";
-
-export type LyricsSource = "ytmusic" | "lrclib" | "musixmatch" | "genius";
-
-/**
- * Preference order. YouTube Music leads because it is the only source
- * matched by videoId rather than by text, so it cannot return a different
- * song. The rest follow as fallbacks for the tracks it has nothing for.
- */
-export const SOURCE_ORDER: LyricsSource[] = [
-  "ytmusic",
-  "lrclib",
-  "musixmatch",
-  "genius",
-];
-
-export const SOURCE_LABELS: Record<LyricsSource, string> = {
-  ytmusic: "YouTube Music",
-  lrclib: "LRCLIB",
-  musixmatch: "Musixmatch",
-  genius: "Genius",
-};
 
 const ONE_HOUR = 60 * 60 * 1000;
 
@@ -38,13 +27,12 @@ const ONE_HOUR = 60 * 60 * 1000;
  * user keeps yesterday's answer, looked up with yesterday's broken title
  * and artist, for a day after installing the fix.
  */
-const LOOKUP_VERSION = "v3";
+const LOOKUP_VERSION = "v4";
 
 /**
- * Fire both lyric queries in parallel, plus a derived "best" selection.
- * Auto-pick rule: first source (in `SOURCE_ORDER`) that has any lyrics,
- * with timed lyrics ALWAYS winning over plain — i.e. if LRCLIB has plain
- * text but Musixmatch has synced LRC, Musixmatch wins.
+ * Fire every enabled lyric query in parallel, plus a derived "best" selection
+ * (see `pickSource`: word-timed, then line-timed, then plain, in the user's order).
+ * Kugou and NetEase run only when `enabledSources` lists them, i.e. with consent.
  */
 export function useLyricsSources(track: QueueTrack | undefined, enabled: boolean) {
   // YTM's display strings are not lookup strings. See track-meta.ts for the
@@ -86,10 +74,22 @@ export function useLyricsSources(track: QueueTrack | undefined, enabled: boolean
   // instead, which is a human deciding enough time has passed.
   // Keyed on the videoId alone: no title, no artist, nothing fuzzy. This
   // is the query that structurally cannot come back with another song.
+  const order = useLyricsSettings((s) => s.order);
+  const off = useLyricsSettings((s) => s.off);
+  const consent = useLyricsSettings((s) => s.chineseConsent);
+  const songPick = useLyricsSettings((s) =>
+    track?.videoId ? s.perSong[track.videoId] : undefined,
+  );
+  const on = useMemo(
+    () => enabledSources({ order, off, chineseConsent: consent }),
+    [order, off, consent],
+  );
+  const isOn = (s: LyricsSource) => enabled && on.includes(s);
+
   const ytmusic = useQuery({
     queryKey: ["lyrics", "ytmusic", LOOKUP_VERSION, track?.videoId],
     queryFn: ({ signal }) => fetchYtMusicLyrics(track?.videoId, signal),
-    enabled: !!track?.videoId && enabled,
+    enabled: !!track?.videoId && isOn("ytmusic"),
     staleTime: ONE_HOUR,
     retry: shouldRetryLyricsQuery,
   });
@@ -114,7 +114,7 @@ export function useLyricsSources(track: QueueTrack | undefined, enabled: boolean
         },
         signal,
       ),
-    enabled: !!track && enabled,
+    enabled: !!track && isOn("lrclib"),
     staleTime: ONE_HOUR,
     retry: shouldRetryLyricsQuery,
   });
@@ -129,7 +129,7 @@ export function useLyricsSources(track: QueueTrack | undefined, enabled: boolean
         },
         signal,
       ),
-    enabled: !!track && enabled,
+    enabled: !!track && isOn("musixmatch"),
     staleTime: ONE_HOUR,
     retry: shouldRetryLyricsQuery,
   });
@@ -144,42 +144,61 @@ export function useLyricsSources(track: QueueTrack | undefined, enabled: boolean
         },
         signal,
       ),
-    enabled: !!track && enabled,
+    enabled: !!track && isOn("genius"),
     staleTime: ONE_HOUR,
     retry: shouldRetryLyricsQuery,
   });
 
+  const kugou = useQuery({
+    queryKey: ["lyrics", "kugou", LOOKUP_VERSION, trackTitle, artistName, duration],
+    queryFn: ({ signal }) =>
+      fetchKugouLyrics({ title: trackTitle!, artist: artistName, duration }, signal),
+    enabled: !!track && isOn("kugou"),
+    staleTime: ONE_HOUR,
+    retry: shouldRetryLyricsQuery,
+  });
+
+  const netease = useQuery({
+    queryKey: ["lyrics", "netease", LOOKUP_VERSION, trackTitle, artistName, duration],
+    queryFn: ({ signal }) =>
+      fetchNeteaseLyrics({ title: trackTitle!, artist: artistName, duration }, signal),
+    enabled: !!track && isOn("netease"),
+    staleTime: ONE_HOUR,
+    retry: shouldRetryLyricsQuery,
+  });
+
+  const file = useQuery({
+    queryKey: ["lyrics", "file", track?.videoId],
+    queryFn: () => loadLyricsFile(track!.videoId),
+    enabled: !!track?.videoId && isOn("file"),
+    staleTime: Infinity,
+  });
+
   const queries: Record<LyricsSource, UseQueryResult<Lyrics | null>> = {
+    file,
+    kugou,
+    netease,
     ytmusic,
     lrclib,
     musixmatch,
     genius,
   };
 
-  let best: LyricsSource | null = null;
-  for (const s of SOURCE_ORDER) {
-    if (queries[s].data?.kind === "timed") {
-      best = s;
-      break;
-    }
+  const avail = {} as Record<LyricsSource, Availability>;
+  for (const s of DEFAULT_ORDER) {
+    const q = queries[s];
+    avail[s] = availabilityOf(q.data, q.isLoading, q.isError);
   }
-  if (!best) {
-    for (const s of SOURCE_ORDER) {
-      if (queries[s].data?.kind === "plain") {
-        best = s;
-        break;
-      }
-    }
-  }
+  const best = pickSource(on, avail, songPick);
 
-  const isLoading = SOURCE_ORDER.some((s) => queries[s].isLoading);
+  const isLoading = on.some((s) => queries[s].isLoading);
 
   // Whether any source failed to *answer*, as opposed to answering "no
   // lyrics". Since providers stopped collapsing failures into null, this is
   // now knowable, and the panel needs it: "we could not reach Genius" and
   // "this track has no lyrics" call for different words and only one of
   // them is worth a retry button.
-  const failed = SOURCE_ORDER.filter((s) => queries[s].isError);
+  const failed = on.filter((s) => queries[s].isError);
 
   // A refetch of an errored query leaves `isError` true until it settles, so
   // without this the panel looks inert after Try again and invites a second
@@ -191,5 +210,5 @@ export function useLyricsSources(track: QueueTrack | undefined, enabled: boolean
     for (const s of failed) void queries[s].refetch();
   };
 
-  return { queries, best, isLoading, failed, isRetrying, retryFailed };
+  return { queries, availability: avail, best, isLoading, failed, isRetrying, retryFailed };
 }
