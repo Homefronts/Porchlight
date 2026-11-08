@@ -199,6 +199,7 @@ Pick a look and a layout on first launch, with a live preview of your own librar
 
 - **Discord Rich Presence**: show what you're listening to on your Discord profile, with album art, a progress bar, and buttons to open the song or get Porchlight.
 - **Last.fm**: scrobble every track you play, love and unlove songs from the app, and queue scrobbles made offline until you're back online.
+- **Libre.fm and ListenBrainz**: scrobble to them too, each with its own switch. Libre.fm signs in like Last.fm and can sync your likes; ListenBrainz takes your user token. Offline listens wait and send later.
 - **Share links**: Share copies a link that opens in Porchlight (old ytubic-plus:// links still work), or a plain music.youtube.com link if you prefer.
 - **Report a bug**: a bug icon in the top bar opens the report form, so it's always one click away.
 
@@ -271,7 +272,6 @@ Ideas for future Porchlight releases. Not promises.
 Small, quick to build.
 
 - [ ] **Share your AI marks** — turn your Mark as AI choices into a one-click report to the community list.
-- [ ] **Libre.fm and ListenBrainz scrobbling** — next to Last.fm, with a switch per service.
 
 ### Later
 

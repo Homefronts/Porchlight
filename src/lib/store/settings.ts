@@ -59,7 +59,7 @@ type State = {
    *  meaningful while `lastfmSessionKey` is set; connecting turns it on.
    *  The signed HTTP calls + offline retry queue live in
    *  `src-tauri/src/lastfm.rs`; the play-time timing that decides when to
-   *  scrobble lives in `lib/lastfm-scrobbler.ts`. */
+   *  scrobble lives in `lib/scrobbler.ts`. */
   lastfmEnabled: boolean;
   /** Last.fm session key: a permanent bearer credential for the connected
    *  account, or null when not connected. Passed to every scrobble call. */
@@ -73,6 +73,17 @@ type State = {
    *  scrobbling and off by default: an opt-in, since people often keep their
    *  likes intentionally different per platform. See `lib/lastfm.ts`. */
   lastfmLoveSync: boolean;
+  /** Libre.fm: the same fields as Last.fm (it speaks the same API). */
+  librefmEnabled: boolean;
+  librefmSessionKey: string | null;
+  librefmUsername: string | null;
+  librefmAvatar: string | null;
+  librefmLoveSync: boolean;
+  /** ListenBrainz: the user token pasted from listenbrainz.org/settings, and
+   *  the account name it belongs to. See `src-tauri/src/listenbrainz.rs`. */
+  listenbrainzEnabled: boolean;
+  listenbrainzToken: string | null;
+  listenbrainzUsername: string | null;
   /** Show AI-generated music. Off hides confirmed AI outside the library
    *  and holds it back inside it (see `lib/ai/`). On by default, so the
    *  filter is opt-in. */
@@ -107,6 +118,14 @@ type State = {
   setLastfmSession: (username: string, sessionKey: string) => void;
   /** Forget the connected account and stop scrobbling. */
   clearLastfmSession: () => void;
+  setLibrefmEnabled: (v: boolean) => void;
+  setLibrefmLoveSync: (v: boolean) => void;
+  setLibrefmAvatar: (v: string | null) => void;
+  setLibrefmSession: (username: string, sessionKey: string) => void;
+  clearLibrefmSession: () => void;
+  setListenbrainzEnabled: (v: boolean) => void;
+  setListenbrainzAccount: (username: string, token: string) => void;
+  clearListenbrainzAccount: () => void;
 };
 
 /**
@@ -137,6 +156,14 @@ export const useSettingsStore = create<State>()(
       lastfmUsername: null,
       lastfmAvatar: null,
       lastfmLoveSync: false,
+      librefmEnabled: false,
+      librefmSessionKey: null,
+      librefmUsername: null,
+      librefmAvatar: null,
+      librefmLoveSync: false,
+      listenbrainzEnabled: false,
+      listenbrainzToken: null,
+      listenbrainzUsername: null,
       aiMusic: true,
       aiNoticeSeen: false,
       rewindHistory: true,
@@ -172,6 +199,28 @@ export const useSettingsStore = create<State>()(
           lastfmAvatar: null,
           lastfmEnabled: false,
           lastfmLoveSync: false,
+        }),
+      setLibrefmEnabled: (librefmEnabled) => set({ librefmEnabled }),
+      setLibrefmLoveSync: (librefmLoveSync) => set({ librefmLoveSync }),
+      setLibrefmAvatar: (librefmAvatar) => set({ librefmAvatar }),
+      setLibrefmSession: (librefmUsername, librefmSessionKey) =>
+        set({ librefmUsername, librefmSessionKey, librefmEnabled: true }),
+      clearLibrefmSession: () =>
+        set({
+          librefmUsername: null,
+          librefmSessionKey: null,
+          librefmAvatar: null,
+          librefmEnabled: false,
+          librefmLoveSync: false,
+        }),
+      setListenbrainzEnabled: (listenbrainzEnabled) => set({ listenbrainzEnabled }),
+      setListenbrainzAccount: (listenbrainzUsername, listenbrainzToken) =>
+        set({ listenbrainzUsername, listenbrainzToken, listenbrainzEnabled: true }),
+      clearListenbrainzAccount: () =>
+        set({
+          listenbrainzUsername: null,
+          listenbrainzToken: null,
+          listenbrainzEnabled: false,
         }),
     }),
     {

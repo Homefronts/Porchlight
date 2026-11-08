@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useSettingsStore } from "@/lib/store/settings";
+import { loveTargets } from "@/lib/scrobbler";
 import {
   artistFromSubtitle,
   artistsFromList,
@@ -7,7 +8,7 @@ import {
 } from "@/lib/track-meta";
 
 /**
- * Shared Last.fm helpers used by both the scrobbler (`lastfm-scrobbler.ts`)
+ * Shared Last.fm helpers used by both the scrobbler (`scrobbler.ts`)
  * and the loved-track sync wired into the like buttons. The signed API calls
  * and the offline retry queue live in `src-tauri/src/lastfm.rs`.
  */
@@ -46,8 +47,8 @@ export function lastfmArtist(track: LastfmTrackMeta | undefined): string {
 }
 
 /**
- * Mirror a YouTube Music like/unlike to the connected Last.fm account as a
- * loved / unloved track. No-op unless Last.fm is connected and the loved-track
+ * Mirror a YouTube Music like/unlike to the connected Last.fm and Libre.fm
+ * accounts as a loved / unloved track. Only where that account's loved-track
  * sync is switched on (a separate opt-in from scrobbling). Best-effort: love
  * state isn't queued for retry (unlike scrobbles), so an offline like just
  * isn't mirrored.
@@ -56,17 +57,16 @@ export function syncLastfmLove(
   track: LastfmTrackMeta | undefined,
   loved: boolean,
 ): void {
-  const { lastfmLoveSync, lastfmSessionKey } = useSettingsStore.getState();
-  if (!lastfmLoveSync || !lastfmSessionKey) return;
+  const targets = loveTargets(useSettingsStore.getState());
+  if (targets.length === 0) return;
   const artist = lastfmArtist(track);
   const title = track?.title?.trim() ?? "";
   if (!artist || !title) return;
-  void invoke("lastfm_love", {
-    artist,
-    track: title,
-    loved,
-    sessionKey: lastfmSessionKey,
-  }).catch(() => {
-    /* best-effort; love isn't retried */
-  });
+  for (const target of targets) {
+    void invoke("lastfm_love", { artist, track: title, loved, ...target }).catch(
+      () => {
+        /* best-effort; love isn't retried */
+      },
+    );
+  }
 }

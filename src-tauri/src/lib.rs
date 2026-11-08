@@ -29,6 +29,7 @@ mod bridge;
 mod downloads;
 mod discord;
 mod lastfm;
+mod listenbrainz;
 mod media;
 mod migrate;
 mod power;
@@ -4441,6 +4442,7 @@ pub fn run() {
         .manage(SessionRenewal::default())
         .manage(discord::spawn())
         .manage(lastfm::LastfmState::default())
+        .manage(listenbrainz::ListenbrainzState::default())
         .invoke_handler(tauri::generate_handler![
             migrate::take_handoff_frontend,
             migrate::ack_handoff_imported,
@@ -4508,6 +4510,12 @@ pub fn run() {
             lastfm::lastfm_scrobble,
             lastfm::lastfm_love,
             lastfm::lastfm_flush,
+            lastfm::lastfm_forget,
+            listenbrainz::listenbrainz_validate,
+            listenbrainz::listenbrainz_now_playing,
+            listenbrainz::listenbrainz_scrobble,
+            listenbrainz::listenbrainz_flush,
+            listenbrainz::listenbrainz_forget,
             lastfm::lastfm_artist_tags,
         ])
         .on_window_event(|window, event| {
@@ -4576,6 +4584,7 @@ pub fn run() {
             // its own task; a no-op when Last.fm isn't configured or the queue
             // is empty. See src/lastfm.rs.
             lastfm::flush_on_startup(app.handle().clone());
+            listenbrainz::flush_on_startup(app.handle().clone());
             let cache_dir = cache_root.join("stream");
             let ephemeral_dir = cache_root.join("stream-ephemeral");
             let cover_dir = cache_root.join("covers");

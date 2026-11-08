@@ -1,4 +1,4 @@
-// Same bar as the Last.fm scrobbler (src/lib/lastfm-scrobbler.ts).
+// Same bar as the Last.fm scrobbler (src/lib/scrobbler.ts).
 const CAP_SECONDS = 240;
 const MIN_TRACK_SECONDS = 30;
 

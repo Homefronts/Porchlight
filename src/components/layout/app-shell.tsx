@@ -22,7 +22,7 @@ import { useAudioEngine } from "@/lib/audio-engine";
 import { FullscreenPlayer } from "@/components/layout/fullscreen-player";
 import { useCacheAutoClean } from "@/lib/cache-cleanup";
 import { usePlaybackNotifications } from "@/lib/playback-notifications";
-import { useLastfmScrobbler } from "@/lib/lastfm-scrobbler";
+import { useScrobbler } from "@/lib/scrobbler";
 import { useRewindLogger } from "@/lib/rewind/use-rewind-logger";
 import { useRewindScheduler } from "@/lib/rewind/seal";
 import { useVideoModeFollower } from "@/lib/video-mode";
@@ -124,7 +124,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   useDiscordPresenceSync();
   useCacheAutoClean();
   usePlaybackNotifications();
-  useLastfmScrobbler();
+  useScrobbler();
   useRewindLogger();
   useRewindScheduler();
   useVideoModeFollower();

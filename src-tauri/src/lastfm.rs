@@ -46,6 +46,62 @@ const API_SECRET: &str = match option_env!("YTUBIC_LASTFM_API_SECRET") {
 
 const API_ROOT: &str = "https://ws.audioscrobbler.com/2.0/";
 
+// Libre.fm (GNU FM) speaks the Last.fm 2.0 API and accepts any key and secret,
+// so ours is a fixed 32-character value, not a registered credential.
+const LIBREFM_KEY: &str = "porchlightporchlightporchlight00";
+
+/// Which Audioscrobbler-compatible service a call goes to. The frontend passes
+/// it as `service` ("lastfm" / "librefm"); left out, it means Last.fm.
+#[derive(Deserialize, Clone, Copy, Default, PartialEq, Debug)]
+#[serde(rename_all = "lowercase")]
+pub enum Service {
+    #[default]
+    Lastfm,
+    Librefm,
+}
+
+impl Service {
+    fn root(self) -> &'static str {
+        match self {
+            Service::Lastfm => API_ROOT,
+            Service::Librefm => "https://libre.fm/2.0/",
+        }
+    }
+    fn auth_page(self) -> &'static str {
+        match self {
+            Service::Lastfm => "https://www.last.fm/api/auth/",
+            Service::Librefm => "https://libre.fm/api/auth/",
+        }
+    }
+    fn key(self) -> &'static str {
+        match self {
+            Service::Lastfm => API_KEY,
+            Service::Librefm => LIBREFM_KEY,
+        }
+    }
+    fn secret(self) -> &'static str {
+        match self {
+            Service::Lastfm => API_SECRET,
+            Service::Librefm => LIBREFM_KEY,
+        }
+    }
+    fn queue_file(self) -> &'static str {
+        match self {
+            Service::Lastfm => "lastfm-queue.json",
+            Service::Librefm => "librefm-queue.json",
+        }
+    }
+    fn name(self) -> &'static str {
+        match self {
+            Service::Lastfm => "Last.fm",
+            Service::Librefm => "Libre.fm",
+        }
+    }
+    fn configured(self) -> bool {
+        !self.key().is_empty() && !self.secret().is_empty()
+    }
+}
+
 /// Managed Tauri state. Only a lock: it serializes the read-modify-write of the
 /// on-disk offline queue so two scrobbles landing at once can't clobber the
 /// file. The queue itself lives on disk (source of truth), not in memory. The
@@ -91,8 +147,8 @@ fn sign(params: &BTreeMap<String, String>, secret: &str) -> String {
 /// Attach `api_sig` (computed over the current params) plus `format=json`,
 /// yielding the full param set to send. `params` must already hold every
 /// signed param and nothing else.
-fn finalize(mut params: BTreeMap<String, String>) -> BTreeMap<String, String> {
-    let sig = sign(&params, API_SECRET);
+fn finalize(service: Service, mut params: BTreeMap<String, String>) -> BTreeMap<String, String> {
+    let sig = sign(&params, service.secret());
     params.insert("api_sig".into(), sig);
     params.insert("format".into(), "json".into());
     params
@@ -136,14 +192,14 @@ pub struct BeginAuth {
 
 /// `auth.getToken` → an unauthorized request token, plus the browser URL the
 /// user visits to approve it.
-async fn get_token(client: &reqwest::Client) -> Result<String, String> {
+async fn get_token(service: Service, client: &reqwest::Client) -> Result<String, String> {
     let mut params = BTreeMap::new();
     params.insert("method".into(), "auth.getToken".into());
-    params.insert("api_key".into(), API_KEY.into());
-    let params = finalize(params);
+    params.insert("api_key".into(), service.key().into());
+    let params = finalize(service, params);
 
     let body = client
-        .get(API_ROOT)
+        .get(service.root())
         .query(&params)
         .send()
         .await
@@ -152,7 +208,7 @@ async fn get_token(client: &reqwest::Client) -> Result<String, String> {
         .await
         .map_err(|e| format!("read error: {e}"))?;
 
-    check_api_error(&body).map_err(|(c, m)| format!("Last.fm error {c}: {m}"))?;
+    check_api_error(&body).map_err(|(c, m)| format!("{} error {c}: {m}", service.name()))?;
 
     #[derive(Deserialize)]
     struct TokenResp {
@@ -175,17 +231,18 @@ pub struct LastfmSession {
 /// a failure), and `Err` for a real problem (expired token, bad key, network).
 /// The frontend polls this so connecting needs no manual confirmation step.
 async fn get_session(
+    service: Service,
     client: &reqwest::Client,
     token: &str,
 ) -> Result<Option<LastfmSession>, String> {
     let mut params = BTreeMap::new();
     params.insert("method".into(), "auth.getSession".into());
-    params.insert("api_key".into(), API_KEY.into());
+    params.insert("api_key".into(), service.key().into());
     params.insert("token".into(), token.into());
-    let params = finalize(params);
+    let params = finalize(service, params);
 
     let body = client
-        .get(API_ROOT)
+        .get(service.root())
         .query(&params)
         .send()
         .await
@@ -197,7 +254,7 @@ async fn get_session(
     match check_api_error(&body) {
         // 14 = token not yet authorized by the user: keep polling, not an error.
         Err((14, _)) => return Ok(None),
-        Err((c, m)) => return Err(format!("Last.fm error {c}: {m}")),
+        Err((c, m)) => return Err(format!("{} error {c}: {m}", service.name())),
         Ok(()) => {}
     }
 
@@ -231,9 +288,13 @@ enum SendOutcome {
 }
 
 /// POST a signed method to Last.fm and classify the outcome.
-async fn post_signed(client: &reqwest::Client, params: BTreeMap<String, String>) -> SendOutcome {
-    let params = finalize(params);
-    let resp = match client.post(API_ROOT).form(&params).send().await {
+async fn post_signed(
+    service: Service,
+    client: &reqwest::Client,
+    params: BTreeMap<String, String>,
+) -> SendOutcome {
+    let params = finalize(service, params);
+    let resp = match client.post(service.root()).form(&params).send().await {
         Ok(r) => r,
         Err(_) => return SendOutcome::Retry, // offline / DNS / TLS, retry later
     };
@@ -250,22 +311,22 @@ async fn post_signed(client: &reqwest::Client, params: BTreeMap<String, String>)
             let _ = msg;
             SendOutcome::Retry
         }
-        Err((code, msg)) => SendOutcome::Drop(format!("Last.fm error {code}: {msg}")),
+        Err((code, msg)) => SendOutcome::Drop(format!("{} error {code}: {msg}", service.name())),
     }
 }
 
 // ── Offline queue persistence ────────────────────────────────────────────
 
-fn queue_path(app: &AppHandle) -> Result<PathBuf, String> {
+fn queue_path(app: &AppHandle, service: Service) -> Result<PathBuf, String> {
     let dir = app
         .path()
         .app_config_dir()
         .map_err(|e| format!("no config dir: {e}"))?;
-    Ok(dir.join("lastfm-queue.json"))
+    Ok(dir.join(service.queue_file()))
 }
 
-fn read_queue(app: &AppHandle) -> Vec<PendingScrobble> {
-    let Ok(path) = queue_path(app) else {
+fn read_queue(app: &AppHandle, service: Service) -> Vec<PendingScrobble> {
+    let Ok(path) = queue_path(app, service) else {
         return Vec::new();
     };
     match std::fs::read_to_string(&path) {
@@ -274,8 +335,8 @@ fn read_queue(app: &AppHandle) -> Vec<PendingScrobble> {
     }
 }
 
-fn write_queue(app: &AppHandle, queue: &[PendingScrobble]) {
-    let Ok(path) = queue_path(app) else {
+fn write_queue(app: &AppHandle, service: Service, queue: &[PendingScrobble]) {
+    let Ok(path) = queue_path(app, service) else {
         return;
     };
     if let Some(parent) = path.parent() {
@@ -293,10 +354,14 @@ fn write_queue(app: &AppHandle, queue: &[PendingScrobble]) {
 
 /// Build the bracketed `track.scrobble` params for a batch (≤50) that all share
 /// one session key.
-fn scrobble_batch_params(items: &[PendingScrobble], session_key: &str) -> BTreeMap<String, String> {
+fn scrobble_batch_params(
+    service: Service,
+    items: &[PendingScrobble],
+    session_key: &str,
+) -> BTreeMap<String, String> {
     let mut params = BTreeMap::new();
     params.insert("method".into(), "track.scrobble".into());
-    params.insert("api_key".into(), API_KEY.into());
+    params.insert("api_key".into(), service.key().into());
     params.insert("sk".into(), session_key.into());
     for (i, it) in items.iter().enumerate() {
         params.insert(format!("artist[{i}]"), it.artist.clone());
@@ -316,9 +381,9 @@ fn scrobble_batch_params(items: &[PendingScrobble], session_key: &str) -> BTreeM
 /// carries a single `sk`), sends each group, and rewrites the file with only
 /// the items that still need retrying. Best-effort: any error just leaves the
 /// affected items queued (or drops the permanently-rejected ones).
-async fn flush_queue(app: &AppHandle, client: &reqwest::Client, lock: &Mutex<()>) {
+async fn flush_queue(app: &AppHandle, service: Service, client: &reqwest::Client, lock: &Mutex<()>) {
     let _guard = lock.lock().await;
-    let queue = read_queue(app);
+    let queue = read_queue(app, service);
     if queue.is_empty() {
         return;
     }
@@ -336,8 +401,8 @@ async fn flush_queue(app: &AppHandle, client: &reqwest::Client, lock: &Mutex<()>
     for (sk, items) in groups {
         // Last.fm caps a scrobble batch at 50.
         for chunk in items.chunks(50) {
-            let params = scrobble_batch_params(chunk, &sk);
-            match post_signed(client, params).await {
+            let params = scrobble_batch_params(service, chunk, &sk);
+            match post_signed(service, client, params).await {
                 SendOutcome::Sent => {}
                 SendOutcome::Retry => remaining.extend_from_slice(chunk),
                 SendOutcome::Drop(msg) => {
@@ -346,31 +411,30 @@ async fn flush_queue(app: &AppHandle, client: &reqwest::Client, lock: &Mutex<()>
             }
         }
     }
-    write_queue(app, &remaining);
+    write_queue(app, service, &remaining);
 }
 
 // ── Tauri commands ───────────────────────────────────────────────────────
 
 /// Whether this build has API credentials baked in. The Settings UI uses it to
 /// decide between a working Connect button and an "unavailable" note.
+/// Every command below takes an optional `service`; left out, it's Last.fm.
 #[tauri::command]
-pub fn lastfm_is_configured() -> bool {
-    !API_KEY.is_empty() && !API_SECRET.is_empty()
+pub fn lastfm_is_configured(service: Option<Service>) -> bool {
+    service.unwrap_or_default().configured()
 }
 
 /// Step 1 of connecting: fetch a request token and hand back the browser URL
 /// the user must open to approve it.
 #[tauri::command]
-pub async fn lastfm_begin_auth() -> Result<BeginAuth, String> {
-    if API_KEY.is_empty() || API_SECRET.is_empty() {
+pub async fn lastfm_begin_auth(service: Option<Service>) -> Result<BeginAuth, String> {
+    let service = service.unwrap_or_default();
+    if !service.configured() {
         return Err("Last.fm API credentials are not configured in this build.".into());
     }
     let client = reqwest::Client::new();
-    let token = get_token(&client).await?;
-    let auth_url = format!(
-        "https://www.last.fm/api/auth/?api_key={}&token={}",
-        API_KEY, token
-    );
+    let token = get_token(service, &client).await?;
+    let auth_url = format!("{}?api_key={}&token={}", service.auth_page(), service.key(), token);
     Ok(BeginAuth { token, auth_url })
 }
 
@@ -378,9 +442,12 @@ pub async fn lastfm_begin_auth() -> Result<BeginAuth, String> {
 /// once the user has approved the token in their browser, or `None` while it is
 /// still pending.
 #[tauri::command]
-pub async fn lastfm_poll_session(token: String) -> Result<Option<LastfmSession>, String> {
+pub async fn lastfm_poll_session(
+    service: Option<Service>,
+    token: String,
+) -> Result<Option<LastfmSession>, String> {
     let client = reqwest::Client::new();
-    get_session(&client, &token).await
+    get_session(service.unwrap_or_default(), &client, &token).await
 }
 
 /// Public profile info for a Last.fm user, used to show an avatar + name in
@@ -396,19 +463,23 @@ pub struct LastfmUserInfo {
 }
 
 #[tauri::command]
-pub async fn lastfm_user_info(user: String) -> Result<LastfmUserInfo, String> {
-    if API_KEY.is_empty() {
+pub async fn lastfm_user_info(
+    service: Option<Service>,
+    user: String,
+) -> Result<LastfmUserInfo, String> {
+    let service = service.unwrap_or_default();
+    if !service.configured() {
         return Err("Last.fm API credentials are not configured in this build.".into());
     }
     let client = reqwest::Client::new();
     let mut params = BTreeMap::new();
     params.insert("method".to_string(), "user.getInfo".to_string());
-    params.insert("api_key".to_string(), API_KEY.to_string());
+    params.insert("api_key".to_string(), service.key().to_string());
     params.insert("user".to_string(), user);
     params.insert("format".to_string(), "json".to_string());
 
     let body = client
-        .get(API_ROOT)
+        .get(service.root())
         .query(&params)
         .send()
         .await
@@ -417,7 +488,7 @@ pub async fn lastfm_user_info(user: String) -> Result<LastfmUserInfo, String> {
         .await
         .map_err(|e| format!("read error: {e}"))?;
 
-    check_api_error(&body).map_err(|(c, m)| format!("Last.fm error {c}: {m}"))?;
+    check_api_error(&body).map_err(|(c, m)| format!("{} error {c}: {m}", service.name()))?;
 
     #[derive(Deserialize)]
     struct Resp {
@@ -509,6 +580,7 @@ pub async fn lastfm_artist_tags(artist: String) -> Result<Vec<String>, String> {
 /// ephemeral (Last.fm expires it on its own), so a failure is never queued.
 #[tauri::command]
 pub async fn lastfm_update_now_playing(
+    service: Option<Service>,
     artist: String,
     track: String,
     album: String,
@@ -518,10 +590,11 @@ pub async fn lastfm_update_now_playing(
     if artist.is_empty() || track.is_empty() {
         return Ok(()); // nothing meaningful to report
     }
+    let service = service.unwrap_or_default();
     let client = reqwest::Client::new();
     let mut params = BTreeMap::new();
     params.insert("method".into(), "track.updateNowPlaying".into());
-    params.insert("api_key".into(), API_KEY.into());
+    params.insert("api_key".into(), service.key().into());
     params.insert("sk".into(), session_key);
     params.insert("artist".into(), artist);
     params.insert("track".into(), track);
@@ -532,7 +605,7 @@ pub async fn lastfm_update_now_playing(
         params.insert("duration".into(), d.to_string());
     }
     // Best-effort; the classification doesn't matter for now-playing.
-    let _ = post_signed(&client, params).await;
+    let _ = post_signed(service, &client, params).await;
     Ok(())
 }
 
@@ -543,6 +616,7 @@ pub async fn lastfm_update_now_playing(
 pub async fn lastfm_scrobble(
     app: AppHandle,
     state: State<'_, LastfmState>,
+    service: Option<Service>,
     artist: String,
     track: String,
     album: String,
@@ -553,6 +627,7 @@ pub async fn lastfm_scrobble(
     if artist.is_empty() || track.is_empty() {
         return Ok(());
     }
+    let service = service.unwrap_or_default();
     let client = reqwest::Client::new();
     let scrobble = PendingScrobble {
         artist,
@@ -563,20 +638,20 @@ pub async fn lastfm_scrobble(
         session_key: session_key.clone(),
     };
 
-    let params = scrobble_batch_params(std::slice::from_ref(&scrobble), &session_key);
-    match post_signed(&client, params).await {
+    let params = scrobble_batch_params(service, std::slice::from_ref(&scrobble), &session_key);
+    match post_signed(service, &client, params).await {
         SendOutcome::Sent => {
             // Sent live, so a good moment to drain any backlog from an earlier
             // offline stretch.
-            flush_queue(&app, &client, &state.queue_lock).await;
+            flush_queue(&app, service, &client, &state.queue_lock).await;
         }
         SendOutcome::Retry => {
             // Hold the queue lock across the read-modify-write so a concurrent
             // scrobble or flush can't clobber the file.
             let _guard = state.queue_lock.lock().await;
-            let mut queue = read_queue(&app);
+            let mut queue = read_queue(&app, service);
             queue.push(scrobble);
-            write_queue(&app, &queue);
+            write_queue(&app, service, &queue);
         }
         SendOutcome::Drop(msg) => {
             eprintln!("[lastfm] scrobble rejected, dropping: {msg}");
@@ -590,6 +665,7 @@ pub async fn lastfm_scrobble(
 /// state isn't time-critical and isn't queued for retry (unlike scrobbles).
 #[tauri::command]
 pub async fn lastfm_love(
+    service: Option<Service>,
     artist: String,
     track: String,
     loved: bool,
@@ -598,17 +674,18 @@ pub async fn lastfm_love(
     if artist.is_empty() || track.is_empty() {
         return Ok(());
     }
+    let service = service.unwrap_or_default();
     let client = reqwest::Client::new();
     let mut params = BTreeMap::new();
     params.insert(
         "method".into(),
         if loved { "track.love" } else { "track.unlove" }.into(),
     );
-    params.insert("api_key".into(), API_KEY.into());
+    params.insert("api_key".into(), service.key().into());
     params.insert("sk".into(), session_key);
     params.insert("artist".into(), artist);
     params.insert("track".into(), track);
-    let _ = post_signed(&client, params).await;
+    let _ = post_signed(service, &client, params).await;
     Ok(())
 }
 
@@ -616,9 +693,31 @@ pub async fn lastfm_love(
 /// wants to nudge a drain (e.g. after regaining connectivity). No-op when the
 /// queue is empty.
 #[tauri::command]
-pub async fn lastfm_flush(app: AppHandle, state: State<'_, LastfmState>) -> Result<(), String> {
+pub async fn lastfm_flush(
+    app: AppHandle,
+    state: State<'_, LastfmState>,
+    service: Option<Service>,
+) -> Result<(), String> {
     let client = reqwest::Client::new();
-    flush_queue(&app, &client, &state.queue_lock).await;
+    flush_queue(&app, service.unwrap_or_default(), &client, &state.queue_lock).await;
+    Ok(())
+}
+
+/// Disconnect: forget scrobbles still waiting for this account.
+#[tauri::command]
+pub async fn lastfm_forget(
+    app: AppHandle,
+    state: State<'_, LastfmState>,
+    service: Option<Service>,
+    session_key: String,
+) -> Result<(), String> {
+    let service = service.unwrap_or_default();
+    let _guard = state.queue_lock.lock().await;
+    let queue: Vec<_> = read_queue(&app, service)
+        .into_iter()
+        .filter(|s| s.session_key != session_key)
+        .collect();
+    write_queue(&app, service, &queue);
     Ok(())
 }
 
@@ -627,13 +726,14 @@ pub async fn lastfm_flush(app: AppHandle, state: State<'_, LastfmState>) -> Resu
 /// isn't held across the `.await`, then spawns onto the async runtime; never
 /// blocks startup.
 pub fn flush_on_startup(app: AppHandle) {
-    if API_KEY.is_empty() || API_SECRET.is_empty() {
-        return;
-    }
     let lock = app.state::<LastfmState>().queue_lock.clone();
     tauri::async_runtime::spawn(async move {
         let client = reqwest::Client::new();
-        flush_queue(&app, &client, &lock).await;
+        for service in [Service::Lastfm, Service::Librefm] {
+            if service.configured() {
+                flush_queue(&app, service, &client, &lock).await;
+            }
+        }
     });
 }
 
@@ -670,7 +770,7 @@ mod tests {
         params.insert("b".to_string(), "2".to_string());
         // Signature the request must carry: computed before format/api_sig exist.
         let expected_sig = sign(&params, API_SECRET);
-        let out = finalize(params);
+        let out = finalize(Service::Lastfm, params);
         assert_eq!(out.get("format").map(String::as_str), Some("json"));
         assert_eq!(
             out.get("api_sig").map(String::as_str),
@@ -701,6 +801,43 @@ mod tests {
     }
 
     #[test]
+    fn librefm_speaks_the_same_api_at_its_own_address() {
+        let s = Service::Librefm;
+        assert_eq!(s.root(), "https://libre.fm/2.0/");
+        assert_eq!(s.auth_page(), "https://libre.fm/api/auth/");
+        assert_eq!(s.queue_file(), "librefm-queue.json");
+        // Libre.fm takes any key, so it always works, even in unconfigured builds.
+        assert!(s.configured());
+        assert_eq!(s.key().len(), 32);
+        // Last.fm keeps its old queue file so stranded scrobbles still drain.
+        assert_eq!(Service::Lastfm.queue_file(), "lastfm-queue.json");
+        assert_eq!(Service::Lastfm.root(), "https://ws.audioscrobbler.com/2.0/");
+        assert_eq!(Service::default(), Service::Lastfm);
+    }
+
+    #[test]
+    fn service_reads_from_the_frontend_name_and_defaults_to_lastfm() {
+        let s: Service = serde_json::from_str(r#""librefm""#).unwrap();
+        assert_eq!(s, Service::Librefm);
+        let s: Service = serde_json::from_str(r#""lastfm""#).unwrap();
+        assert_eq!(s, Service::Lastfm);
+    }
+
+    #[test]
+    fn scrobble_batch_carries_the_services_key() {
+        let item = PendingScrobble {
+            artist: "A".into(),
+            track: "T".into(),
+            album: String::new(),
+            duration: None,
+            timestamp: 1,
+            session_key: "sk".into(),
+        };
+        let p = scrobble_batch_params(Service::Librefm, std::slice::from_ref(&item), "sk");
+        assert_eq!(p.get("api_key").map(String::as_str), Some(Service::Librefm.key()));
+    }
+
+    #[test]
     fn scrobble_batch_uses_bracketed_indices() {
         let items = vec![
             PendingScrobble {
@@ -720,7 +857,7 @@ mod tests {
                 session_key: "sk".into(),
             },
         ];
-        let p = scrobble_batch_params(&items, "sk");
+        let p = scrobble_batch_params(Service::Lastfm, &items, "sk");
         assert_eq!(p.get("method").map(String::as_str), Some("track.scrobble"));
         assert_eq!(p.get("sk").map(String::as_str), Some("sk"));
         assert_eq!(p.get("artist[0]").map(String::as_str), Some("A"));
