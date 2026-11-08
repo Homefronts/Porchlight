@@ -48,3 +48,18 @@ describe("parseLRC", () => {
     expect(parseLRC("no timestamps here")).toEqual([]);
   });
 });
+
+describe("parseLRC enhanced word tags", () => {
+  it("fills words from <mm:ss.xx> tags", () => {
+    const [l] = parseLRC("[00:01.00]<00:01.00>Hello <00:01.50>sun<00:03.00>");
+    expect(l.text).toBe("Hello sun");
+    expect(l.words).toEqual([
+      { start: 1, end: 1.5, text: "Hello " },
+      { start: 1.5, end: 3, text: "sun" },
+    ]);
+  });
+
+  it("leaves words undefined without tags", () => {
+    expect(parseLRC("[00:01.00]plain")[0].words).toBeUndefined();
+  });
+});
