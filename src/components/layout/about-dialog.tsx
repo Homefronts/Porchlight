@@ -64,6 +64,11 @@ const CREDITS: { name: string; role: string; url: string }[] = [
   },
   { name: "Genius", role: "lyrics", url: "https://genius.com" },
   { name: "Musixmatch", role: "lyrics", url: "https://www.musixmatch.com" },
+  { name: "Kugou", role: "word-by-word lyrics", url: "https://www.kugou.com" },
+  { name: "NetEase Cloud Music", role: "word-by-word lyrics", url: "https://music.163.com" },
+  { name: "Google Translate", role: "lyrics translation", url: "https://translate.google.com" },
+  { name: "kuroshiro", role: "Japanese romanization", url: "https://github.com/hexenq/kuroshiro" },
+  { name: "pinyin-pro", role: "Chinese romanization", url: "https://github.com/zh-lx/pinyin-pro" },
 ];
 
 // Footer icon button — 38px, 10px radius, on the design's `--w060` fill.

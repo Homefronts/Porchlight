@@ -181,6 +181,7 @@ Pick a look and a layout on first launch, with a live preview of your own librar
 ### Lyrics
 
 - **Synced lyrics**: line-by-line synced lyrics from LRCLIB, Musixmatch, Genius and YouTube Music itself, matched to the right song.
+- **Word-by-word lyrics**: karaoke-style highlighting from Kugou, NetEase, LRCLIB or your own TTML and LRC files, with romanization, translation, duets split by singer, and a source order you choose. Kugou and NetEase are off until you accept them.
 - **Lyrics that follow you**: the text tracks the progress slider while you drag it.
 - **Copyable text**: lyrics, playback errors and notifications can be selected and copied.
 
@@ -278,7 +279,6 @@ Small, quick to build.
 Bigger pieces of work.
 
 - [ ] **Bring your Spotify library** — move playlists, liked songs and followed artists to YouTube Music for free, no Soundiiz needed. Load Spotify's own data export (or an Exportify CSV, M3U file or pasted list), check the matches on a review screen ("312 matched, 9 unsure, 4 not found"), and the playlists are created on your YouTube Music account. Each song is matched to the same recording, never a cover or live version.
-- [ ] **Word-by-word lyrics** — karaoke-style highlighting from more lyrics sources, in an order you choose, with translation, romanization (Japanese, Korean, Chinese and more) and duets laid out left and right.
 - [ ] **New releases from artists you follow** — the latest albums, EPs and singles from your YouTube Music subscriptions on Home, marked New for their first week.
 - [ ] **Multiple languages** — English, Spanish, Brazilian Portuguese, French, German, Italian, Ukrainian, Russian, Turkish, Indonesian, Hindi, Japanese, Korean and Simplified Chinese, with a language picker in Settings that starts on your system language. Every string is English in the code today, so they move into language files first; after that each new language is one file, and native speakers are welcome to fix or add one.
 - [ ] **Drag to reorder playlists** — drag songs around in your own playlists, or drop them onto one in the sidebar.
