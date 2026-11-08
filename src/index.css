@@ -886,6 +886,34 @@
     transform: translateZ(0);
     will-change: scale;
     backface-visibility: hidden;
+    /* The unsung part of a word on the active line: the colour an
+       upcoming line has in this look (`text-t5`, or classic's
+       `text-muted-foreground/70`). */
+    --lyrics-dim: var(--color-t5);
+  }
+  [data-look-family="classic"] .lyrics-line {
+    --lyrics-dim: color-mix(
+      in oklab,
+      var(--color-muted-foreground) 70%,
+      transparent
+    );
+  }
+
+  /* Word by word. Only the active line carries `data-fill`; lyrics-view.tsx
+     sets `--p` on its words from rAF. Past and upcoming lines stay plain
+     text in their own colour (fully sung, not yet sung). The fill paints
+     the line's own colour, so it follows the active-line cross-fade, and
+     `-webkit-text-fill-color` rather than `color: transparent` keeps
+     `currentColor` meaning that colour. */
+  .lyrics-line[data-fill] > [data-w] {
+    background-image: linear-gradient(
+      90deg,
+      currentColor var(--p, 0%),
+      var(--lyrics-dim) var(--p, 0%)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
   /* Seeking. The 1.26s cross-fade is tuned for the slow handoff between

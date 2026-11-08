@@ -1,9 +1,19 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import {
+  Fragment,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  type ChangeEvent,
+} from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { IconCheck, IconRefresh } from "@tabler/icons-react";
 import { IconMicrophoneFilled } from "@tabler/icons-react";
 import { playerIconButton } from "@/components/layout/player-chrome";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -19,9 +29,18 @@ import {
 import type { Lyrics, TimedLine } from "@/lib/lyrics/types";
 import { useLyricsSources } from "@/lib/lyrics/sources";
 import type { Availability } from "@/lib/lyrics/pick";
+import { useEnrichedLyrics } from "@/lib/lyrics/enrich";
+import { lineAlign, wordFill } from "@/lib/lyrics/word-fill";
+import { removeLyricsFile, saveLyricsFile } from "@/lib/lyrics/user-files";
 import {
-  DEFAULT_ORDER,
+  availabilityBadge,
+  firstAgentOf,
+  singerLabelAt,
+} from "@/components/layout/lyrics-view-words";
+import {
+  enabledSources,
   SOURCE_LABELS,
+  TARGET_LANGS,
   useLyricsSettings,
   type LyricsSource,
 } from "@/lib/store/lyrics-settings";
@@ -41,6 +60,7 @@ try {
 }
 
 export type LyricsViewState = {
+  videoId: string | undefined;
   active: Lyrics | null;
   isLoading: boolean;
   hasTrack: boolean;
@@ -75,14 +95,25 @@ export function useLyricsView(track: QueueTrack | undefined): LyricsViewState {
     if (videoId) pickForSong(videoId, p === "auto" ? null : p);
   };
 
-  const { queries, availability, best, isLoading, failed, isRetrying, retryFailed } =
-    useLyricsSources(track, !!track);
+  const {
+    queries,
+    availability,
+    best,
+    isLoading,
+    failed,
+    isRetrying,
+    retryFailed,
+  } = useLyricsSources(track, !!track);
 
   // `best` already applies the song pick, falling back to auto when it has nothing.
   const activeSource = best;
-  const active = activeSource ? (queries[activeSource].data ?? null) : null;
+  const active = useEnrichedLyrics(
+    activeSource ? (queries[activeSource].data ?? null) : null,
+    videoId,
+  );
 
   return {
+    videoId,
     active,
     isLoading,
     hasTrack: !!track,
@@ -140,7 +171,13 @@ export function LyricsBody({
     );
   }
   if (state.active.kind === "timed") {
-    return <TimedLyrics lines={state.active.lines} large={large} />;
+    return (
+      <TimedLyrics
+        lines={state.active.lines}
+        agents={state.active.agents}
+        large={large}
+      />
+    );
   }
   return <PlainLyrics text={state.active.text} large={large} />;
 }
@@ -230,9 +267,11 @@ const SEEK_SCROLL_DURATION_MS = 350;
 
 function TimedLyrics({
   lines,
+  agents,
   large = false,
 }: {
   lines: TimedLine[];
+  agents?: Record<string, string>;
   large?: boolean;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -246,6 +285,8 @@ function TimedLyrics({
   const scrub = useScrubStore((s) => s.scrub);
   const position = scrub ?? playbackPosition;
   const family = useLookFamily();
+  const wordByWord = useLyricsSettings((s) => s.wordByWord);
+  const firstAgent = useMemo(() => firstAgentOf(lines), [lines]);
 
   const activeIdx = findActiveIdx(lines, position);
   const prevActiveRef = useRef(activeIdx);
@@ -364,6 +405,61 @@ function TimedLyrics({
     // *next*, perfectly ordinary line change.
   }, [activeIdx, position, scrub]);
 
+  // Word fill. Writes `--p` straight onto the active line's word spans, so
+  // the per-frame work never goes through React. Only the active line is
+  // touched: past and upcoming lines get their look from CSS (`data-fill`
+  // is on the active line alone). A layout effect so a newly active line
+  // never paints one frame with the fill it had last time.
+  useLayoutEffect(() => {
+    const words = lines[activeIdx]?.words;
+    const el = scrollRef.current?.querySelector<HTMLElement>(
+      `[data-line-idx="${activeIdx}"]`,
+    );
+    if (!wordByWord || !words?.length || !el) return;
+    const spans = el.querySelectorAll<HTMLElement>(":scope > [data-w]");
+    const painted: string[] = [];
+    // The store's position moves a few times a second; between ticks it is
+    // extrapolated while playing (capped at a second, in case ticks stall).
+    let base = usePlaybackStore.getState().position;
+    let at = performance.now();
+    let raf: number | null = null;
+    const paint = () => {
+      const { playing } = usePlaybackStore.getState();
+      const scrub = useScrubStore.getState().scrub;
+      const pos =
+        scrub ??
+        (playing ? base + Math.min(1, (performance.now() - at) / 1000) : base);
+      spans.forEach((span, j) => {
+        const w = words[j];
+        if (!w) return;
+        const p = `${wordFill(w, pos) * 100}%`;
+        if (painted[j] === p) return;
+        painted[j] = p;
+        span.style.setProperty("--p", p);
+      });
+      // Loop only while the music moves on its own; a scrub or a paused
+      // seek repaints from the subscriptions below.
+      raf = playing && scrub === null ? requestAnimationFrame(paint) : null;
+    };
+    const kick = () => {
+      if (raf === null) paint();
+    };
+    const offPlayback = usePlaybackStore.subscribe((s, prev) => {
+      if (s.position !== prev.position) {
+        base = s.position;
+        at = performance.now();
+      }
+      if (s.position !== prev.position || s.playing !== prev.playing) kick();
+    });
+    const offScrub = useScrubStore.subscribe(kick);
+    paint();
+    return () => {
+      offPlayback();
+      offScrub();
+      if (raf !== null) cancelAnimationFrame(raf);
+    };
+  }, [lines, activeIdx, wordByWord]);
+
   useEffect(() => {
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
@@ -375,6 +471,7 @@ function TimedLyrics({
     <div className="relative flex h-full min-h-0 flex-col">
       <div
         ref={scrollRef}
+        data-look-family={family}
         className={cn(
           // The right inset is the room the active line's `scale-[1.06]`
           // needs. Text wraps against the layout box, but the scale is a
@@ -398,49 +495,95 @@ function TimedLyrics({
         {lines.map((line, i) => {
           const isActive = i === activeIdx;
           const isPast = i < activeIdx;
+          const align = lineAlign(line.agent, agents, firstAgent);
+          const singer = singerLabelAt(lines, i, agents);
+          const words = wordByWord && line.words?.length ? line.words : null;
           return (
-            <button
-              key={i}
-              type="button"
-              data-line-idx={i}
-              onClick={() => seek(line.start)}
-              className={cn(
-                // Same font-size on every line so the active line can't
-                // grow into a second row and shove neighbours around.
-                // The "active is bigger" feel comes from a transform
-                // scale (off the layout flow) plus weight + glow.
-                //
-                // Cross-fade duration is a touch longer than
-                // `ACTIVE_LOOKAHEAD_S` (800 ms) so the highlight is
-                // well past the midpoint by the time the new line
-                // actually starts, but still feels deliberate rather
-                // than abrupt. ease-in-out softens both ends.
-                // `scale` lives on its own CSS property in Tailwind v4
-                // (not `transform`), so it's listed explicitly in the
-                // transition. Both branches set a `scale-*` so the
-                // browser has a defined start AND end to interpolate.
-                "lyrics-line origin-left cursor-pointer rounded-md px-2 py-1 text-left font-[650] leading-snug transition-[scale,color] duration-[1260ms] ease-in-out hover:bg-black/10 dark:hover:bg-black/30",
-                large
-                  ? "px-3 py-3.5 text-[31px] font-bold leading-[1.18] tracking-[-0.025em]"
-                  : "text-lg",
-                // A lyric sheet: the look's headline face, with Instrument
-                // Serif at its one real weight.
-                "font-headline",
-                family === "liner" && "font-normal tracking-normal",
-                family === "ink" && "font-medium",
-                isActive
-                  ? "scale-[1.06] text-foreground"
-                  : family === "classic"
-                    ? isPast
-                      ? "scale-100 text-muted-foreground/40"
-                      : "scale-100 text-muted-foreground/70"
-                    : isPast
-                      ? "scale-100 text-t9"
-                      : "scale-100 text-t5",
-              )}
-            >
-              {line.text || "♪"}
-            </button>
+            <Fragment key={i}>
+              {singer ? (
+                <span
+                  className={cn(
+                    "mt-2 font-mono text-[10px] font-semibold uppercase tracking-[0.13em]",
+                    large ? "px-3" : "px-2",
+                    align === "right"
+                      ? "self-end text-right text-muted-foreground"
+                      : align === "center"
+                        ? "self-center text-center text-brand"
+                        : "text-brand",
+                  )}
+                >
+                  {singer}
+                </span>
+              ) : null}
+              <button
+                type="button"
+                data-line-idx={i}
+                data-fill={isActive && words ? "" : undefined}
+                onClick={() => seek(line.start)}
+                className={cn(
+                  // Same font-size on every line so the active line can't
+                  // grow into a second row and shove neighbours around.
+                  // The "active is bigger" feel comes from a transform
+                  // scale (off the layout flow) plus weight + glow.
+                  //
+                  // Cross-fade duration is a touch longer than
+                  // `ACTIVE_LOOKAHEAD_S` (800 ms) so the highlight is
+                  // well past the midpoint by the time the new line
+                  // actually starts, but still feels deliberate rather
+                  // than abrupt. ease-in-out softens both ends.
+                  // `scale` lives on its own CSS property in Tailwind v4
+                  // (not `transform`), so it's listed explicitly in the
+                  // transition. Both branches set a `scale-*` so the
+                  // browser has a defined start AND end to interpolate.
+                  "lyrics-line origin-left cursor-pointer rounded-md px-2 py-1 text-left font-[650] leading-snug transition-[scale,color] duration-[1260ms] ease-in-out hover:bg-black/10 dark:hover:bg-black/30",
+                  large
+                    ? "px-3 py-3.5 text-[31px] font-bold leading-[1.18] tracking-[-0.025em]"
+                    : "text-lg",
+                  // A lyric sheet: the look's headline face, with Instrument
+                  // Serif at its one real weight.
+                  "font-headline",
+                  family === "liner" && "font-normal tracking-normal",
+                  family === "ink" && "font-medium",
+                  isActive
+                    ? "scale-[1.06] text-foreground"
+                    : family === "classic"
+                      ? isPast
+                        ? "scale-100 text-muted-foreground/40"
+                        : "scale-100 text-muted-foreground/70"
+                      : isPast
+                        ? "scale-100 text-t9"
+                        : "scale-100 text-t5",
+                  align === "right" && "self-end origin-right text-right",
+                  align === "center" && "self-center origin-center text-center",
+                )}
+              >
+                {words
+                  ? words.map((w, j) => (
+                      <span key={j} data-w>
+                        {w.text}
+                      </span>
+                    ))
+                  : line.text || "♪"}
+                {/* Under the line and inside the button, so a click on any
+                  of them seeks. Opacity, not a colour, keeps them a step
+                  below the line in every look and state. */}
+                {line.roman ? (
+                  <span className="mt-1 block font-sans text-[0.55em] font-medium leading-snug tracking-normal opacity-70">
+                    {line.roman}
+                  </span>
+                ) : null}
+                {line.translation ? (
+                  <span className="mt-0.5 block text-[0.6em] font-normal italic leading-snug tracking-normal opacity-75">
+                    {line.translation}
+                  </span>
+                ) : null}
+                {line.bg?.text ? (
+                  <span className="mt-0.5 block text-[0.7em] leading-snug opacity-70">
+                    {line.bg.text}
+                  </span>
+                ) : null}
+              </button>
+            </Fragment>
           );
         })}
       </div>
@@ -498,73 +641,160 @@ export function LyricsSourceButton({
   state: LyricsViewState;
   className?: string;
 }) {
-  const { pref, setPref, best, availability } = state;
+  const { videoId, pref, setPref, best, availability } = state;
+  const order = useLyricsSettings((s) => s.order);
+  const off = useLyricsSettings((s) => s.off);
+  const chineseConsent = useLyricsSettings((s) => s.chineseConsent);
+  const romanize = useLyricsSettings((s) => s.romanize);
+  const setRomanize = useLyricsSettings((s) => s.setRomanize);
+  const translate = useLyricsSettings((s) => s.translate);
+  const setTranslate = useLyricsSettings((s) => s.setTranslate);
+  const targetLang = useLyricsSettings((s) => s.targetLang);
+  const queryClient = useQueryClient();
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  // A source switched off, or waiting on consent, isn't offered at all.
+  const sources = enabledSources({ order, off, chineseConsent });
+  const picked = pref !== "auto" && sources.includes(pref) ? pref : "auto";
+  const langLabel =
+    TARGET_LANGS.find((l) => l.code === targetLang)?.label ?? targetLang;
+  const hasFile = availabilityBadge(availability.file) !== null;
+
+  const refreshFile = () =>
+    queryClient.invalidateQueries({ queryKey: ["lyrics", "file", videoId] });
+
+  const onFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // picking the same file again still fires change
+    if (!file || !videoId) return;
+    try {
+      const lyrics = await saveLyricsFile(videoId, {
+        name: file.name,
+        text: await file.text(),
+      });
+      if (!lyrics) throw new Error("unreadable");
+      await refreshFile();
+      setPref("file");
+      toast("Lyrics file added");
+    } catch {
+      toast("That file couldn't be read as lyrics");
+    }
+  };
+
+  const onRemoveFile = async () => {
+    if (!videoId) return;
+    await removeLyricsFile(videoId);
+    if (pref === "file") setPref("auto");
+    await refreshFile();
+  };
 
   return (
-    <DropdownMenu>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Lyrics source"
-              className={cn(playerIconButton, className)}
-            >
-              <IconMicrophoneFilled />
-            </Button>
-          </DropdownMenuTrigger>
-        </TooltipTrigger>
-        <TooltipContent>Lyrics source</TooltipContent>
-      </Tooltip>
-      <DropdownMenuContent align="start" className="w-52">
-        <DropdownMenuLabel>Lyrics source</DropdownMenuLabel>
-        <DropdownMenuItem onSelect={() => setPref("auto")}>
-          <span className="flex-1">
-            Auto
-            {best ? (
-              <span className="ml-1 text-xs text-muted-foreground">
-                ({SOURCE_LABELS[best]})
-              </span>
-            ) : null}
-          </span>
-          {pref === "auto" ? (
-            <IconCheck className="size-4" stroke={2.4} />
-          ) : null}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        {DEFAULT_ORDER.map((s) => {
-          const a = availability[s];
-          const dot =
-            a === "word" || a === "line"
-              ? "bg-brand"
-              : a === "plain"
-                ? "bg-muted-foreground/60"
-                : a === "loading"
-                  ? "bg-muted-foreground/30 animate-pulse"
-                  : a === "error"
-                    ? "bg-destructive"
-                    : "bg-transparent";
-          return (
-            <DropdownMenuItem
-              key={s}
-              onSelect={() => setPref(s)}
-              // Only a source that answered and had nothing is unselectable.
-              // A failed one stays pickable: selecting it is how the user
-              // asks for another attempt.
-              disabled={a === "none"}
-            >
-              <span
-                className={cn("mr-2 size-1.5 shrink-0 rounded-full", dot)}
-              />
-              <span className="flex-1">{SOURCE_LABELS[s]}</span>
-              {pref === s ? (
-                <IconCheck className="size-4" stroke={2.4} />
+    <>
+      <input
+        ref={fileInput}
+        type="file"
+        accept=".ttml,.lrc,.xml"
+        className="hidden"
+        onChange={onFile}
+      />
+      <DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Lyrics source"
+                className={cn(playerIconButton, className)}
+              >
+                <IconMicrophoneFilled />
+              </Button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Lyrics source</TooltipContent>
+        </Tooltip>
+        <DropdownMenuContent align="start" className="w-64">
+          <DropdownMenuLabel>Source for this song</DropdownMenuLabel>
+          <DropdownMenuItem onSelect={() => setPref("auto")}>
+            <span className="flex-1">
+              Auto
+              {best ? (
+                <span className="ml-1 text-xs text-muted-foreground">
+                  ({SOURCE_LABELS[best]})
+                </span>
               ) : null}
+            </span>
+            {picked === "auto" ? (
+              <IconCheck className="size-4" stroke={2.4} />
+            ) : null}
+          </DropdownMenuItem>
+          {sources.map((s) => {
+            const a = availability[s];
+            const badge = availabilityBadge(a);
+            const dot =
+              a === "word" || a === "line"
+                ? "bg-brand"
+                : a === "plain"
+                  ? "bg-muted-foreground/60"
+                  : a === "loading"
+                    ? "bg-muted-foreground/30 animate-pulse"
+                    : a === "error"
+                      ? "bg-destructive"
+                      : "bg-transparent";
+            return (
+              <DropdownMenuItem
+                key={s}
+                onSelect={() => setPref(s)}
+                // Only a source that answered and had nothing is unselectable.
+                // A failed one stays pickable: selecting it is how the user
+                // asks for another attempt.
+                disabled={a === "none"}
+              >
+                <span
+                  className={cn("mr-2 size-1.5 shrink-0 rounded-full", dot)}
+                />
+                <span className="flex-1">{SOURCE_LABELS[s]}</span>
+                {badge ? (
+                  <span className="font-mono text-[10px] tracking-[0.13em] text-muted-foreground">
+                    {badge}
+                  </span>
+                ) : null}
+                {picked === s ? (
+                  <IconCheck className="size-4" stroke={2.4} />
+                ) : null}
+              </DropdownMenuItem>
+            );
+          })}
+          <DropdownMenuSeparator />
+          <DropdownMenuCheckboxItem
+            checked={romanize}
+            onCheckedChange={setRomanize}
+          >
+            Show romanization
+          </DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem
+            checked={translate}
+            onCheckedChange={setTranslate}
+          >
+            Translate to {langLabel}
+          </DropdownMenuCheckboxItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            disabled={!videoId}
+            onSelect={() => fileInput.current?.click()}
+          >
+            <span className="flex-1">Use a lyrics file…</span>
+            <span className="font-mono text-[10px] tracking-[0.13em] text-muted-foreground">
+              .TTML .LRC
+            </span>
+          </DropdownMenuItem>
+          {hasFile ? (
+            <DropdownMenuItem onSelect={() => void onRemoveFile()}>
+              Remove lyrics file
             </DropdownMenuItem>
-          );
-        })}
-      </DropdownMenuContent>
-    </DropdownMenu>
+          ) : null}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
   );
 }

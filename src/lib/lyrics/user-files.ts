@@ -8,7 +8,7 @@ const key = (videoId: string) => `lyrics-file:${videoId}`;
 
 function parse(name: string, text: string): Lyrics | null {
   const ext = name.toLowerCase().split(".").pop();
-  if (ext === "ttml") return parseTTML(text);
+  if (ext === "ttml" || ext === "xml") return parseTTML(text);
   if (ext === "lrc") {
     const lines = parseLRC(text);
     return lines.length ? { kind: "timed", lines, source: "file" } : null;

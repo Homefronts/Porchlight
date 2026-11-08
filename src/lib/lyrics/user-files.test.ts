@@ -21,6 +21,9 @@ describe("user lyrics files", () => {
     expect(store.has("lyrics-file:v1")).toBe(true);
     expect((await loadLyricsFile("v1"))?.kind).toBe("timed");
   });
+  it("reads a .xml as TTML", async () => {
+    expect((await saveLyricsFile("v5", { name: "a.xml", text: TTML }))?.kind).toBe("timed");
+  });
   it("saves and loads a .lrc", async () => {
     const l = await saveLyricsFile("v2", { name: "a.lrc", text: "[00:01.00]la la\n[00:03.00]li li" });
     expect(l?.kind).toBe("timed");
