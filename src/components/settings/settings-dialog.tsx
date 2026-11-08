@@ -4,6 +4,7 @@ import {
   IconAdjustmentsFilled,
   IconContrastFilled,
   IconDatabaseFilled,
+  IconMicrophone,
   IconPlayerPlayFilled,
   IconPuzzleFilled,
   IconX,
@@ -18,6 +19,7 @@ import {
 import { useUpdateStore } from "@/lib/store/update";
 import { GeneralTab } from "@/components/settings/general-tab";
 import { PlaybackTab } from "@/components/settings/playback-tab";
+import { LyricsTab } from "@/components/settings/lyrics-tab";
 import { AppearanceTab } from "@/components/settings/appearance-tab";
 import { StorageTab } from "@/components/settings/storage-tab";
 import { IntegrationsTab } from "@/components/settings/integrations-tab";
@@ -36,6 +38,7 @@ const TABS: {
   { id: "general", label: "General", icon: IconAdjustmentsFilled },
   { id: "appearance", label: "Appearance", icon: IconContrastFilled },
   { id: "playback", label: "Playback", icon: IconPlayerPlayFilled },
+  { id: "lyrics", label: "Lyrics", icon: IconMicrophone },
   { id: "storage", label: "Storage", icon: IconDatabaseFilled },
   { id: "integrations", label: "Integrations", icon: IconPuzzleFilled },
 ];
@@ -183,6 +186,7 @@ export function SettingsDialog() {
           <div className="app-scroll min-w-0 flex-1 overflow-y-auto px-5 pb-[22px] pt-1 [overflow-anchor:none] [scrollbar-gutter:stable]">
             {tab === "general" && <GeneralTab />}
             {tab === "playback" && <PlaybackTab />}
+            {tab === "lyrics" && <LyricsTab />}
             {tab === "appearance" && <AppearanceTab />}
             {tab === "storage" && <StorageTab />}
             {tab === "integrations" && <IntegrationsTab />}

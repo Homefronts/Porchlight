@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { frostedOverlay, frostedSurface } from "@/components/ui/frosted";
 import { arrangeTitles, useHomeSectionsStore } from "@/lib/store/home-sections";
+import { moveItem } from "@/lib/move-item";
 import { cn } from "@/lib/utils";
 
 /**
@@ -40,10 +41,7 @@ export function HomeConfigureDialog({
   const [dragOver, setDragOver] = useState<number | null>(null);
 
   const move = (from: number, to: number) => {
-    const next = [...rows];
-    const [item] = next.splice(from, 1);
-    next.splice(to, 0, item);
-    setOrder(next);
+    setOrder(moveItem(rows, from, to));
   };
 
   return (

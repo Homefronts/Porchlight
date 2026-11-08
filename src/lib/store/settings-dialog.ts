@@ -3,6 +3,7 @@ import { create } from "zustand";
 export type SettingsTab =
   | "general"
   | "playback"
+  | "lyrics"
   | "appearance"
   | "storage"
   | "integrations";
