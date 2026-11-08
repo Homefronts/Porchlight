@@ -61,8 +61,13 @@ async function romanizeOne(line: string): Promise<string | null> {
       case "ja": {
         const k = await japanese();
         if (!k) return null;
-        // shortcut: a lone "o" is taken as the particle を (Hepburn gives "o"); a stray お token would also become "wo"
-        return (await k.convert(line, { to: "romaji", mode: "spaced" })).trim().replace(/(^|\s)o(?=\s|$)/g, "$1wo");
+        // Hepburn writes the particle を as "o"; split on it so honorific お stays "o"
+        const out: string[] = [];
+        for (const [i, seg] of line.split("を").entries()) {
+          if (i > 0) out.push("wo");
+          if (seg.trim()) out.push((await k.convert(seg, { to: "romaji", mode: "spaced" })).trim());
+        }
+        return out.join(" ");
       }
       case "ko":
         return romanizeKorean(line);

@@ -32,6 +32,9 @@ describe("romanizeLines", () => {
   it("Japanese with kanji", async () => {
     expect(await romanizeLines(["夢を見る"])).toEqual(["yume wo miru"]);
   }, 15000);
+  it("keeps honorific o", async () => {
+    expect(await romanizeLines(["お願い"])).toEqual(["onegai"]);
+  }, 15000);
 });
 
 describe("Japanese without the dictionary", () => {

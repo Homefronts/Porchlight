@@ -8,17 +8,19 @@ import fs from "node:fs";
 // Serves node_modules/kuromoji/dict at /kuromoji-dict/ (dev) and copies it into the build.
 // No Content-Encoding on purpose: kuromoji gunzips the .dat.gz files itself.
 const dictDir = path.resolve(__dirname, "node_modules/kuromoji/dict");
+const serveDict = (server: { middlewares: { use: (fn: (req: any, res: any, next: () => void) => void) => void } }) => {
+  server.middlewares.use((req, res, next) => {
+    const m = /^\/kuromoji-dict\/([\w.-]+)$/.exec((req.url ?? "").split("?")[0]);
+    const file = m && path.join(dictDir, m[1]);
+    if (!file || !fs.existsSync(file)) return next();
+    res.setHeader("Content-Type", "application/octet-stream");
+    fs.createReadStream(file).pipe(res);
+  });
+};
 const kuromojiDict = () => ({
   name: "kuromoji-dict",
-  configureServer(server: { middlewares: { use: (fn: (req: any, res: any, next: () => void) => void) => void } }) {
-    server.middlewares.use((req, res, next) => {
-      const m = /^\/kuromoji-dict\/([\w.-]+)$/.exec((req.url ?? "").split("?")[0]);
-      const file = m && path.join(dictDir, m[1]);
-      if (!file || !fs.existsSync(file)) return next();
-      res.setHeader("Content-Type", "application/octet-stream");
-      fs.createReadStream(file).pipe(res);
-    });
-  },
+  configureServer: serveDict,
+  configurePreviewServer: serveDict,
   closeBundle() {
     const out = path.resolve(__dirname, "dist/kuromoji-dict");
     fs.mkdirSync(out, { recursive: true });
@@ -44,9 +46,11 @@ export default defineConfig(async () => ({
   ],
 
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
+    alias: [
+      { find: "@", replacement: path.resolve(__dirname, "./src") },
+      // kuromoji's browser loader calls require("path").join, which Vite externalises
+      { find: /^path$/, replacement: path.resolve(__dirname, "./src/lib/lyrics/path-shim.js") },
+    ],
   },
 
   clearScreen: false,
