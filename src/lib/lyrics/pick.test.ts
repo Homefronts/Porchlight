@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pickSource, type Availability } from "./pick";
+import { availabilityOf, pickSource, type Availability } from "./pick";
 import type { LyricsSource } from "@/lib/store/lyrics-settings";
 
 const av = (o: Partial<Record<LyricsSource, Availability>>) =>
@@ -29,5 +29,13 @@ describe("pickSource", () => {
   });
   it("nothing gives null", () => {
     expect(pickSource(["file"], av({}))).toBeNull();
+  });
+  it("a song pick outside the enabled order is ignored", () => {
+    expect(pickSource(["lrclib"], av({ lrclib: "line", kugou: "word" }), "kugou")).toBe("lrclib");
+  });
+  it("a disabled source's cached data is not used", () => {
+    const data = { kind: "plain", text: "la" } as const;
+    expect(availabilityOf(data, false, false, false)).toBe("none");
+    expect(availabilityOf(data, false, false)).toBe("plain");
   });
 });

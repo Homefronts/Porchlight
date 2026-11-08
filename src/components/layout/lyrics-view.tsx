@@ -78,7 +78,8 @@ export function useLyricsView(track: QueueTrack | undefined): LyricsViewState {
   const { queries, availability, best, isLoading, failed, isRetrying, retryFailed } =
     useLyricsSources(track, !!track);
 
-  const activeSource: LyricsSource | null = pref === "auto" ? best : pref;
+  // `best` already applies the song pick, falling back to auto when it has nothing.
+  const activeSource = best;
   const active = activeSource ? (queries[activeSource].data ?? null) : null;
 
   return {

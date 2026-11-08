@@ -187,7 +187,7 @@ export function useLyricsSources(track: QueueTrack | undefined, enabled: boolean
   const avail = {} as Record<LyricsSource, Availability>;
   for (const s of DEFAULT_ORDER) {
     const q = queries[s];
-    avail[s] = availabilityOf(q.data, q.isLoading, q.isError);
+    avail[s] = availabilityOf(q.data, q.isLoading, q.isError, on.includes(s));
   }
   const best = pickSource(on, avail, songPick);
 

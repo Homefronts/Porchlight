@@ -8,7 +8,10 @@ export function availabilityOf(
   data: Lyrics | null | undefined,
   isLoading: boolean,
   isError: boolean,
+  enabled = true,
 ): Availability {
+  // A disabled query still returns its cached data; ignore it.
+  if (!enabled) return "none";
   if (data) return data.kind === "plain" ? "plain" : hasWordTiming(data) ? "word" : "line";
   return isLoading ? "loading" : isError ? "error" : "none";
 }
@@ -21,7 +24,7 @@ export function pickSource(
   avail: Record<LyricsSource, Availability>,
   songPick?: LyricsSource,
 ): LyricsSource | null {
-  if (songPick && HAS.has(avail[songPick])) return songPick;
+  if (songPick && order.includes(songPick) && HAS.has(avail[songPick])) return songPick;
   for (const tier of ["word", "line", "plain"] as const) {
     const s = order.find((x) => avail[x] === tier);
     if (s) return s;
