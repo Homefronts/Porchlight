@@ -62,4 +62,16 @@ describe("parseLRC enhanced word tags", () => {
   it("leaves words undefined without tags", () => {
     expect(parseLRC("[00:01.00]plain")[0].words).toBeUndefined();
   });
+
+  it("shifts word times for each copy of a repeated line", () => {
+    const lines = parseLRC("[00:10.00][00:50.00]<00:10.00>a <00:11.00>b<00:12.00>\n[00:55.00]c");
+    expect(lines[0].words).toEqual([
+      { start: 10, end: 11, text: "a " },
+      { start: 11, end: 12, text: "b" },
+    ]);
+    expect(lines[1].words).toEqual([
+      { start: 50, end: 51, text: "a " },
+      { start: 51, end: 52, text: "b" },
+    ]);
+  });
 });

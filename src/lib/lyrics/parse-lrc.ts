@@ -39,6 +39,8 @@ export function parseLRC(lrc: string): TimedLine[] {
         : 0;
       if (Number.isNaN(mm) || Number.isNaN(ss)) continue;
       const start = Math.max(0, mm * 60 + ss + frac / 1000 - offsetSec);
+      // Word tags are written for the first stamp; later copies (a repeated chorus) move with their stamp.
+      const shift = tagSec(m) - tagSec(matches[0]);
       const line: TimedLine = { start, text };
       if (wordTags.length > 0) {
         const words: TimedWord[] = [];
@@ -46,8 +48,8 @@ export function parseLRC(lrc: string): TimedLine[] {
           const from = (t.index ?? 0) + t[0].length;
           const nx = wordTags[i + 1];
           const wText = body.slice(from, nx?.index ?? body.length);
-          const ws = tagSec(t) - offsetSec;
-          if (wText) words.push({ start: ws, end: nx ? tagSec(nx) - offsetSec : ws, text: wText });
+          const ws = tagSec(t) - offsetSec + shift;
+          if (wText) words.push({ start: ws, end: nx ? tagSec(nx) - offsetSec + shift : ws, text: wText });
         });
         if (words.length > 0) line.words = words;
       }
