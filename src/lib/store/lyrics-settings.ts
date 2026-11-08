@@ -133,3 +133,12 @@ export const useLyricsSettings = create<LyricsSettings>()(
     },
   ),
 );
+
+// The floating player is a separate JS context sharing this key. Without this,
+// it keeps a stale consent after a Decline in the main window (and keeps asking
+// Kugou/NetEase), and its next write clobbers the Decline.
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) => {
+    if (e.key === "ytm-lyrics-settings") void useLyricsSettings.persist.rehydrate();
+  });
+}

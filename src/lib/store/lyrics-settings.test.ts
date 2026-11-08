@@ -70,4 +70,20 @@ describe("lyrics settings", () => {
     ({ useLyricsSettings: u, DEFAULT_ORDER } = await load());
     expect(u.getState().order).toEqual(DEFAULT_ORDER);
   });
+
+  it("a Decline in another window reaches this one", async () => {
+    const { useLyricsSettings: u, enabledSources } = await load();
+    u.getState().answerConsent(true);
+    expect(enabledSources(u.getState())).toContain("kugou");
+    // The other window writes its Decline; only the storage event tells this one.
+    m.set("ytm-lyrics-settings", JSON.stringify({
+      version: 1,
+      state: { ...JSON.parse(m.get("ytm-lyrics-settings")!).state, chineseConsent: "declined", off: ["kugou", "netease"] },
+    }));
+    window.dispatchEvent(new StorageEvent("storage", { key: "ytm-lyrics-settings" }));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(u.getState().chineseConsent).toBe("declined");
+    expect(enabledSources(u.getState())).not.toContain("kugou");
+    expect(enabledSources(u.getState())).not.toContain("netease");
+  });
 });
