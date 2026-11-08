@@ -76,4 +76,17 @@ describe("parseKRC", () => {
     expect(w[1]).toMatchObject({ start: 1.5, end: 2.5 });
     expect(w[2]).toMatchObject({ start: 2.5, end: 3 });
   });
+
+  it("a malformed language block just means no romanization", async () => {
+    for (const content of [
+      "nope",
+      [{ type: 0, lyricContent: "nope" }],
+      [{ type: 0, lyricContent: ["nope", ["ok"]] }],
+    ]) {
+      const b64 = Buffer.from(JSON.stringify({ content })).toString("base64");
+      const { lines, romanByLine } = await roundTrip(`[language:${b64}]\n[1000,1000]<0,1000,0>x`);
+      expect(lines.map((l) => l.text)).toEqual(["x"]);
+      expect(romanByLine[0]).toBeNull();
+    }
+  });
 });

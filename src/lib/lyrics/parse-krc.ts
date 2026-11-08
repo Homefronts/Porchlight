@@ -24,6 +24,16 @@ const decodeEntities = (s: string) =>
 const CREDIT_PREFIX = /^(lyrics by|composed by|作词|作曲|编曲)/i;
 const CREDIT_COLON = /^.{0,11}[：:]/;
 
+/** Credit lines: prefix match anywhere, "Label：" only before the first real lyric. */
+export function dropCredits<T extends { text: string }>(lines: T[]): T[] {
+  let lyricSeen = false;
+  return lines.filter((l) => {
+    if (CREDIT_PREFIX.test(l.text) || (!lyricSeen && CREDIT_COLON.test(l.text))) return false;
+    lyricSeen = true;
+    return true;
+  });
+}
+
 function parseB64Json(b64: string): unknown {
   try {
     const bin = atob(b64);
@@ -42,11 +52,12 @@ export function parseKRC(text: string): {
   for (const row of text.split(/\r?\n/)) {
     const lang = row.match(/^\[language:([^\]]*)\]/);
     if (lang) {
-      const j = parseB64Json(lang[1]) as {
-        content?: { type: number; lyricContent?: string[][] }[];
-      } | null;
-      const r = j?.content?.find((c) => c.type === 0)?.lyricContent;
-      roman = (r ?? []).map((t) => t.join("").trim());
+      // Untrusted Kugou data: any odd shape just means no romanization.
+      const c = (parseB64Json(lang[1]) as { content?: unknown } | null)?.content;
+      const r = Array.isArray(c)
+        ? (c.find((x) => x?.type === 0) as { lyricContent?: unknown } | undefined)?.lyricContent
+        : undefined;
+      roman = Array.isArray(r) ? r.map((t) => (Array.isArray(t) ? t.join("").trim() : "")) : [];
       continue;
     }
     const m = row.match(/^\[(\d+),(\d+)\](.*)$/);
@@ -66,18 +77,7 @@ export function parseKRC(text: string): {
     if (words.length) line.words = repairWords(words, start, end);
     raw.push(line);
   }
-  // Credit lines: prefix match anywhere, "Label：" only before the first real lyric.
-  const lines: TimedLine[] = [];
-  const romanByLine: (string | null)[] = [];
-  let lyricSeen = false;
-  raw.forEach((l, i) => {
-    const credit =
-      CREDIT_PREFIX.test(l.text) || (!lyricSeen && CREDIT_COLON.test(l.text));
-    if (credit) return;
-    lyricSeen = true;
-    lines.push(l);
-    // language block indexes lyric lines, not credit lines; align by raw index
-    romanByLine.push(roman[i] || null);
-  });
-  return { lines, romanByLine };
+  // language block indexes lyric lines, not credit lines; align by raw index
+  const kept = dropCredits(raw.map((l, i) => ({ text: l.text, l, i })));
+  return { lines: kept.map((k) => k.l), romanByLine: kept.map((k) => roman[k.i] || null) };
 }

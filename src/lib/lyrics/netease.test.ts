@@ -55,4 +55,14 @@ describe("netease", () => {
     await expect(fetchNeteaseLyrics({ title: "x" })).rejects.toThrow("consent");
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("NetEase: the lrc fallback drops credit lines", async () => {
+    const lrc = ["[00:00.00]作词 : Ben", "[00:00.50]作曲 : Ben", "[00:01.00]Xiao chuan"].join("\n");
+    const { fetchNeteaseLyrics } = await setup((u) =>
+      u.includes("/search/") ? json({ result: { songs: [song()] } }) : json({ lrc: { lyric: lrc } }),
+    );
+    const r = await fetchNeteaseLyrics(P);
+    if (r?.kind !== "timed") throw new Error("expected timed");
+    expect(r.lines.map((l) => l.text)).toEqual(["Xiao chuan"]);
+  });
 });

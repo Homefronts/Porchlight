@@ -1,6 +1,7 @@
 import type { Lyrics, TimedLine } from "@/lib/lyrics/types";
 import { parseLRC } from "@/lib/lyrics/parse-lrc";
 import { parseYRC } from "@/lib/lyrics/parse-yrc";
+import { dropCredits } from "@/lib/lyrics/parse-krc";
 import { selectBest } from "@/lib/lyrics/score";
 import { createDeadline, lyricsFetch, throwForStatus } from "@/lib/lyrics/http";
 import { enabledSources, useLyricsSettings } from "@/lib/store/lyrics-settings";
@@ -50,7 +51,7 @@ export async function fetchNeteaseLyrics(
     const j = (await r.json()) as { yrc?: LyricBlock; lrc?: LyricBlock; romalrc?: LyricBlock };
 
     const lines: TimedLine[] = j.yrc?.lyric ? parseYRC(j.yrc.lyric) : [];
-    if (!lines.length && j.lrc?.lyric) lines.push(...parseLRC(j.lrc.lyric));
+    if (!lines.length && j.lrc?.lyric) lines.push(...dropCredits(parseLRC(j.lrc.lyric)));
     if (!lines.length) return null;
 
     // Attach each romanized line to the lyric line starting nearest (within 0.6 s).
