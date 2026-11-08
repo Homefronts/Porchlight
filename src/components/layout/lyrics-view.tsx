@@ -41,6 +41,7 @@ import {
   extrapolate,
   findActiveIdx,
   firstAgentOf,
+  shouldRetryPick,
   singerLabelAt,
 } from "@/components/layout/lyrics-view-words";
 import {
@@ -97,9 +98,6 @@ export function useLyricsView(track: QueueTrack | undefined): LyricsViewState {
     videoId ? (s.perSong[videoId] ?? "auto") : "auto",
   );
   const pickForSong = useLyricsSettings((s) => s.pickForSong);
-  const setPref = (p: Pref) => {
-    if (videoId) pickForSong(videoId, p === "auto" ? null : p);
-  };
 
   const {
     queries,
@@ -110,6 +108,12 @@ export function useLyricsView(track: QueueTrack | undefined): LyricsViewState {
     isRetrying,
     retryFailed,
   } = useLyricsSources(track, !!track);
+
+  const setPref = (p: Pref) => {
+    if (videoId) pickForSong(videoId, p === "auto" ? null : p);
+    // The pick alone falls back to auto while the source has nothing, so ask it again.
+    if (shouldRetryPick(p, availability)) void queries[p].refetch();
+  };
 
   // `best` already applies the song pick, falling back to auto when it has nothing.
   const activeSource = best;
@@ -742,8 +746,8 @@ export function LyricsSourceButton({
                 key={s}
                 onSelect={() => setPref(s)}
                 // Only a source that answered and had nothing is unselectable.
-                // A failed one stays pickable: selecting it is how the user
-                // asks for another attempt.
+                // A failed one stays pickable: selecting it refetches it
+                // (see `setPref` in `useLyricsView`).
                 disabled={a === "none"}
               >
                 <span

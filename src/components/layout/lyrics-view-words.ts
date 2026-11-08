@@ -1,4 +1,5 @@
 import type { Availability } from "@/lib/lyrics/pick";
+import type { LyricsSource } from "@/lib/store/lyrics-settings";
 import type { TimedLine } from "@/lib/lyrics/types";
 
 /** The first singer in line order; `lineAlign` puts them on the left. */
@@ -80,4 +81,12 @@ export function findActiveIdx(lines: TimedLine[], position: number, wordByWord: 
     active = i;
   }
   return active;
+}
+
+/** Picking a source that never answered is how the user asks it again. */
+export function shouldRetryPick(
+  p: LyricsSource | "auto",
+  availability: Partial<Record<LyricsSource, Availability>>,
+): p is LyricsSource {
+  return p !== "auto" && availability[p] === "error";
 }

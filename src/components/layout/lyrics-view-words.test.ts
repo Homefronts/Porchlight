@@ -4,6 +4,7 @@ import {
   availabilityBadge,
   extrapolate,
   findActiveIdx,
+  shouldRetryPick,
   firstAgentOf,
   singerLabelAt,
 } from "./lyrics-view-words";
@@ -86,5 +87,17 @@ describe("findActiveIdx", () => {
   it("uses the lookahead alone when word-by-word is off or the line has no words", () => {
     expect(findActiveIdx(held(14.9), 14.5, false)).toBe(1);
     expect(findActiveIdx([{ start: 10, text: "a" }, { start: 15, text: "c" }], 14.5, true)).toBe(1);
+  });
+});
+
+describe("shouldRetryPick", () => {
+  const avail = { genius: "error", lrclib: "line", musixmatch: "none" } as Parameters<typeof shouldRetryPick>[1];
+  it("picking a source that failed to answer asks it again", () => {
+    expect(shouldRetryPick("genius", avail)).toBe(true);
+  });
+  it("auto and sources that answered are not refetched", () => {
+    expect(shouldRetryPick("auto", avail)).toBe(false);
+    expect(shouldRetryPick("lrclib", avail)).toBe(false);
+    expect(shouldRetryPick("musixmatch", avail)).toBe(false);
   });
 });
