@@ -30,6 +30,28 @@ for (const [k, v] of en) {
   enBlanks.set(base(k), b);
 }
 
+/** Bases that are plural in en, where `map` lacks exactly `lang`'s categories (a bare key counts as wrong). */
+function pluralProblems(en: Map<string, string>, map: Map<string, string>, lang: string): string[] {
+  const cats = sorted(new Intl.PluralRules(lang).resolvedOptions().pluralCategories);
+  const bases = new Set([...en.keys()].filter((k) => PLURAL.test(k)).map(base));
+  return [...bases].filter((b) => {
+    const forms = [...map.keys()].filter((k) => k !== b && base(k) === b).map((k) => PLURAL.exec(k)![1]);
+    return map.has(b) || sorted(forms).join() !== cats.join();
+  });
+}
+
+describe("plural check", () => {
+  const fixtureEn = new Map([["songs.count_one", "{count} song"], ["songs.count_other", "{count} songs"]]);
+  it("fails a bare key where en has plural forms", () => {
+    expect(pluralProblems(fixtureEn, new Map([["songs.count", "{count} Lieder"]]), "de")).toEqual(["songs.count"]);
+  });
+  it("fails missing or extra categories, passes the right ones", () => {
+    expect(pluralProblems(fixtureEn, new Map([["songs.count_other", "x"]]), "de")).toEqual(["songs.count"]);
+    expect(pluralProblems(fixtureEn, new Map([["songs.count_one", "x"], ["songs.count_other", "x"]]), "ja")).toEqual(["songs.count"]);
+    expect(pluralProblems(fixtureEn, new Map([["songs.count_other", "x"]]), "ja")).toEqual([]);
+  });
+});
+
 describe("locale files", () => {
   it("all 14 exist", () => {
     for (const lang of LANGS) expect(existsSync(join(dir, `${lang}.json`)), lang).toBe(true);
@@ -61,13 +83,7 @@ describe("locale files", () => {
       });
 
       it("has exactly the plural forms its language uses", () => {
-        const cats = sorted(new Intl.PluralRules(lang).resolvedOptions().pluralCategories);
-        const forms = new Map<string, string[]>();
-        for (const k of map.keys()) {
-          const m = PLURAL.exec(k);
-          if (m) forms.set(base(k), [...(forms.get(base(k)) ?? []), m[1]]);
-        }
-        for (const [b, f] of forms) expect(sorted(f), `${lang} ${b}`).toEqual(cats);
+        expect(pluralProblems(en, map, lang)).toEqual([]);
       });
 
       it("keeps en's {blanks}", () => {

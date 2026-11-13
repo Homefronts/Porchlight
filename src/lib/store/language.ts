@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import type { Lang } from "../i18n/translate";
+import { LANGS, type Lang } from "../i18n/translate";
 import { safeLocalStorage } from "./safe-storage";
 
 type State = {
@@ -14,7 +14,16 @@ export const useLanguageStore = create<State>()(
       language: "system",
       setLanguage: (language) => set({ language }),
     }),
-    { name: "ytm-language", storage: createJSONStorage(() => safeLocalStorage) },
+    {
+      name: "ytm-language",
+      storage: createJSONStorage(() => safeLocalStorage),
+      // A hand-edited or future value would otherwise reach resolveLanguage as a bogus Lang.
+      merge: (persisted, current) => {
+        const l = (persisted as { language?: unknown } | undefined)?.language;
+        const valid = l === "system" || LANGS.includes(l as Lang);
+        return { ...current, language: valid ? (l as State["language"]) : "system" };
+      },
+    },
   ),
 );
 

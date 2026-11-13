@@ -15,6 +15,9 @@ const { getLocale, loadLanguage, onLanguageChange, t } = await import(".");
 const { useLanguageStore } = await import("../store/language");
 
 vi.mock("../../locales/fr.json", () => ({ default: { common: { ok: "D'accord" } } }));
+vi.mock("../../locales/de.json", () => {
+  throw new Error("chunk failed");
+});
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -27,6 +30,13 @@ describe("i18n runtime", () => {
     expect(t("common.ok")).toBe("OK");
     await loadLanguage("fr");
     expect(t("common.ok")).toBe("D'accord");
+  });
+
+  it("a file that fails to load stays unloaded, so the next call tries again", async () => {
+    useLanguageStore.setState({ language: "de" });
+    await expect(loadLanguage("de")).rejects.toThrow();
+    expect(t("common.ok")).toBe("OK");
+    await expect(loadLanguage("de")).rejects.toThrow();
   });
 
   it("getLocale follows resolveLanguage", () => {

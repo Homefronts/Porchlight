@@ -30,6 +30,12 @@ describe("language store", () => {
     expect(JSON.parse(m.get("ytm-language")!).state.language).toBe("ja");
   });
 
+  it("an unknown stored language falls back to system", async () => {
+    m.set("ytm-language", JSON.stringify({ state: { language: "xx" }, version: 0 }));
+    const { useLanguageStore } = await load();
+    expect(useLanguageStore.getState().language).toBe("system");
+  });
+
   it("a change in another window reaches this one", async () => {
     const { useLanguageStore } = await load();
     m.set("ytm-language", JSON.stringify({ state: { language: "de" }, version: 0 }));

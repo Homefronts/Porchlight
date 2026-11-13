@@ -2,7 +2,14 @@ import { getLocale, loadLanguage, onLanguageChange } from ".";
 import type { Lang } from "./translate";
 
 async function apply(lang: Lang): Promise<void> {
-  await loadLanguage(lang);
+  try {
+    await loadLanguage(lang);
+  } catch (e) {
+    // The file stays unloaded, so the next change retries; until then t() shows English.
+    console.warn(`[i18n] could not load ${lang}, showing English`, e);
+    if (getLocale() === lang) document.documentElement.lang = "en";
+    return;
+  }
   // A newer change may have landed while this file loaded.
   if (getLocale() === lang) document.documentElement.lang = lang;
 }
