@@ -17,6 +17,7 @@ import { useFreePlaybackStore, usePremiumStore } from "@/lib/store/premium";
 import { useDownloadsStore } from "@/lib/downloads";
 import { currentTrack, usePlaybackStore } from "@/lib/store/playback";
 import { authLoggedInQuery } from "@/lib/store/auth-queries";
+import { useT } from "@/lib/i18n";
 
 const PREMIUM_URL = "https://music.youtube.com/music_premium";
 const YTM_URL = "https://music.youtube.com";
@@ -32,6 +33,7 @@ const YTM_URL = "https://music.youtube.com";
  * upsell.
  */
 export function PremiumGateDialog() {
+  const t = useT();
   const open = usePremiumGateDialog((s) => s.open);
   const setOpen = usePremiumGateDialog((s) => s.setOpen);
   const status = usePremiumStore((s) => s.status);
@@ -69,12 +71,8 @@ export function PremiumGateDialog() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Connect to the internet to keep using downloads</DialogTitle>
-            <DialogDescription>
-              Porchlight checks your Music Premium subscription at least once
-              every 30 days. Go online for a moment and your downloads will
-              play again.
-            </DialogDescription>
+            <DialogTitle>{t("shell.premiumGate.checkInTitle")}</DialogTitle>
+            <DialogDescription>{t("shell.premiumGate.checkInText")}</DialogDescription>
           </DialogHeader>
         </DialogContent>
       </Dialog>
@@ -87,15 +85,15 @@ export function PremiumGateDialog() {
         <DialogHeader>
           <DialogTitle>
             {signedOut
-              ? "Sign in to play music"
-              : "YouTube Music Premium recommended"}
+              ? t("shell.premiumGate.signInTitle")
+              : t("shell.premiumGate.recommendedTitle")}
           </DialogTitle>
           <DialogDescription>
             {checking
-              ? "Checking your YouTube Music subscription…"
+              ? t("shell.premiumGate.checking")
               : signedOut
-                ? "Porchlight plays music through your YouTube Music account. Sign in with an account that has an active Music Premium subscription."
-                : "Your account doesn't have an active Music Premium subscription, which YouTube requires for ad-free playback."}
+                ? t("shell.premiumGate.signedOutText")
+                : t("shell.premiumGate.noPremiumText")}
           </DialogDescription>
         </DialogHeader>
 
@@ -104,27 +102,18 @@ export function PremiumGateDialog() {
             <div className="flex gap-3 rounded-lg border border-border/60 bg-surface p-3">
               <InfoIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
               <p className="text-xs leading-relaxed text-muted-foreground">
-                Free YouTube Music is supported by ads. YouTube's Terms of
-                Service require those ads to play, and Porchlight has no way to
-                show them, so YouTube limits ad-free playback to Premium
-                accounts.{" "}
+                {t("shell.premiumGate.adsNote1")}{" "}
                 <span className="font-medium text-foreground">
-                  Porchlight itself stays completely free and open source, and
-                  always will be.
+                  {t("shell.premiumGate.adsNote2")}
                 </span>{" "}
-                You can keep listening for free, with ads, at
-                music.youtube.com.
+                {t("shell.premiumGate.adsNote3")}
               </p>
             </div>
             {offerFree && (
               <div className="grid gap-3 rounded-lg border border-border/60 p-3 text-xs leading-relaxed text-muted-foreground">
                 <p>
-                  <span className="font-medium text-foreground">Play without Premium (experimental).</span>{" "}
-                  We don't recommend this. It has no downloads, it may stop
-                  working at any time, and YouTube could limit your account. You
-                  choose to use it, and you're responsible for that choice.
-                  Porchlight and its contributors accept no responsibility for
-                  how you use it.
+                  <span className="font-medium text-foreground">{t("shell.premiumGate.experimentalTitle")}</span>{" "}
+                  {t("shell.premiumGate.experimentalText")}
                 </p>
                 <label className="flex items-center gap-2 text-foreground">
                   <input
@@ -132,16 +121,16 @@ export function PremiumGateDialog() {
                     checked={accepted}
                     onChange={(e) => setAccepted(e.target.checked)}
                   />
-                  I understand and accept this
+                  {t("shell.premiumGate.accept")}
                 </label>
                 <Button variant="outline" size="sm" className="justify-self-start" disabled={!accepted} onClick={playWithoutPremium}>
-                  Play without Premium
+                  {t("shell.premiumGate.playWithout")}
                 </Button>
               </div>
             )}
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => void openUrl(YTM_URL)}>
-                Listen in browser
+                {t("shell.premiumGate.listenInBrowser")}
               </Button>
               {signedOut ? (
                 <Button
@@ -151,11 +140,11 @@ export function PremiumGateDialog() {
                     );
                   }}
                 >
-                  Sign in
+                  {t("shell.premiumGate.signIn")}
                 </Button>
               ) : (
                 <Button onClick={() => void openUrl(PREMIUM_URL)}>
-                  Get Music Premium
+                  {t("shell.premiumGate.getPremium")}
                 </Button>
               )}
             </div>

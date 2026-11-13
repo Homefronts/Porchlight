@@ -37,8 +37,8 @@ import { useSettingsStore } from "@/lib/store/settings";
 import { useFreePlaybackStore, usePremiumStore } from "@/lib/store/premium";
 import { openPremiumGate } from "@/lib/store/premium-gate";
 import {
-  AI_ACCURACY_TEXT,
-  AI_ACCURACY_TITLE,
+  aiAccuracyText,
+  aiAccuracyTitle,
   setAiMusic,
   useAiDetectionMode,
 } from "@/components/layout/ai-toggle-button";
@@ -188,8 +188,8 @@ function AiMusicRow() {
       description={
         <>
           Off hides AI-generated songs everywhere except your library, where
-          they're skipped unless you choose to play them. {AI_ACCURACY_TITLE}{" "}
-          {AI_ACCURACY_TEXT}
+          they're skipped unless you choose to play them. {aiAccuracyTitle()}{" "}
+          {aiAccuracyText()}
           {mode.reduced ? (
             <span className="mt-1.5 block font-medium text-amber-600 dark:text-amber-400">
               {mode.message}

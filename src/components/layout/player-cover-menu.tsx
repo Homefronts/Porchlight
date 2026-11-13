@@ -21,6 +21,7 @@ import {
 import { downloadCover, lookupITunesCover } from "@/lib/cover-art";
 import type { QueueTrack } from "@/lib/store/playback";
 import type { ShelfItem } from "@/lib/innertube/types";
+import { useT } from "@/lib/i18n";
 
 type Props = {
   track: QueueTrack | undefined;
@@ -50,6 +51,7 @@ export function PlayerCoverMenu({ track, children }: Props) {
 
   const controller = useTrackMenuController(item);
   const [saving, setSaving] = useState(false);
+  const t = useT();
 
   if (!track) return <>{children}</>;
 
@@ -70,9 +72,9 @@ export function PlayerCoverMenu({ track, children }: Props) {
         [itunes, largest ? getHighResVariant(largest, 1080) : null, largest],
         artistLine ? `${artistLine} - ${track.title}` : track.title,
       );
-      toast.success("Cover saved", { description: path });
+      toast.success(t("player.cover.saved"), { description: path });
     } catch (e) {
-      toast.error(`Couldn't save cover: ${String(e)}`);
+      toast.error(t("player.cover.saveFailed", { error: String(e) }));
     } finally {
       setSaving(false);
     }
@@ -103,7 +105,7 @@ export function PlayerCoverMenu({ track, children }: Props) {
             ) : (
               <IconDownload />
             )}
-            Download cover
+            {t("player.cover.download")}
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>

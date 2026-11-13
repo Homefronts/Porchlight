@@ -31,6 +31,7 @@ import {
 import { useSourceSwitch } from "@/lib/video-mode";
 import type { QueueTrack } from "@/lib/store/playback";
 import type { ShelfItem } from "@/lib/innertube/types";
+import { useT } from "@/lib/i18n";
 
 type Props = {
   track: QueueTrack | undefined;
@@ -84,6 +85,7 @@ export function PlayerMoreMenu({
     : { kind: "song", id: "", title: "", thumbnails: [] };
 
   const controller = useTrackMenuController(item);
+  const t = useT();
 
   return (
     <>
@@ -94,7 +96,7 @@ export function PlayerMoreMenu({
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="More"
+                aria-label={t("player.menu.more")}
                 disabled={!track}
                 // The design draws this one a hair smaller than its
                 // neighbours — three dots read heavy at 17px.
@@ -104,14 +106,14 @@ export function PlayerMoreMenu({
               </Button>
             </DropdownMenuTrigger>
           </TooltipTrigger>
-          <TooltipContent>More</TooltipContent>
+          <TooltipContent>{t("player.menu.more")}</TooltipContent>
         </Tooltip>
         <DropdownMenuContent align={align} side={side} className="w-56">
           {track ? (
             <>
               {includeSource ? (
                 <>
-                  <DropdownMenuLabel>Source</DropdownMenuLabel>
+                  <DropdownMenuLabel>{t("player.menu.source")}</DropdownMenuLabel>
                   <SourceMenuItems track={track} />
                   <DropdownMenuSeparator />
                 </>
@@ -140,6 +142,7 @@ export function PlayerMoreMenu({
 
 /** Sleep timer, in the main window's menus: the timer lives with the player there. */
 function SleepTimerItems() {
+  const t = useT();
   const { endsAt, endOfSong } = useSleepTimer();
   return (
     <>
@@ -148,22 +151,22 @@ function SleepTimerItems() {
         <DropdownMenuItem onSelect={cancelSleepTimer}>
           <IconMoonFilled />
           {endOfSong
-            ? "Cancel sleep timer (end of song)"
-            : `Cancel sleep timer (${Math.max(1, Math.ceil((endsAt! - Date.now()) / 60_000))} min left)`}
+            ? t("player.sleep.cancelEnd")
+            : t("player.sleep.cancelLeft", { count: Math.max(1, Math.ceil((endsAt! - Date.now()) / 60_000)) })}
         </DropdownMenuItem>
       ) : (
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
             <IconMoonFilled />
-            Sleep timer
+            {t("player.sleep.title")}
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent>
             {[15, 30, 45, 60, 90].map((m) => (
               <DropdownMenuItem key={m} onSelect={() => sleepAfterMinutes(m)}>
-                {m} minutes
+                {t("player.sleep.minutes", { count: m })}
               </DropdownMenuItem>
             ))}
-            <DropdownMenuItem onSelect={sleepAfterThisSong}>End of this song</DropdownMenuItem>
+            <DropdownMenuItem onSelect={sleepAfterThisSong}>{t("player.sleep.endOfSong")}</DropdownMenuItem>
           </DropdownMenuSubContent>
         </DropdownMenuSub>
       )}
@@ -177,6 +180,7 @@ function SleepTimerItems() {
  * `findAlternateVideoId` lookup — the menu form is just less wide.
  */
 function SourceMenuItems({ track }: { track: QueueTrack }) {
+  const t = useT();
   const { selected, busy, switchTo } = useSourceSwitch(track);
 
   return (
@@ -193,7 +197,7 @@ function SourceMenuItems({ track }: { track: QueueTrack }) {
         ) : (
           <IconMusicFilled className="size-4" />
         )}
-        <span className="flex-1">Song</span>
+        <span className="flex-1">{t("player.menu.song")}</span>
         {selected === "song" ? (
           <IconCheck className="size-4" stroke={2.4} />
         ) : null}
@@ -210,7 +214,7 @@ function SourceMenuItems({ track }: { track: QueueTrack }) {
         ) : (
           <IconVideoFilled className="size-4" />
         )}
-        <span className="flex-1">Video</span>
+        <span className="flex-1">{t("player.menu.video")}</span>
         {selected === "video" ? (
           <IconCheck className="size-4" stroke={2.4} />
         ) : null}

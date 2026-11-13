@@ -1,5 +1,7 @@
 {
-  "common": { "ok": "OK" },
+  "common": {
+    "ok": "OK"
+  },
   "time": {
     "justNow": "just now",
     "minutesAgo": "{count}m ago",
@@ -13,6 +15,375 @@
         "description": "Porchlight's own text. Music from YouTube stays as it is.",
         "system": "System default",
         "help": "Help improve this translation"
+      }
+    }
+  },
+  "shell": {
+    "consent": {
+      "title": "Word-by-word lyrics from Kugou and NetEase",
+      "description": "Choose whether Porchlight may contact Kugou and NetEase.",
+      "p1": "Porchlight can get word-by-word lyrics from Kugou and NetEase, two music services based in China.",
+      "p2": "If you accept, for each song you play they receive its title, artist and length. Like any website, they also see your computer's IP address. They never get your name, accounts, cookies, logins or listening history.",
+      "p3": "You can change this any time in Settings > Lyrics.",
+      "decline": "Decline",
+      "accept": "Accept"
+    },
+    "ai": {
+      "toggleLabel": "AI music",
+      "badge": "AI",
+      "shown": "AI music shown · click to hide",
+      "hidden": "AI music hidden · click to show",
+      "reduced": " · detection in reduced mode",
+      "accuracyTitle": "AI filtering is pretty good, but not perfect.",
+      "accuracyText": "We detect AI music using community-run lists checked against Spotify. New or unlisted AI artists can still slip through. If you spot one, right-click the song and choose Mark artist as AI, and it'll be hidden from then on.",
+      "playAnywayTitle": "AI music is off. Play anyway?",
+      "playAnywayText": "This song is marked as AI-generated. Playing it won't change your setting.",
+      "cancel": "Cancel",
+      "playAnyway": "Play anyway"
+    },
+    "about": {
+      "roles": {
+        "appShell": "app shell",
+        "routerQuery": "router + query",
+        "components": "components",
+        "audioStreaming": "audio streaming",
+        "syncedLyrics": "synced lyrics",
+        "lyrics": "lyrics",
+        "wordByWord": "word-by-word lyrics",
+        "lyricsTranslation": "lyrics translation",
+        "japaneseRomanization": "Japanese romanization",
+        "chineseRomanization": "Chinese romanization"
+      },
+      "close": "Close",
+      "version": "Version {version}",
+      "betaFor": " · beta for {os}",
+      "whatsNew": "What's new",
+      "description": "Fast, responsive YouTube Music desktop client. Unofficial: not affiliated with, endorsed by, or sponsored by Google or YouTube. \"YouTube\" and \"YouTube Music\" are trademarks of Google LLC. Recommended for Music Premium accounts. You're responsible for how you use Porchlight.",
+      "by": "by",
+      "forkAdding": ", adding radio mixes, offline downloads and an AI music filter. Built on",
+      "upstreamBy": "by George Shyshov (NUber), who designed and built the app this is based on. If you enjoy it, please support the original author below.",
+      "aiLists": "AI music detection uses community lists by CennoxX (spotify-ai-blocker), gounetmusic (loved-music-ai-artists) and CevvalKoala (CevvalYoutubeAIBlocklist). Thank you!",
+      "sponsorData": "Sponsor skipping uses data from SponsorBlock (sponsor.ajay.app), CC BY-NC-SA 4.0.",
+      "betaBuild": "The {os} build is in beta. If something breaks, please report it via the window menu (⋯ → Report an issue) or on",
+      "poweredBy": "Powered by",
+      "freeSoftware": "Free software ·",
+      "checking": "Checking for updates…",
+      "latest": "You're on the latest version",
+      "support": "Support",
+      "update": {
+        "readyVersion": "Version {version} ready",
+        "ready": "Update ready",
+        "restart": "Restart",
+        "availableVersion": "Version {version} available",
+        "available": "Update available",
+        "download": "Download",
+        "failed": "Update failed",
+        "retry": "Retry",
+        "installing": "Restarting to update…",
+        "downloadingVersion": "Downloading version {version}…",
+        "downloading": "Downloading update…"
+      }
+    },
+    "common": {
+      "close": "Close"
+    },
+    "channels": {
+      "title": "Choose a channel",
+      "description": "Your library, likes and recommendations belong to the channel, not the account. Pick the one Porchlight should use.",
+      "loadFailed": "Couldn't load the channel list. Check your connection and try again.",
+      "tryAgain": "Try again",
+      "brand": "Brand channel",
+      "personal": "Personal channel",
+      "none": "No channels found for this account."
+    },
+    "updateBanner": {
+      "installingTitle": "Installing update",
+      "restarting": "Restarting…",
+      "readyTitle": "Restart to update",
+      "readyVersion": "Version {version} ready",
+      "readyNoVersion": "Ready to install",
+      "failedTitle": "Update failed",
+      "clickRetry": "Click to retry",
+      "label": "{title} · {sub}"
+    },
+    "premiumGate": {
+      "checkInTitle": "Connect to the internet to keep using downloads",
+      "checkInText": "Porchlight checks your Music Premium subscription at least once every 30 days. Go online for a moment and your downloads will play again.",
+      "signInTitle": "Sign in to play music",
+      "recommendedTitle": "YouTube Music Premium recommended",
+      "checking": "Checking your YouTube Music subscription…",
+      "signedOutText": "Porchlight plays music through your YouTube Music account. Sign in with an account that has an active Music Premium subscription.",
+      "noPremiumText": "Your account doesn't have an active Music Premium subscription, which YouTube requires for ad-free playback.",
+      "adsNote1": "Free YouTube Music is supported by ads. YouTube's Terms of Service require those ads to play, and Porchlight has no way to show them, so YouTube limits ad-free playback to Premium accounts.",
+      "adsNote2": "Porchlight itself stays completely free and open source, and always will be.",
+      "adsNote3": "You can keep listening for free, with ads, at music.youtube.com.",
+      "experimentalTitle": "Play without Premium (experimental).",
+      "experimentalText": "We don't recommend this. It has no downloads, it may stop working at any time, and YouTube could limit your account. You choose to use it, and you're responsible for that choice. Porchlight and its contributors accept no responsibility for how you use it.",
+      "accept": "I understand and accept this",
+      "playWithout": "Play without Premium",
+      "listenInBrowser": "Listen in browser",
+      "signIn": "Sign in",
+      "getPremium": "Get Music Premium"
+    },
+    "whatsNew": {
+      "releaseNotes": "Release notes for Porchlight {version}",
+      "noteFromDev": "Note from the developer",
+      "newer": "Newer release",
+      "older": "Older release"
+    },
+    "topBar": {
+      "more": "More",
+      "settings": "Settings",
+      "reportIssue": "Report Issue",
+      "about": "About",
+      "quit": "Quit",
+      "back": "Back",
+      "forward": "Forward",
+      "reportBug": "Report a bug",
+      "floatingWindow": "Floating window",
+      "layout": "Layout",
+      "sideCard": "Side card",
+      "bottomBar": "Bottom bar",
+      "theme": "Theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System",
+      "minimize": "Minimize",
+      "restore": "Restore",
+      "maximize": "Maximize",
+      "report": {
+        "title": "Report an issue",
+        "description": "Tell us what went wrong or what you'd like to see. Submitting opens a prefilled GitHub issue in your browser.",
+        "summary": "Short summary (optional)",
+        "body": "What happened? Steps to reproduce, expected vs actual…",
+        "cancel": "Cancel",
+        "submit": "Submit",
+        "thanks": "Thanks! Finish submitting the issue in your browser.",
+        "openFailed": "Couldn't open the browser"
+      }
+    },
+    "nav": {
+      "home": "Home",
+      "explore": "Explore",
+      "podcasts": "Podcasts",
+      "search": "Search",
+      "library": "Library",
+      "downloads": "Downloads",
+      "rewind": "Rewind"
+    },
+    "sidebar": {
+      "beta": "Beta",
+      "betaTitle": "The build for this OS is in beta. Report anything broken via ⋯ → Report an issue.",
+      "browse": "Browse",
+      "settings": "Settings",
+      "playlists": "Playlists",
+      "likedSongs": "Liked songs",
+      "unpin": "Unpin from top",
+      "pin": "Pin to top",
+      "hide": "Hide from sidebar",
+      "signIn": "Sign in",
+      "signInFailed": "Sign-in failed: {error}",
+      "account": "Account",
+      "premium": "Premium",
+      "free": "Free",
+      "signedOut": "Signed out",
+      "signOutFailed": "Sign out failed: {error}",
+      "switchFailed": "Switch failed: {error}",
+      "connecting": "Connecting",
+      "noSession": "This account can't keep its session alive. Sign in again to re-link it.",
+      "accounts": "Accounts",
+      "unknownAccount": "Unknown account",
+      "switchChannel": "Switch channel",
+      "addAccount": "Add another account",
+      "manageGoogle": "Manage Google Account",
+      "manageSubscription": "Manage subscription",
+      "signOut": "Sign out"
+    },
+    "index": {
+      "appendix": "Appendix",
+      "appendixPlaylists": "Appendix · Playlists",
+      "menu": "MENU"
+    },
+    "floating": {
+      "unpin": "Unpin from top",
+      "pin": "Pin on top"
+    },
+    "resize": {
+      "sidebar": "Resize sidebar",
+      "player": "Resize player"
+    },
+    "entity": {
+      "play": "Play",
+      "shuffle": "Shuffle"
+    }
+  },
+  "player": {
+    "badges": {
+      "endOfSong": "end of song",
+      "minutes": "{count} min",
+      "sleepAria": "Sleep timer, {label}. Click to cancel",
+      "sleepTitle": "Sleep timer: {label}. Click to cancel",
+      "skipSponsors": "Skip sponsors",
+      "speed": "Playing at {speed}x. Click for normal speed"
+    },
+    "controls": {
+      "player": "Player",
+      "seek": "Seek",
+      "seekValue": "{current} of {total}",
+      "openFullscreen": "Open full screen",
+      "previous": "Previous",
+      "next": "Next",
+      "play": "Play",
+      "pause": "Pause",
+      "lyrics": "Lyrics",
+      "queue": "Queue",
+      "shuffle": "Shuffle",
+      "repeatOne": "Repeat one",
+      "repeatAll": "Repeat all",
+      "repeatOff": "Repeat off",
+      "songVersion": "Song version",
+      "videoVersion": "Video version",
+      "mute": "Mute",
+      "unmute": "Unmute",
+      "volume": "Volume",
+      "fullScreen": "Full screen"
+    },
+    "strip": {
+      "empty": "Nothing on the tape",
+      "pick": "Pick a record to start"
+    },
+    "nowPlaying": "Now playing",
+    "nothingYet": "Nothing yet",
+    "nothingPlaying": "Nothing playing",
+    "pickRecord": "Pick a record to start",
+    "popOut": "Pop out player",
+    "closeFloating": "Close floating player",
+    "gatefold": {
+      "nowPlayingTag": "● Now playing",
+      "nothingPlayingTag": "○ Nothing playing",
+      "time": "Time",
+      "from": "From",
+      "lyricSheet": "Lyric sheet",
+      "emptySleeve": "EMPTY SLEEVE",
+      "nothingPlayingYet": "Nothing playing yet",
+      "pickSomething": "Pick something to start",
+      "picks": "{count} picks from Home",
+      "tapToPlay": "Tap to play"
+    },
+    "playlistEmpty": "This playlist is empty",
+    "playlistLoadFailed": "Couldn't load playlist: {error}",
+    "liner": {
+      "tracks_one": "{count} track",
+      "tracks_other": "{count} tracks",
+      "title": "Liner notes",
+      "fieldTitle": "Title",
+      "fieldArtist": "Artist",
+      "fieldFrom": "From",
+      "fieldTime": "Time",
+      "playFromHere": "Play {title} from here",
+      "empty": "No tracks on this record",
+      "firstOf": "First {shown} of {count}",
+      "first": "First {shown}",
+      "loadFailed": "Couldn't load the tracks",
+      "openRecord": "Open the full record ›"
+    },
+    "crate": {
+      "crate": "Crate",
+      "shelves": "Shelves",
+      "flipHint": "{shelf}: {title}, {n} of {total}. Arrow keys flip, Enter plays.",
+      "bring": "Bring {title} to the front",
+      "addedToQueue": "Added to queue: {title}",
+      "play": "▸ Play",
+      "open": "Open ▸",
+      "queue": "+ Queue",
+      "previousRecord": "Previous record",
+      "nextRecord": "Next record",
+      "seeAll": "See all ▸",
+      "turntable": "Turntable",
+      "emptyPlatter": "Empty platter",
+      "dropRecord": "Drop a record on the platter",
+      "upNext": "Up next",
+      "queueEmpty": "Queue is empty",
+      "kind": {
+        "song": "song",
+        "video": "video",
+        "album": "album",
+        "playlist": "playlist",
+        "artist": "artist",
+        "category": "category",
+        "podcast": "podcast"
+      },
+      "roleDescription": "crate"
+    },
+    "nowPlayingCaps": "● NOW PLAYING",
+    "pickTrack": "Pick a track to start",
+    "playbackError": "Playback error: {error}",
+    "cover": {
+      "saved": "Cover saved",
+      "saveFailed": "Couldn't save cover: {error}",
+      "download": "Download cover"
+    },
+    "menu": {
+      "more": "More",
+      "source": "Source",
+      "song": "Song",
+      "video": "Video"
+    },
+    "sleep": {
+      "cancelEnd": "Cancel sleep timer (end of song)",
+      "cancelLeft": "Cancel sleep timer ({count} min left)",
+      "title": "Sleep timer",
+      "minutes": "{count} minutes",
+      "endOfSong": "End of this song"
+    },
+    "queue": {
+      "queue": "Queue",
+      "history": "History",
+      "autoplay": "Autoplay",
+      "clear": "Clear queue",
+      "closeQueue": "Close queue",
+      "close": "Close",
+      "nowPlaying": "Now playing",
+      "upNext": "Up next",
+      "previously": "Previously played",
+      "emptyQueue": "Queue is empty.",
+      "nothingQueued": "Nothing queued. Enable Autoplay to keep the music going.",
+      "noHistory": "No history yet.",
+      "stopRadio": "Stop radio",
+      "startRadio": "Start radio",
+      "remove": "Remove from queue"
+    },
+    "fullscreen": {
+      "layoutGroup": "Full screen layout",
+      "centered": "Centered",
+      "withLyrics": "With lyrics",
+      "immersive": "Immersive art",
+      "exit": "Exit fullscreen",
+      "liked": "Liked",
+      "like": "Like",
+      "removeDislike": "Remove dislike",
+      "dislike": "Dislike"
+    },
+    "lyrics": {
+      "loading": "Loading lyrics…",
+      "couldntReach": "Couldn't reach {sources}.",
+      "trying": "Trying…",
+      "tryAgain": "Try again",
+      "none": "No lyrics found.",
+      "fileAdded": "Lyrics file added",
+      "fileUnreadable": "That file couldn't be read as lyrics",
+      "fileRemoveFailed": "That lyrics file couldn't be removed",
+      "source": "Lyrics source",
+      "sourceForSong": "Source for this song",
+      "auto": "Auto",
+      "romanization": "Show romanization",
+      "translateTo": "Translate to {language}",
+      "useFile": "Use a lyrics file…",
+      "removeFile": "Remove lyrics file",
+      "badge": {
+        "word": "WORD",
+        "line": "LINE",
+        "text": "TEXT"
       }
     }
   }

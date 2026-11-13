@@ -19,11 +19,11 @@ import {
 import { useSettingsStore } from "@/lib/store/settings";
 import { allowHeldStart, usePlaybackStore } from "@/lib/store/playback";
 import { cn } from "@/lib/utils";
+import { t, useT } from "@/lib/i18n";
 
 /** Copy agreed with the user; shown once on first opt-out and in Settings. */
-export const AI_ACCURACY_TITLE = "AI filtering is pretty good, but not perfect.";
-export const AI_ACCURACY_TEXT =
-  "We detect AI music using community-run lists checked against Spotify. New or unlisted AI artists can still slip through. If you spot one, right-click the song and choose Mark artist as AI, and it'll be hidden from then on.";
+export const aiAccuracyTitle = () => t("shell.ai.accuracyTitle");
+export const aiAccuracyText = () => t("shell.ai.accuracyText");
 
 const useNoticeOpen = create<{ open: boolean; setOpen: (v: boolean) => void }>()(
   (set) => ({ open: false, setOpen: (open) => set({ open }) }),
@@ -46,6 +46,7 @@ export function useAiDetectionMode() {
 }
 
 export function AiToggleButton({ className }: { className?: string }) {
+  const t = useT();
   const on = useSettingsStore((s) => s.aiMusic);
   const mode = useAiDetectionMode();
   const noticeReason = useAiDataStore((s) => s.noticeReason);
@@ -66,7 +67,7 @@ export function AiToggleButton({ className }: { className?: string }) {
         <Button
           variant="ghost"
           size="icon"
-          aria-label="AI music"
+          aria-label={t("shell.ai.toggleLabel")}
           aria-pressed={!on}
           onClick={() => setAiMusic(!on)}
           className={cn("relative w-auto px-1.5", className)}
@@ -77,7 +78,7 @@ export function AiToggleButton({ className }: { className?: string }) {
               !on && "line-through decoration-2",
             )}
           >
-            AI
+            {t("shell.ai.badge")}
           </span>
           {mode.reduced ? (
             <span className="absolute right-0.5 top-0.5 size-1.5 rounded-full bg-amber-500" />
@@ -85,8 +86,8 @@ export function AiToggleButton({ className }: { className?: string }) {
         </Button>
       </TooltipTrigger>
       <TooltipContent side="bottom">
-        {on ? "AI music shown · click to hide" : "AI music hidden · click to show"}
-        {mode.reduced ? " · detection in reduced mode" : ""}
+        {on ? t("shell.ai.shown") : t("shell.ai.hidden")}
+        {mode.reduced ? t("shell.ai.reduced") : ""}
       </TooltipContent>
     </Tooltip>
   );
@@ -94,16 +95,17 @@ export function AiToggleButton({ className }: { className?: string }) {
 
 /** Mounted once (top bar); opened by the first opt-out. */
 export function AiNoticeDialog() {
+  const t = useT();
   const { open, setOpen } = useNoticeOpen();
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{AI_ACCURACY_TITLE}</DialogTitle>
-          <DialogDescription>{AI_ACCURACY_TEXT}</DialogDescription>
+          <DialogTitle>{t("shell.ai.accuracyTitle")}</DialogTitle>
+          <DialogDescription>{t("shell.ai.accuracyText")}</DialogDescription>
         </DialogHeader>
         <div className="flex justify-end">
-          <Button onClick={() => setOpen(false)}>OK</Button>
+          <Button onClick={() => setOpen(false)}>{t("common.ok")}</Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -132,20 +134,18 @@ export function askPlayAnyway(start: () => void): void {
 
 /** Mounted once (top bar). */
 export function PlayAnywayDialog() {
+  const t = useT();
   const { run, set } = usePlayAnyway();
   return (
     <Dialog open={!!run} onOpenChange={(o) => !o && set(null)}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>AI music is off. Play anyway?</DialogTitle>
-          <DialogDescription>
-            This song is marked as AI-generated. Playing it won't change your
-            setting.
-          </DialogDescription>
+          <DialogTitle>{t("shell.ai.playAnywayTitle")}</DialogTitle>
+          <DialogDescription>{t("shell.ai.playAnywayText")}</DialogDescription>
         </DialogHeader>
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={() => set(null)}>
-            Cancel
+            {t("shell.ai.cancel")}
           </Button>
           <Button
             onClick={() => {
@@ -153,7 +153,7 @@ export function PlayAnywayDialog() {
               set(null);
             }}
           >
-            Play anyway
+            {t("shell.ai.playAnyway")}
           </Button>
         </div>
       </DialogContent>

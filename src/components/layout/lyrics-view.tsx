@@ -56,6 +56,7 @@ import type { QueueTrack } from "@/lib/store/playback";
 import { useScrubStore } from "@/lib/store/scrub";
 import { useLookFamily } from "@/components/theme/look-type";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 type Pref = LyricsSource | "auto";
 
@@ -145,10 +146,11 @@ export function LyricsBody({
   /** Full-screen sizing: bigger type, same motion. */
   large?: boolean;
 }) {
+  const t = useT();
   if (!state.hasTrack) return null;
   if (state.isLoading && !state.active) {
     return (
-      <p className="px-4 py-2 text-sm text-muted-foreground">Loading lyrics…</p>
+      <p className="px-4 py-2 text-sm text-muted-foreground">{t("player.lyrics.loading")}</p>
     );
   }
   if (!state.active) {
@@ -159,8 +161,7 @@ export function LyricsBody({
       return (
         <div className="flex flex-col items-start gap-2 px-4 py-2">
           <p className="text-sm text-muted-foreground">
-            Couldn&apos;t reach{" "}
-            {state.failed.map((s) => SOURCE_LABELS[s]).join(", ")}.
+            {t("player.lyrics.couldntReach", { sources: state.failed.map((s) => SOURCE_LABELS[s]).join(", ") })}
           </p>
           <Button
             variant="secondary"
@@ -169,14 +170,14 @@ export function LyricsBody({
             disabled={state.isRetrying}
           >
             <IconRefresh className={state.isRetrying ? "animate-spin" : ""} />
-            {state.isRetrying ? "Trying…" : "Try again"}
+            {state.isRetrying ? t("player.lyrics.trying") : t("player.lyrics.tryAgain")}
           </Button>
         </div>
       );
     }
     return (
       <p className="px-4 py-2 text-sm text-muted-foreground">
-        No lyrics found.
+        {t("player.lyrics.none")}
       </p>
     );
   }
@@ -625,6 +626,7 @@ export function LyricsSourceButton({
   state: LyricsViewState;
   className?: string;
 }) {
+  const t = useT();
   const { videoId, pref, setPref, best, availability } = state;
   const order = useLyricsSettings((s) => s.order);
   const off = useLyricsSettings((s) => s.off);
@@ -671,9 +673,9 @@ export function LyricsSourceButton({
       if (settings.off.includes("file")) settings.setOn("file", true);
       await refreshFile();
       setPref("file");
-      toast("Lyrics file added");
+      toast(t("player.lyrics.fileAdded"));
     } catch {
-      toast("That file couldn't be read as lyrics");
+      toast(t("player.lyrics.fileUnreadable"));
     }
   };
 
@@ -684,7 +686,7 @@ export function LyricsSourceButton({
       if (pref === "file") setPref("auto");
       await refreshFile();
     } catch {
-      toast.error("That lyrics file couldn't be removed");
+      toast.error(t("player.lyrics.fileRemoveFailed"));
     }
   };
 
@@ -704,20 +706,20 @@ export function LyricsSourceButton({
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Lyrics source"
+                aria-label={t("player.lyrics.source")}
                 className={cn(playerIconButton, className)}
               >
                 <IconMicrophoneFilled />
               </Button>
             </DropdownMenuTrigger>
           </TooltipTrigger>
-          <TooltipContent>Lyrics source</TooltipContent>
+          <TooltipContent>{t("player.lyrics.source")}</TooltipContent>
         </Tooltip>
         <DropdownMenuContent align="start" className="w-64">
-          <DropdownMenuLabel>Source for this song</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("player.lyrics.sourceForSong")}</DropdownMenuLabel>
           <DropdownMenuItem onSelect={() => setPref("auto")}>
             <span className="flex-1">
-              Auto
+              {t("player.lyrics.auto")}
               {best ? (
                 <span className="ml-1 text-xs text-muted-foreground">
                   ({SOURCE_LABELS[best]})
@@ -770,27 +772,27 @@ export function LyricsSourceButton({
             checked={romanize}
             onCheckedChange={setRomanize}
           >
-            Show romanization
+            {t("player.lyrics.romanization")}
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={translate}
             onCheckedChange={setTranslate}
           >
-            Translate to {langLabel}
+            {t("player.lyrics.translateTo", { language: langLabel })}
           </DropdownMenuCheckboxItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             disabled={!videoId}
             onSelect={() => fileInput.current?.click()}
           >
-            <span className="flex-1">Use a lyrics file…</span>
+            <span className="flex-1">{t("player.lyrics.useFile")}</span>
             <span className="font-mono text-[10px] tracking-[0.13em] text-muted-foreground">
               .TTML .LRC
             </span>
           </DropdownMenuItem>
           {hasFile ? (
             <DropdownMenuItem onSelect={() => void onRemoveFile()}>
-              Remove lyrics file
+              {t("player.lyrics.removeFile")}
             </DropdownMenuItem>
           ) : null}
         </DropdownMenuContent>

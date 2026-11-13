@@ -98,45 +98,46 @@ import { cn } from "@/lib/utils";
 import { useActiveLook } from "@/lib/theme/store";
 import { isLinerLook } from "@/lib/theme/looks";
 import { PorchlightMark } from "@/components/theme/porchlight-mark";
+import { useT } from "@/lib/i18n";
 
 export const NAV_ITEMS = [
-  { to: "/", label: "Home", icon: IconHome, iconOn: IconHomeFilled },
+  { to: "/", label: "shell.nav.home", icon: IconHome, iconOn: IconHomeFilled },
   {
     to: "/explore",
-    label: "Explore",
+    label: "shell.nav.explore",
     icon: IconBrandSafari,
     iconOn: IconBrandSafariFilled,
   },
   // Tabler has no filled microphone glyph.
   {
     to: "/podcasts",
-    label: "Podcasts",
+    label: "shell.nav.podcasts",
     icon: IconMicrophone2,
     iconOn: IconMicrophone2,
   },
   {
     to: "/search",
-    label: "Search",
+    label: "shell.nav.search",
     icon: IconSearch,
     iconOn: IconSearchFilled,
   },
   {
     to: "/library",
-    label: "Library",
+    label: "shell.nav.library",
     icon: IconBookmarks,
     iconOn: IconBookmarksFilled,
   },
   // Tabler has no filled download glyph, so the outline stays when active.
   {
     to: "/downloads",
-    label: "Downloads",
+    label: "shell.nav.downloads",
     icon: IconDownload,
     iconOn: IconDownload,
   },
   // Tabler has no filled history glyph either.
   {
     to: "/rewind",
-    label: "Rewind",
+    label: "shell.nav.rewind",
     icon: IconHistory,
     iconOn: IconHistory,
   },
@@ -155,6 +156,7 @@ export const LIKED_ID = "VLLM";
 const ART_BTN_CLS = "h-auto py-[7px]";
 
 export function AppSidebar() {
+  const t = useT();
   const { location } = useRouterState();
   const look = useActiveLook();
   const liner = isLinerLook(look);
@@ -208,10 +210,10 @@ export function AppSidebar() {
         {IS_BETA_PLATFORM && (
           <span
             data-sidebar-label
-            title="The build for this OS is in beta — report anything broken via ⋯ → Report an issue."
+            title={t("shell.sidebar.betaTitle")}
             className="shrink-0 rounded-[4px] border border-border/60 bg-muted/40 px-1 pb-px pt-0.5 text-[10px] font-semibold uppercase leading-none tracking-wider text-muted-foreground"
           >
-            Beta
+            {t("shell.sidebar.beta")}
           </span>
         )}
       </SidebarHeader>
@@ -221,7 +223,7 @@ export function AppSidebar() {
           never slides out of view when the library is long. */}
       <SidebarContent className="gap-0 overflow-hidden">
         <SidebarGroup className="shrink-0 py-1 group-data-[collapsible=icon]:mt-1">
-          <SidebarGroupLabel>Browse</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("shell.sidebar.browse")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {NAV_ITEMS.map(({ to, label, icon, iconOn }) => {
@@ -232,11 +234,11 @@ export function AppSidebar() {
                     <SidebarMenuButton
                       asChild
                       isActive={on}
-                      tooltip={label}
+                      tooltip={t(label)}
                     >
                       <Link to={to}>
                         <Icon />
-                        <span>{label}</span>
+                        <span>{t(label)}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -267,11 +269,11 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              tooltip="Settings"
+              tooltip={t("shell.sidebar.settings")}
               onClick={() => openSettings()}
             >
               <IconSettings />
-              <span>Settings</span>
+              <span>{t("shell.sidebar.settings")}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -394,6 +396,7 @@ function SidebarPlaylists({
   isPlaylistOn: (id: string) => boolean;
   onScrollableChange: (scrollable: boolean) => void;
 }) {
+  const t = useT();
   const rows = usePlaylistRows();
   const pin = usePinnedPlaylistsStore((s) => s.pin);
   const unpin = usePinnedPlaylistsStore((s) => s.unpin);
@@ -448,7 +451,7 @@ function SidebarPlaylists({
   // restores the rail's own 14px inset so the tiles stay centered.
   return (
     <SidebarGroup className="mt-2 flex min-h-0 flex-1 flex-col py-1 pe-0 group-data-[collapsible=icon]:mt-4 group-data-[collapsible=icon]:pe-2.5">
-      <SidebarGroupLabel>Playlists</SidebarGroupLabel>
+      <SidebarGroupLabel>{t("shell.sidebar.playlists")}</SidebarGroupLabel>
       {/* The scroll lives here, not on SidebarContent, so the label above
           stays put and only the playlist rows move. `app-scroll` is the
           same thin scrollbar the main content and carousels use. */}
@@ -464,7 +467,7 @@ function SidebarPlaylists({
             <SidebarMenuButton
               asChild
               isActive={isPlaylistOn(LIKED_ID)}
-              tooltip="Liked songs"
+              tooltip={t("shell.sidebar.likedSongs")}
               className={ART_BTN_CLS}
             >
               <Link to="/playlist/$id" params={{ id: LIKED_ID }}>
@@ -476,7 +479,7 @@ function SidebarPlaylists({
                   className="size-5 shrink-0 rounded-[5px]"
                   heart={52}
                 />
-                <span>Liked songs</span>
+                <span>{t("shell.sidebar.likedSongs")}</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -507,7 +510,7 @@ function SidebarPlaylists({
                   {p.pinned ? (
                     <ContextMenuItem onSelect={() => unpin(p.id)}>
                       <IconPinnedOffFilled />
-                      Unpin from top
+                      {t("shell.sidebar.unpin")}
                     </ContextMenuItem>
                   ) : (
                     <ContextMenuItem
@@ -520,12 +523,12 @@ function SidebarPlaylists({
                       }
                     >
                       <IconPinFilled />
-                      Pin to top
+                      {t("shell.sidebar.pin")}
                     </ContextMenuItem>
                   )}
                   <ContextMenuItem onSelect={() => hide(p.id)}>
                     <IconEyeOffFilled />
-                    Hide from sidebar
+                    {t("shell.sidebar.hide")}
                   </ContextMenuItem>
                 </ContextMenuContent>
               </ContextMenu>
@@ -557,22 +560,25 @@ const MANAGE_SUBSCRIPTION_URL = "https://music.youtube.com/paid_memberships";
  * the same fresh `start_login` as "Add another account".
  */
 function SidebarSignInButton({ relinkId }: { relinkId: string | null }) {
+  const t = useT();
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <Button
-          title="Sign in"
+          title={t("shell.sidebar.signIn")}
           onClick={() => {
             const call = relinkId
               ? invoke("relink_account", { id: relinkId })
               : invoke("start_login");
-            call.catch((e) => toast.error(`Sign-in failed: ${String(e)}`));
+            call.catch((e) =>
+              toast.error(t("shell.sidebar.signInFailed", { error: String(e) })),
+            );
           }}
           className="on-brand grid h-9 w-full grid-cols-[32px_minmax(0,1fr)] items-center gap-0.5 overflow-hidden py-0 ps-0.5 pe-2.5 [&>svg]:justify-self-center"
         >
           <IconLogin stroke={2.3} />
           <span data-sidebar-label className="truncate text-start">
-            Sign in
+            {t("shell.sidebar.signIn")}
           </span>
         </Button>
       </SidebarMenuItem>
@@ -581,6 +587,7 @@ function SidebarSignInButton({ relinkId }: { relinkId: string | null }) {
 }
 
 export function UserProfile() {
+  const t = useT();
   const loggedIn = useQuery(authLoggedInQuery);
   const account = useQuery(accountInfoQuery(loggedIn.data === true));
   const accounts = useAccounts();
@@ -620,7 +627,7 @@ export function UserProfile() {
     activeAccount?.channelName ||
     activeAccount?.name ||
     activeAccount?.email ||
-    "Account";
+    t("shell.sidebar.account");
   const email = live?.email ?? activeAccount?.email ?? "";
   const photoUrl =
     live?.photoUrl ??
@@ -629,7 +636,7 @@ export function UserProfile() {
     undefined;
   const initial = (name || email || "?").trim().charAt(0).toUpperCase();
   const isPremium = premiumStatus === "premium";
-  const tierLabel = isPremium ? "Premium" : "Free";
+  const tierLabel = isPremium ? t("shell.sidebar.premium") : t("shell.sidebar.free");
 
   const signOut = async () => {
     if (!activeAccount) {
@@ -639,9 +646,9 @@ export function UserProfile() {
       try {
         await invoke("clear_cookies");
         resetInnertube();
-        toast.success("Signed out");
+        toast.success(t("shell.sidebar.signedOut"));
       } catch (e) {
-        toast.error(`Sign out failed: ${String(e)}`);
+        toast.error(t("shell.sidebar.signOutFailed", { error: String(e) }));
       }
       return;
     }
@@ -651,9 +658,9 @@ export function UserProfile() {
       // active (multi-account case) or drops the user to signed-out
       // (last-account case). Either way `accounts-changed` fires and
       // the listener takes care of query invalidation + client reset.
-      toast.success("Signed out");
+      toast.success(t("shell.sidebar.signedOut"));
     } catch (e) {
-      toast.error(`Sign out failed: ${String(e)}`);
+      toast.error(t("shell.sidebar.signOutFailed", { error: String(e) }));
     }
   };
 
@@ -666,7 +673,7 @@ export function UserProfile() {
     try {
       await invoke("start_login");
     } catch (e) {
-      toast.error(`Sign-in failed: ${String(e)}`);
+      toast.error(t("shell.sidebar.signInFailed", { error: String(e) }));
     }
   };
 
@@ -677,7 +684,7 @@ export function UserProfile() {
       // `accounts-changed` listener handles all invalidation — no need
       // to do it manually here.
     } catch (e) {
-      toast.error(`Switch failed: ${String(e)}`);
+      toast.error(t("shell.sidebar.switchFailed", { error: String(e) }));
     }
   };
 
@@ -721,7 +728,7 @@ export function UserProfile() {
                 // First look at the session, typically the few seconds
                 // at launch while the keeper renews an old snapshot.
                 <IconLoader2
-                  aria-label="Connecting"
+                  aria-label={t("shell.sidebar.connecting")}
                   className="ms-auto size-3.5 shrink-0 animate-spin text-t6 group-data-[collapsible=icon]:hidden"
                 />
               ) : null}
@@ -749,8 +756,7 @@ export function UserProfile() {
                   onClick={addAccount}
                   className="w-full px-2 py-1.5 text-start text-[11px] leading-snug text-amber-600 underline-offset-2 hover:underline dark:text-amber-400"
                 >
-                  This account can&apos;t keep its session alive. Sign in again
-                  to re-link it.
+                  {t("shell.sidebar.noSession")}
                 </button>
                 <DropdownMenuSeparator />
               </>
@@ -758,7 +764,7 @@ export function UserProfile() {
             {allAccounts.length ? (
               <>
                 <DropdownMenuLabel className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Accounts
+                  {t("shell.sidebar.accounts")}
                 </DropdownMenuLabel>
                 {allAccounts.map((a) => (
                   <DropdownMenuItem
@@ -788,7 +794,7 @@ export function UserProfile() {
                     </Avatar>
                     <div className="flex min-w-0 flex-col leading-tight">
                       <span className="truncate">
-                        {a.name || a.email || "Unknown account"}
+                        {a.name || a.email || t("shell.sidebar.unknownAccount")}
                       </span>
                       {a.email && a.name ? (
                         <span className="truncate text-[10px] text-muted-foreground">
@@ -806,26 +812,26 @@ export function UserProfile() {
             ) : null}
             <DropdownMenuItem onSelect={() => openChannelPicker()}>
               <IconUsersGroupFilled />
-              Switch channel
+              {t("shell.sidebar.switchChannel")}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={addAccount}>
               <IconUserPlusFilled />
-              Add another account
+              {t("shell.sidebar.addAccount")}
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={openExternal(MANAGE_GOOGLE_URL)}>
               <IconUserCogFilled />
-              Manage Google Account
+              {t("shell.sidebar.manageGoogle")}
               <IconExternalLink className="ms-auto" />
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={openExternal(MANAGE_SUBSCRIPTION_URL)}>
               <IconCreditCardFilled />
-              Manage subscription
+              {t("shell.sidebar.manageSubscription")}
               <IconExternalLink className="ms-auto" />
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onSelect={signOut}>
               <IconLogout stroke={2.3} />
-              Sign out
+              {t("shell.sidebar.signOut")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

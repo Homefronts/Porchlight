@@ -38,6 +38,7 @@ import { isFloatingPlayerWindow } from "@/lib/floating-player";
 import { pickRadioChip, toggleRadioMix } from "@/lib/radio-mix";
 import { useActiveLook } from "@/lib/theme/store";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 function formatDuration(seconds?: number): string {
   if (!seconds || Number.isNaN(seconds)) return "—";
@@ -75,6 +76,7 @@ const QUEUE_SCROLL = cn(
  * Popover anchored to the queue button (bottom-bar variant).
  */
 export function QueueBody({ onClose }: { onClose?: () => void }) {
+  const t = useT();
   const { queue, index, playing, autoRadio, radio } = usePlaybackStore(
     useShallow((s) => ({
       queue: s.queue,
@@ -126,8 +128,8 @@ export function QueueBody({ onClose }: { onClose?: () => void }) {
             "[&_button[aria-selected=true]]:font-semibold [&_button[aria-selected=true]]:text-t1",
           )}
           tabs={[
-            { id: "queue", label: "Queue" },
-            { id: "history", label: "History" },
+            { id: "queue", label: t("player.queue.queue") },
+            { id: "history", label: t("player.queue.history") },
           ]}
         />
         <div className="flex items-center gap-0.5">
@@ -136,7 +138,7 @@ export function QueueBody({ onClose }: { onClose?: () => void }) {
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Autoplay"
+                aria-label={t("player.queue.autoplay")}
                 aria-pressed={autoRadio}
                 onClick={() => setAutoRadio(!autoRadio)}
                 className={cn(
@@ -147,14 +149,14 @@ export function QueueBody({ onClose }: { onClose?: () => void }) {
                 <IconBroadcast />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">Autoplay</TooltipContent>
+            <TooltipContent side="bottom">{t("player.queue.autoplay")}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Clear queue"
+                aria-label={t("player.queue.clear")}
                 disabled={upcoming.length === 0}
                 onClick={clearQueue}
                 className={playerIconButton}
@@ -162,7 +164,7 @@ export function QueueBody({ onClose }: { onClose?: () => void }) {
                 <IconTrashFilled />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">Clear queue</TooltipContent>
+            <TooltipContent side="bottom">{t("player.queue.clear")}</TooltipContent>
           </Tooltip>
           {onClose && (
             <Tooltip>
@@ -170,14 +172,14 @@ export function QueueBody({ onClose }: { onClose?: () => void }) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  aria-label="Close queue"
+                  aria-label={t("player.queue.closeQueue")}
                   onClick={onClose}
                   className={playerIconButton}
                 >
                   <IconX />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="bottom">Close</TooltipContent>
+              <TooltipContent side="bottom">{t("player.queue.close")}</TooltipContent>
             </Tooltip>
           )}
         </div>
@@ -246,14 +248,15 @@ function QueueTabBody({
   onRemoveAt: (i: number) => void;
   onMoveTrack: (from: number, to: number) => void;
 }) {
+  const t = useT();
   if (!active && upcoming.length === 0) {
-    return <p className="mt-3 px-2 text-[13.5px] text-t5">Queue is empty.</p>;
+    return <p className="mt-3 px-2 text-[13.5px] text-t5">{t("player.queue.emptyQueue")}</p>;
   }
 
   return (
     <>
       {active && (
-        <QueueSection label="Now playing">
+        <QueueSection label={t("player.queue.nowPlaying")}>
           <QueueRow
             track={active}
             number={1}
@@ -266,13 +269,13 @@ function QueueTabBody({
 
       {upcoming.length > 0 ? (
         <>
-          <QueueSection label="Up next">
-            {upcoming.map((t, i) => {
+          <QueueSection label={t("player.queue.upNext")}>
+            {upcoming.map((u, i) => {
               const queueIdx = index + 1 + i;
               return (
                 <QueueRow
-                  key={`u-${t.videoId}-${i}`}
-                  track={t}
+                  key={`u-${u.videoId}-${i}`}
+                  track={u}
                   number={i + 2}
                   onActivate={() => onGoTo(queueIdx)}
                   onRemove={() => onRemoveAt(queueIdx)}
@@ -308,7 +311,7 @@ function QueueTabBody({
         </>
       ) : active ? (
         <p className="mt-3 px-2 text-[13.5px] text-t5">
-          Nothing queued. Enable Autoplay to keep the music going.
+          {t("player.queue.nothingQueued")}
         </p>
       ) : null}
     </>
@@ -324,15 +327,16 @@ function HistoryTabBody({
   onGoTo: (i: number) => void;
   onRemoveAt: (i: number) => void;
 }) {
+  const t = useT();
   if (history.length === 0) {
-    return <p className="mt-3 px-2 text-[13.5px] text-t5">No history yet.</p>;
+    return <p className="mt-3 px-2 text-[13.5px] text-t5">{t("player.queue.noHistory")}</p>;
   }
   return (
-    <QueueSection label="Previously played" muted>
-      {history.map((t, i) => (
+    <QueueSection label={t("player.queue.previously")} muted>
+      {history.map((h, i) => (
         <QueueRow
-          key={`h-${t.videoId}-${i}`}
-          track={t}
+          key={`h-${h.videoId}-${i}`}
+          track={h}
           number={i + 1}
           onActivate={() => onGoTo(i)}
           onRemove={() => onRemoveAt(i)}
@@ -354,13 +358,14 @@ export function QueueToggleButton({
   open: boolean;
   onToggle: () => void;
 }) {
+  const t = useT();
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
           variant="ghost"
           size="icon"
-          aria-label="Queue"
+          aria-label={t("player.queue.queue")}
           aria-pressed={open}
           onClick={onToggle}
           className={cn(playerIconButton, open && playerIconButtonOn)}
@@ -368,7 +373,7 @@ export function QueueToggleButton({
           <IconPlaylist />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>Queue</TooltipContent>
+      <TooltipContent>{t("player.queue.queue")}</TooltipContent>
     </Tooltip>
   );
 }
@@ -421,6 +426,7 @@ export function RadioToggleButton({ className }: { className?: string } = {}) {
   const on = usePlaybackStore((s) => !!s.radio);
   const hasTrack = usePlaybackStore((s) => s.index >= 0);
   const [busy, setBusy] = useState(false);
+  const t = useT();
   if (isFloatingPlayerWindow()) return null;
   return (
     <Tooltip>
@@ -428,7 +434,7 @@ export function RadioToggleButton({ className }: { className?: string } = {}) {
         <Button
           variant="ghost"
           size="icon"
-          aria-label={on ? "Stop radio" : "Start radio"}
+          aria-label={on ? t("player.queue.stopRadio") : t("player.queue.startRadio")}
           aria-pressed={on}
           disabled={!hasTrack || busy}
           onClick={() => {
@@ -440,7 +446,7 @@ export function RadioToggleButton({ className }: { className?: string } = {}) {
           <IconRadio />
         </Button>
       </TooltipTrigger>
-      <TooltipContent>{on ? "Stop radio" : "Start radio"}</TooltipContent>
+      <TooltipContent>{on ? t("player.queue.stopRadio") : t("player.queue.startRadio")}</TooltipContent>
     </Tooltip>
   );
 }
@@ -452,6 +458,7 @@ export function RadioToggleButton({ className }: { className?: string } = {}) {
  * if the right edge would overflow the viewport). Fixed 28rem×28rem.
  */
 export function QueuePopover({ className }: { className?: string }) {
+  const t = useT();
   return (
     <Popover>
       <Tooltip>
@@ -460,14 +467,14 @@ export function QueuePopover({ className }: { className?: string }) {
             <Button
               variant="ghost"
               size="icon"
-              aria-label="Queue"
+              aria-label={t("player.queue.queue")}
               className={cn(playerIconButton, className)}
             >
               <IconPlaylist />
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>
-        <TooltipContent>Queue</TooltipContent>
+        <TooltipContent>{t("player.queue.queue")}</TooltipContent>
       </Tooltip>
       <PopoverContent
         align="center"
@@ -547,6 +554,7 @@ function QueueRow({
   onDrop?: () => void;
   onDragEnd?: () => void;
 }) {
+  const t = useT();
   const subtitle =
     track.artists?.map((a) => a.name).join(", ") ?? track.subtitle ?? "";
   // Held-back AI (AI music off): greyed, skipped, playable on request.
@@ -704,7 +712,7 @@ function QueueRow({
           <Button
             variant="ghost"
             size="icon-xs"
-            aria-label="Remove from queue"
+            aria-label={t("player.queue.remove")}
             className="w-0 overflow-hidden text-t6 opacity-0 transition-[width,opacity,margin] duration-150 hover:bg-w090 hover:text-t1 group-hover:ml-1 group-hover:w-6 group-hover:opacity-100"
             onClick={(e) => {
               e.stopPropagation();

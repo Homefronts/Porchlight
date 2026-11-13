@@ -68,6 +68,7 @@ import { flushPlaybackSave } from "@/lib/store/playback";
 import { IS_MAC } from "@/lib/platform";
 import { openSettings } from "@/lib/store/settings-dialog";
 import { AboutDialog } from "@/components/layout/about-dialog";
+import { useT } from "@/lib/i18n";
 
 // Caption-bar nav buttons get just an icon-color shift on hover —
 // the default ghost-button square highlight competes visually with
@@ -96,6 +97,7 @@ const IS_TAURI =
  */
 /** `sidebarToggle`: off in layouts with no nav for the toggle to open (Index). */
 export function TopBar({ sidebarToggle = true }: { sidebarToggle?: boolean } = {}) {
+  const t = useT();
   const router = useRouter();
   const fullscreen = useFullscreenStore((s) => s.open);
   const [maximized, setMaximized] = useState(false);
@@ -155,7 +157,7 @@ export function TopBar({ sidebarToggle = true }: { sidebarToggle?: boolean } = {
                 variant="ghost"
                 size="icon"
                 className={NAV_BTN_CLS}
-                aria-label="More"
+                aria-label={t("shell.topBar.more")}
               >
                 <MoreHorizontalIcon />
               </Button>
@@ -163,7 +165,7 @@ export function TopBar({ sidebarToggle = true }: { sidebarToggle?: boolean } = {
             <DropdownMenuContent align="start" className="w-56">
               <DropdownMenuItem onSelect={() => openSettings()}>
                 <IconSettingsFilled />
-                Settings
+                {t("shell.topBar.settings")}
               </DropdownMenuItem>
               <LayoutSubMenu />
               <ThemeSubMenu />
@@ -172,11 +174,11 @@ export function TopBar({ sidebarToggle = true }: { sidebarToggle?: boolean } = {
 
               <DropdownMenuItem onSelect={() => setReportOpen(true)}>
                 <IconBugFilled />
-                Report Issue
+                {t("shell.topBar.reportIssue")}
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setAboutOpen(true)}>
                 <IconInfoCircleFilled />
-                About
+                {t("shell.topBar.about")}
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />
@@ -189,7 +191,7 @@ export function TopBar({ sidebarToggle = true }: { sidebarToggle?: boolean } = {
                 }}
               >
                 <IconPowerFilled />
-                Quit
+                {t("shell.topBar.quit")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -204,7 +206,7 @@ export function TopBar({ sidebarToggle = true }: { sidebarToggle?: boolean } = {
                 size="icon"
                 className={NAV_BTN_CLS}
                 onClick={() => router.history.back()}
-                aria-label="Back"
+                aria-label={t("shell.topBar.back")}
               >
                 <ArrowLeftIcon />
               </Button>
@@ -213,7 +215,7 @@ export function TopBar({ sidebarToggle = true }: { sidebarToggle?: boolean } = {
                 size="icon"
                 className={NAV_BTN_CLS}
                 onClick={() => router.history.forward()}
-                aria-label="Forward"
+                aria-label={t("shell.topBar.forward")}
               >
                 <ArrowRightIcon />
               </Button>
@@ -237,14 +239,14 @@ export function TopBar({ sidebarToggle = true }: { sidebarToggle?: boolean } = {
                 <Button
                   variant="ghost"
                   size="icon"
-                  aria-label="Report a bug"
+                  aria-label={t("shell.topBar.reportBug")}
                   onClick={() => setReportOpen(true)}
                   className={NAV_BTN_CLS}
                 >
                   <IconBug />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="bottom">Report a bug</TooltipContent>
+              <TooltipContent side="bottom">{t("shell.topBar.reportBug")}</TooltipContent>
             </Tooltip>
             <AiToggleButton
               className={cn(NAV_BTN_CLS, IS_MAC ? "mr-2" : "mr-[140px]")}
@@ -289,7 +291,7 @@ export function TopBar({ sidebarToggle = true }: { sidebarToggle?: boolean } = {
           <button
             type="button"
             onClick={() => win().minimize()}
-            aria-label="Minimize"
+            aria-label={t("shell.topBar.minimize")}
             className="flex h-full w-11 items-center justify-center text-foreground/85 transition-colors hover:bg-titlebar-hover"
           >
             <MinimizeGlyph />
@@ -297,7 +299,7 @@ export function TopBar({ sidebarToggle = true }: { sidebarToggle?: boolean } = {
           <button
             type="button"
             onClick={() => win().toggleMaximize()}
-            aria-label={maximized ? "Restore" : "Maximize"}
+            aria-label={maximized ? t("shell.topBar.restore") : t("shell.topBar.maximize")}
             className="flex h-full w-11 items-center justify-center text-foreground/85 transition-colors hover:bg-titlebar-hover"
           >
             {maximized ? <RestoreGlyph /> : <MaximizeGlyph />}
@@ -305,7 +307,7 @@ export function TopBar({ sidebarToggle = true }: { sidebarToggle?: boolean } = {
           <button
             type="button"
             onClick={() => win().close()}
-            aria-label="Close"
+            aria-label={t("shell.common.close")}
             className="flex h-full w-11 items-center justify-center text-foreground/85 transition-colors hover:bg-[#c42b1c] hover:text-white"
           >
             <CloseGlyph />
@@ -322,6 +324,7 @@ export function TopBar({ sidebarToggle = true }: { sidebarToggle?: boolean } = {
 }
 
 export function LayoutSubMenu() {
+  const t = useT();
   const mode = useLayoutStore((s) => s.mode);
   const setMode = useLayoutStore((s) => s.setMode);
   const sidebar = useThemeStore((s) => s.layout === "sidebar");
@@ -333,7 +336,7 @@ export function LayoutSubMenu() {
         onCheckedChange={toggleFloating}
       >
         <IconExternalLink />
-        Floating window
+        {t("shell.topBar.floatingWindow")}
       </DropdownMenuCheckboxItem>
     );
   }
@@ -341,7 +344,7 @@ export function LayoutSubMenu() {
     <DropdownMenuSub>
       <DropdownMenuSubTrigger>
         <IconLayoutFilled />
-        Layout
+        {t("shell.topBar.layout")}
       </DropdownMenuSubTrigger>
       <DropdownMenuSubContent>
         <DropdownMenuRadioGroup
@@ -350,15 +353,15 @@ export function LayoutSubMenu() {
         >
           <DropdownMenuRadioItem value="right">
             <IconLayoutSidebarRightFilled className="size-4" />
-            Side card
+            {t("shell.topBar.sideCard")}
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="bottom">
             <IconLayoutBottombarFilled className="size-4" />
-            Bottom bar
+            {t("shell.topBar.bottomBar")}
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="floating">
             <IconExternalLink className="size-4" />
-            Floating window
+            {t("shell.topBar.floatingWindow")}
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuSubContent>
@@ -367,6 +370,7 @@ export function LayoutSubMenu() {
 }
 
 function ThemeSubMenu() {
+  const t = useT();
   const { theme, setTheme, forcedTheme } = useTheme();
   // A non-Classic look fixes light/dark, so the choice is hidden.
   if (forcedTheme) return null;
@@ -378,7 +382,7 @@ function ThemeSubMenu() {
     <DropdownMenuSub>
       <DropdownMenuSubTrigger>
         <IconPaletteFilled />
-        Theme
+        {t("shell.topBar.theme")}
       </DropdownMenuSubTrigger>
       <DropdownMenuSubContent>
         <DropdownMenuRadioGroup
@@ -387,15 +391,15 @@ function ThemeSubMenu() {
         >
           <DropdownMenuRadioItem value="light">
             <IconSunFilled className="size-4" />
-            Light
+            {t("shell.topBar.light")}
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="dark">
             <IconMoonFilled className="size-4" />
-            Dark
+            {t("shell.topBar.dark")}
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="system">
             <IconDeviceDesktopFilled className="size-4" />
-            System
+            {t("shell.topBar.system")}
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuSubContent>
@@ -418,6 +422,7 @@ function ReportIssueDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
+  const t = useT();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
 
@@ -447,10 +452,10 @@ function ReportIssueDialog({
     if (title.trim()) params.set("title", title.trim());
     try {
       await openUrl(`${REPO_ISSUES_URL}?${params}`);
-      toast.success("Thanks! Finish submitting the issue in your browser.");
+      toast.success(t("shell.topBar.report.thanks"));
       onOpenChange(false);
     } catch (e) {
-      toast.error("Couldn't open the browser", { description: String(e) });
+      toast.error(t("shell.topBar.report.openFailed"), { description: String(e) });
     }
   };
 
@@ -471,17 +476,16 @@ function ReportIssueDialog({
         />
         <DialogClose className="absolute right-4 top-4 z-[2] grid size-7 cursor-pointer place-items-center rounded-lg border border-w070 bg-w030 text-t6 transition-colors duration-[140ms] hover:bg-w080 hover:text-t2">
           <IconX className="size-3" />
-          <span className="sr-only">Close</span>
+          <span className="sr-only">{t("shell.common.close")}</span>
         </DialogClose>
 
         {/* Right padding clears the close button. */}
         <DialogHeader className="gap-2 pr-[34px]">
           <DialogTitle className="font-headline text-2xl font-bold leading-none tracking-[-0.02em] text-t1">
-            Report an issue
+            {t("shell.topBar.report.title")}
           </DialogTitle>
           <DialogDescription className="text-[13.5px] leading-[1.5] text-t4 text-pretty">
-            Tell us what went wrong or what you'd like to see. Submitting
-            opens a prefilled GitHub issue in your browser.
+            {t("shell.topBar.report.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -489,13 +493,13 @@ function ReportIssueDialog({
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Short summary (optional)"
+            placeholder={t("shell.topBar.report.summary")}
           />
           {/* Same surface as `Input`, minus its fixed height. */}
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder="What happened? Steps to reproduce, expected vs actual…"
+            placeholder={t("shell.topBar.report.body")}
             rows={7}
             className="w-full resize-none rounded-lg border border-w120 bg-w050 px-3 py-3 text-[13.5px] leading-[1.5] text-t2 outline-none transition-[background-color,border-color,box-shadow] duration-[140ms] placeholder:text-tph hover:border-w200 hover:bg-w080 focus-visible:border-acc1 focus-visible:bg-w070 focus-visible:ring-[3px] focus-visible:ring-[rgba(var(--acc1rgb),0.18)]"
           />
@@ -507,10 +511,10 @@ function ReportIssueDialog({
             size="lg"
             onClick={() => onOpenChange(false)}
           >
-            Cancel
+            {t("shell.topBar.report.cancel")}
           </Button>
           <Button size="lg" onClick={() => void submit()} disabled={!body.trim()}>
-            Submit
+            {t("shell.topBar.report.submit")}
           </Button>
         </DialogFooter>
       </DialogContent>

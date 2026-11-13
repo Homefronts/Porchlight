@@ -32,6 +32,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useLookFamily } from "@/components/theme/look-type";
 import { PorchlightMark } from "@/components/theme/porchlight-mark";
+import { useT, type Key } from "@/lib/i18n";
 
 // Porchlight lives on the Homefronts fork; the original project and its
 // author keep their credit (and the Support / X / Discord links) below.
@@ -47,28 +48,28 @@ const DONATE_URL = "https://donatello.to/NUber";
 
 // Rendered column-first into a 4-row grid, so this order reads down the
 // left column and then down the right one.
-const CREDITS: { name: string; role: string; url: string }[] = [
-  { name: "Tauri", role: "app shell", url: "https://tauri.app" },
-  { name: "TanStack", role: "router + query", url: "https://tanstack.com" },
-  { name: "shadcn/ui", role: "components", url: "https://ui.shadcn.com" },
+const CREDITS: { name: string; role: Key; url: string }[] = [
+  { name: "Tauri", role: "shell.about.roles.appShell", url: "https://tauri.app" },
+  { name: "TanStack", role: "shell.about.roles.routerQuery", url: "https://tanstack.com" },
+  { name: "shadcn/ui", role: "shell.about.roles.components", url: "https://ui.shadcn.com" },
   {
     name: "yt-dlp",
-    role: "audio streaming",
+    role: "shell.about.roles.audioStreaming",
     url: "https://github.com/yt-dlp/yt-dlp",
   },
-  { name: "LRCLIB", role: "synced lyrics", url: "https://lrclib.net" },
+  { name: "LRCLIB", role: "shell.about.roles.syncedLyrics", url: "https://lrclib.net" },
   {
     name: "YouTube Music",
-    role: "synced lyrics",
+    role: "shell.about.roles.syncedLyrics",
     url: "https://music.youtube.com",
   },
-  { name: "Genius", role: "lyrics", url: "https://genius.com" },
-  { name: "Musixmatch", role: "lyrics", url: "https://www.musixmatch.com" },
-  { name: "Kugou", role: "word-by-word lyrics", url: "https://www.kugou.com" },
-  { name: "NetEase Cloud Music", role: "word-by-word lyrics", url: "https://music.163.com" },
-  { name: "Google Translate", role: "lyrics translation", url: "https://translate.google.com" },
-  { name: "kuroshiro", role: "Japanese romanization", url: "https://github.com/hexenq/kuroshiro" },
-  { name: "pinyin-pro", role: "Chinese romanization", url: "https://github.com/zh-lx/pinyin-pro" },
+  { name: "Genius", role: "shell.about.roles.lyrics", url: "https://genius.com" },
+  { name: "Musixmatch", role: "shell.about.roles.lyrics", url: "https://www.musixmatch.com" },
+  { name: "Kugou", role: "shell.about.roles.wordByWord", url: "https://www.kugou.com" },
+  { name: "NetEase Cloud Music", role: "shell.about.roles.wordByWord", url: "https://music.163.com" },
+  { name: "Google Translate", role: "shell.about.roles.lyricsTranslation", url: "https://translate.google.com" },
+  { name: "kuroshiro", role: "shell.about.roles.japaneseRomanization", url: "https://github.com/hexenq/kuroshiro" },
+  { name: "pinyin-pro", role: "shell.about.roles.chineseRomanization", url: "https://github.com/zh-lx/pinyin-pro" },
 ];
 
 // Footer icon button — 38px, 10px radius, on the design's `--w060` fill.
@@ -84,6 +85,7 @@ export function AboutDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
+  const t = useT();
   const [version, setVersion] = useState<string>("");
   const [checking, setChecking] = useState(false);
   const phase = useUpdateStore((s) => s.phase);
@@ -122,31 +124,33 @@ export function AboutDialog({
   const updateLine =
     phase === "ready"
       ? {
-          text: nextVersion ? `Version ${nextVersion} ready` : "Update ready",
-          action: "Restart",
+          text: nextVersion
+            ? t("shell.about.update.readyVersion", { version: nextVersion })
+            : t("shell.about.update.ready"),
+          action: t("shell.about.update.restart"),
           onClick: () => void restartToUpdate(),
         }
       : phase === "available"
         ? {
             text: nextVersion
-              ? `Version ${nextVersion} available`
-              : "Update available",
-            action: "Download",
+              ? t("shell.about.update.availableVersion", { version: nextVersion })
+              : t("shell.about.update.available"),
+            action: t("shell.about.update.download"),
             onClick: () => void downloadAvailableUpdate(),
           }
         : phase === "error"
           ? {
-              text: "Update failed",
-              action: "Retry",
+              text: t("shell.about.update.failed"),
+              action: t("shell.about.update.retry"),
               onClick: () => void downloadAvailableUpdate(),
             }
           : phase === "installing"
-            ? { text: "Restarting to update…" }
+            ? { text: t("shell.about.update.installing") }
             : phase === "downloading"
               ? {
                   text: nextVersion
-                    ? `Downloading version ${nextVersion}…`
-                    : "Downloading update…",
+                    ? t("shell.about.update.downloadingVersion", { version: nextVersion })
+                    : t("shell.about.update.downloading"),
                 }
               : null;
 
@@ -168,7 +172,7 @@ export function AboutDialog({
         />
         <DialogClose className="absolute right-4 top-4 z-[2] grid size-7 cursor-pointer place-items-center rounded-[var(--radius-button,var(--radius-lg))] border border-w070 bg-w030 text-t6 transition-colors duration-[140ms] hover:bg-w080 hover:text-t2">
           <IconX className="size-3" />
-          <span className="sr-only">Close</span>
+          <span className="sr-only">{t("shell.about.close")}</span>
         </DialogClose>
 
         <div className="flex flex-col gap-4 px-7 pb-0 pt-7">
@@ -189,9 +193,9 @@ export function AboutDialog({
               </DialogTitle>
               <div className="flex items-center gap-2">
                 <span className="font-meta text-[13px] text-t5">
-                  {version ? `Version ${version}` : " "}
+                  {version ? t("shell.about.version", { version }) : " "}
                   {version && IS_BETA_PLATFORM
-                    ? ` · beta for ${IS_MAC ? "macOS" : "Linux"}`
+                    ? t("shell.about.betaFor", { os: IS_MAC ? "macOS" : "Linux" })
                     : ""}
                 </span>
                 <span aria-hidden className="h-3 w-px bg-w140" />
@@ -206,23 +210,19 @@ export function AboutDialog({
                   }}
                   className="cursor-pointer text-[13px] font-semibold text-acc1 underline-offset-2 hover:underline"
                 >
-                  What's new
+                  {t("shell.about.whatsNew")}
                 </button>
               </div>
             </div>
           </div>
 
           <DialogDescription className="text-[13.5px] leading-[1.55] text-t4 text-pretty">
-            Fast, responsive YouTube Music desktop client. Unofficial — not
-            affiliated with, endorsed by, or sponsored by Google or YouTube.
-            "YouTube" and "YouTube Music" are trademarks of Google LLC.
-            Recommended for Music Premium accounts. You're responsible for how
-            you use Porchlight.
+            {t("shell.about.description")}
           </DialogDescription>
 
           {/* Fork signature. The original creator's credit stays first-class. */}
           <p className="text-[13.5px] leading-[1.55] text-t4 text-pretty">
-            <span className="font-semibold text-t2">Porchlight</span> by{" "}
+            <span className="font-semibold text-t2">Porchlight</span> {t("shell.about.by")}{" "}
             <button
               type="button"
               onClick={link(FORK_AUTHOR_URL)}
@@ -230,7 +230,7 @@ export function AboutDialog({
             >
               Homefronts
             </button>
-            , adding radio mixes, offline downloads and an AI music filter. Built on{" "}
+            {t("shell.about.forkAdding")}{" "}
             <button
               type="button"
               onClick={link(UPSTREAM_URL)}
@@ -238,24 +238,18 @@ export function AboutDialog({
             >
               YTubic
             </button>{" "}
-            by George Shyshov (NUber), who designed and built the app this
-            is based on. If you enjoy it, please support the original
-            author below.
+            {t("shell.about.upstreamBy")}
           </p>
           <p className="text-[12.5px] leading-[1.5] text-t4 text-pretty">
-            AI music detection uses community lists by CennoxX
-            (spotify-ai-blocker), gounetmusic (loved-music-ai-artists) and
-            CevvalKoala (CevvalYoutubeAIBlocklist). Thank you!
+            {t("shell.about.aiLists")}
           </p>
           <p className="text-[12.5px] leading-[1.5] text-t4 text-pretty">
-            Sponsor skipping uses data from SponsorBlock (sponsor.ajay.app), CC BY-NC-SA 4.0.
+            {t("shell.about.sponsorData")}
           </p>
 
           {IS_BETA_PLATFORM && (
             <p className="text-[13.5px] leading-[1.55] text-t4 text-pretty">
-              The {IS_MAC ? "macOS" : "Linux"} build is in beta. If something
-              breaks, please report it via the window menu (⋯ → Report an issue)
-              or on{" "}
+              {t("shell.about.betaBuild", { os: IS_MAC ? "macOS" : "Linux" })}{" "}
               <button
                 type="button"
                 onClick={link(`${REPO_URL}/issues`)}
@@ -276,10 +270,10 @@ export function AboutDialog({
           >
             <div className="flex items-baseline justify-between gap-3">
               <span className="font-meta text-[10.5px] font-semibold uppercase tracking-[0.09em] text-t5">
-                Powered by
+                {t("shell.about.poweredBy")}
               </span>
               <span className="text-xs text-t6">
-                Free software ·{" "}
+                {t("shell.about.freeSoftware")}{" "}
                 <button
                   type="button"
                   onClick={link(`${REPO_URL}/blob/main/LICENSE`)}
@@ -304,7 +298,7 @@ export function AboutDialog({
                   >
                     {c.name}
                   </button>
-                  {c.role}
+                  {t(c.role)}
                 </li>
               ))}
             </ul>
@@ -320,7 +314,7 @@ export function AboutDialog({
               <>
                 <IconLoader2 className="size-3.5 animate-spin text-t6" />
                 <span className="text-[12.5px] text-t5">
-                  Checking for updates…
+                  {t("shell.about.checking")}
                 </span>
               </>
             ) : updateLine ? (
@@ -349,7 +343,7 @@ export function AboutDialog({
                   stroke={2.4}
                 />
                 <span className="text-[12.5px] text-t5">
-                  You're on the latest version
+                  {t("shell.about.latest")}
                 </span>
               </>
             )}
@@ -393,7 +387,7 @@ export function AboutDialog({
             )}
           >
             <IconMugFilled />
-            Support
+            {t("shell.about.support")}
           </button>
         </div>
       </DialogContent>

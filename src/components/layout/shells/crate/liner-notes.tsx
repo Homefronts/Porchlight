@@ -12,6 +12,7 @@ import type { AlbumPage, ShelfItem } from "@/lib/innertube/types";
 import { playPlaylistNow } from "@/lib/play-playlist";
 import { currentTrack, usePlaybackStore } from "@/lib/store/playback";
 import { cn } from "@/lib/utils";
+import { t as tr, useT } from "@/lib/i18n";
 
 const MONO = "font-meta text-[11px] uppercase tracking-[0.14em] text-muted-foreground";
 
@@ -79,7 +80,7 @@ export function useFreeBelow(ref: React.RefObject<HTMLElement | null>): number {
   return free;
 }
 
-const plural = (n: number) => `${n} track${n === 1 ? "" : "s"}`;
+const plural = (n: number) => tr("player.liner.tracks", { count: n });
 
 /**
  * Crate's liner notes: under the front record, its first tracks as Side A
@@ -99,11 +100,12 @@ export function LinerNotes({ item, song }: { item: ShelfItem; song: ShelfItem | 
 }
 
 function Notes({ item, song, perSide }: { item: ShelfItem; song: ShelfItem | null; perSide: number }) {
+  const t = useT();
   const key = `${item.kind}:${item.id}`;
   const [settled, setSettled] = useState(key);
   useEffect(() => {
-    const t = setTimeout(() => setSettled(key), 250);
-    return () => clearTimeout(t);
+    const id = setTimeout(() => setSettled(key), 250);
+    return () => clearTimeout(id);
   }, [key]);
   const kind = song ? null : item.kind === "album" || item.kind === "playlist" ? item.kind : null;
   // The same cache entries as playPlaylistNow and the album menu, so a click plays from it.
@@ -126,8 +128,8 @@ function Notes({ item, song, perSide }: { item: ShelfItem; song: ShelfItem | nul
     } else
       // The page on screen, so the click plays the row it hit even if a refetch would reorder a mix.
       void playPlaylistNow(item.id, qc, at, q.data as PlaylistFirstPage)
-        .then((ok) => !ok && toast.error("This playlist is empty"))
-        .catch((e) => toast.error(`Couldn't load playlist: ${String(e)}`));
+        .then((ok) => !ok && toast.error(t("player.playlistEmpty")))
+        .catch((e) => toast.error(t("player.playlistLoadFailed", { error: String(e) })));
   };
   return (
     <TrackNotes
@@ -142,11 +144,11 @@ function Notes({ item, song, perSide }: { item: ShelfItem; song: ShelfItem | nul
       open={
         kind === "album" ? (
           <Link to="/album/$id" params={{ id: item.id }} className="text-foreground hover:underline">
-            Open the full record ›
+            {t("player.liner.openRecord")}
           </Link>
         ) : (
           <Link to="/playlist/$id" params={{ id: item.id }} className="text-foreground hover:underline">
-            Open the full record ›
+            {t("player.liner.openRecord")}
           </Link>
         )
       }
@@ -176,10 +178,11 @@ export function TrackNotes({
   onPlay: (at: number) => void;
   open: React.ReactNode;
 }) {
+  const t = useT();
   const header = (
     <div className={cn(MONO, "flex justify-between gap-4 border-b border-w110 pb-2.5")}>
       <span className="truncate">
-        <b className="font-semibold text-brand">Liner notes</b> · {title}
+        <b className="font-semibold text-brand">{t("player.liner.title")}</b> · {title}
       </span>
       {!song && count !== undefined && <span className="shrink-0">{plural(count)}</span>}
     </div>
@@ -190,15 +193,15 @@ export function TrackNotes({
       <ArtistLinks artists={song.artists} fallback={song.subtitle} />
     ) : undefined;
     return (
-      <section aria-label="Liner notes" className="max-w-[1100px]">
+      <section aria-label={t("player.liner.title")} className="max-w-[1100px]">
         {header}
         <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-[15px]">
           {(
             [
-              ["Title", song.title],
-              ["Artist", artist],
-              ["From", song.album],
-              ["Time", song.duration ? formatTime(song.duration) : undefined],
+              [t("player.liner.fieldTitle"), song.title],
+              [t("player.liner.fieldArtist"), artist],
+              [t("player.liner.fieldFrom"), song.album],
+              [t("player.liner.fieldTime"), song.duration ? formatTime(song.duration) : undefined],
             ] as const
           ).map(([k, v]) =>
             v ? (
@@ -218,8 +221,8 @@ export function TrackNotes({
   const row = "grid h-[39px] grid-cols-[34px_1fr_auto] items-baseline gap-2 border-b border-w110/60 py-[9px]";
   const column = (rows: typeof a) => (
     <div>
-      {rows.map(({ track: t, no, at }) => {
-        const now = t.id === playingId;
+      {rows.map(({ track: r, no, at }) => {
+        const now = r.id === playingId;
         return (
           // The whole row plays; the title is the keyboard button, and artist links open the artist instead.
           <div
@@ -233,24 +236,24 @@ export function TrackNotes({
             <span className={cn("truncate text-[15px]", now && "text-brand")}>
               <button
                 type="button"
-                aria-label={`Play ${t.title} from here`}
+                aria-label={t("player.liner.playFromHere", { title: r.title })}
                 onClick={(e) => {
                   e.stopPropagation();
                   onPlay(at);
                 }}
                 className="text-start outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                {t.title}
+                {r.title}
               </button>
               <span onClick={(e) => ownClick(e.target) && e.stopPropagation()}>
                 <ArtistLinks
-                  artists={t.artists}
-                  fallback={t.subtitle}
+                  artists={r.artists}
+                  fallback={r.subtitle}
                   className="ms-2 font-headline text-sm italic text-muted-foreground"
                 />
               </span>
             </span>
-            <span className="font-meta text-xs tabular-nums text-muted-foreground">{t.duration ? formatTime(t.duration) : ""}</span>
+            <span className="font-meta text-xs tabular-nums text-muted-foreground">{r.duration ? formatTime(r.duration) : ""}</span>
           </div>
         );
       })}
@@ -258,11 +261,11 @@ export function TrackNotes({
   );
 
   return (
-    <section aria-label="Liner notes" className="max-w-[1100px]">
+    <section aria-label={t("player.liner.title")} className="max-w-[1100px]">
       {header}
       {tracks ? (
         tracks.length === 0 ? (
-          <p className="mt-3 text-sm text-muted-foreground">No tracks on this record</p>
+          <p className="mt-3 text-sm text-muted-foreground">{t("player.liner.empty")}</p>
         ) : (
           <>
             <div className="mt-1.5 grid grid-cols-2 gap-x-12">
@@ -270,13 +273,13 @@ export function TrackNotes({
               {column(b)}
             </div>
             <div className={cn(MONO, "mt-3.5 flex justify-between gap-4 font-semibold")}>
-              <span>{count !== undefined && count <= shown ? plural(count) : `First ${shown}${count !== undefined ? ` of ${count}` : ""}`}</span>
+              <span>{count !== undefined && count <= shown ? plural(count) : count !== undefined ? t("player.liner.firstOf", { shown, count }) : t("player.liner.first", { shown })}</span>
               {open}
             </div>
           </>
         )
       ) : failed ? (
-        <p className="mt-3 text-sm text-muted-foreground">Couldn't load the tracks</p>
+        <p className="mt-3 text-sm text-muted-foreground">{t("player.liner.loadFailed")}</p>
       ) : (
         <div aria-hidden className="mt-1.5 grid grid-cols-2 gap-x-12">
           {[0, 1].map((c) => (

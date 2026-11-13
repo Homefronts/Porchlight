@@ -27,6 +27,7 @@ import { useScrubStore } from "@/lib/store/scrub";
 import { usePlatter } from "@/components/theme/use-platter";
 import { cn } from "@/lib/utils";
 import { PopOutButton } from "../panels/parts";
+import { useT } from "@/lib/i18n";
 
 // Every button on the label inverts with it instead of the ghost grey hover; links keep the label ink on hover.
 const ON_LABEL =
@@ -56,6 +57,7 @@ function Cassette({ on, playing }: { on: boolean; playing: boolean }) {
 
 /** Seek line in the label's ink; drags go through the shared scrub store, like the bar's. */
 function Counter({ thin }: { thin: boolean }) {
+  const t = useT();
   const { position, duration } = usePlaybackStore(
     useShallow((s) => ({ position: s.position, duration: s.duration })),
   );
@@ -83,8 +85,8 @@ function Counter({ thin }: { thin: boolean }) {
           <SliderPrimitive.Range className="absolute h-full bg-on-strip" />
         </SliderPrimitive.Track>
         <SliderPrimitive.Thumb
-          aria-label="Seek"
-          aria-valuetext={`${tapeTime(shown)} of ${tapeTime(duration)}`}
+          aria-label={t("player.controls.seek")}
+          aria-valuetext={t("player.controls.seekValue", { current: tapeTime(shown), total: tapeTime(duration) })}
           className={cn(
             "block size-2 rounded-full bg-on-strip outline-none focus-visible:ring-2 focus-visible:ring-on-strip",
             disabled && "invisible",
@@ -126,6 +128,7 @@ function WordPopover({
  * ink with its ground for type. Empty, it reads "Nothing on the tape".
  */
 export function IndexStrip({ hasTrack, compact }: { hasTrack: boolean; compact: boolean }) {
+  const t = useT();
   const track = usePlaybackStore(currentTrack);
   const { playing, status } = usePlaybackStore(
     useShallow((s) => ({ playing: s.playing, status: s.status })),
@@ -141,7 +144,7 @@ export function IndexStrip({ hasTrack, compact }: { hasTrack: boolean; compact: 
   return (
     <TooltipProvider delayDuration={800} skipDelayDuration={0}>
       <section
-        aria-label="Player"
+        aria-label={t("player.controls.player")}
         className={cn(
           "relative z-10 flex shrink-0 items-center gap-[18px] bg-strip py-3 text-on-strip",
           compact ? "px-4" : "px-[26px]",
@@ -153,7 +156,7 @@ export function IndexStrip({ hasTrack, compact }: { hasTrack: boolean; compact: 
           <PlayerCoverMenu track={track}>
             <button
               type="button"
-              aria-label="Open full screen"
+              aria-label={t("player.controls.openFullscreen")}
               onClick={openFullscreen}
               className="relative size-10 shrink-0"
             >
@@ -179,7 +182,7 @@ export function IndexStrip({ hasTrack, compact }: { hasTrack: boolean; compact: 
               track && recordTitleClass(family),
             )}
           >
-            {track?.title ?? "Nothing on the tape"}
+            {track?.title ?? t("player.strip.empty")}
           </span>
           {track ? (
             <ArtistLinks
@@ -189,19 +192,19 @@ export function IndexStrip({ hasTrack, compact }: { hasTrack: boolean; compact: 
             />
           ) : (
             <span className="truncate font-headline text-base italic leading-tight opacity-60">
-              Pick a record to start
+              {t("player.strip.pick")}
             </span>
           )}
         </div>
         <Counter thin={compact} />
         <div className={cn("flex shrink-0 items-center gap-0.5", !hasTrack && "opacity-60")}>
-          <Button variant="ghost" size="icon" aria-label="Previous" onClick={prev} disabled={!hasTrack}>
+          <Button variant="ghost" size="icon" aria-label={t("player.controls.previous")} onClick={prev} disabled={!hasTrack}>
             <TransportLabel kind="prev" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            aria-label={playing ? "Pause" : "Play"}
+            aria-label={playing ? t("player.controls.pause") : t("player.controls.play")}
             onClick={toggle}
             disabled={!hasTrack}
           >
@@ -210,23 +213,23 @@ export function IndexStrip({ hasTrack, compact }: { hasTrack: boolean; compact: 
               spinner={loading ? <IconLoader2 className="animate-spin" /> : null}
             />
           </Button>
-          <Button variant="ghost" size="icon" aria-label="Next" onClick={next} disabled={!hasTrack}>
+          <Button variant="ghost" size="icon" aria-label={t("player.controls.next")} onClick={next} disabled={!hasTrack}>
             <TransportLabel kind="next" />
           </Button>
           <WordPopover
-            label="Lyrics"
+            label={t("player.controls.lyrics")}
             disabled={!hasTrack}
             className="flex h-[28rem] w-[24rem] flex-col gap-2 p-0"
           >
             <header className="flex shrink-0 items-center justify-between border-b border-hairline px-3 py-2">
-              <span className="text-sm font-medium">Lyrics</span>
+              <span className="text-sm font-medium">{t("player.controls.lyrics")}</span>
               <LyricsSourceButton state={lyrics} />
             </header>
             <div className="min-h-0 flex-1 overflow-hidden px-2 pb-3">
               <LyricsBody state={lyrics} />
             </div>
           </WordPopover>
-          <WordPopover label="Queue" className="flex h-[28rem] w-[28rem] flex-col p-0">
+          <WordPopover label={t("player.controls.queue")} className="flex h-[28rem] w-[28rem] flex-col p-0">
             <QueueBody />
           </WordPopover>
           <RadioToggleButton />

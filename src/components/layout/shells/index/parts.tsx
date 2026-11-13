@@ -16,6 +16,7 @@ import { openSettings } from "@/lib/store/settings-dialog";
 import { sideLetter } from "@/components/theme/section-label";
 import { cn, noop } from "@/lib/utils";
 import { PorchlightMark } from "@/components/theme/porchlight-mark";
+import { useT } from "@/lib/i18n";
 
 const EYEBROW = "font-meta text-[11px] uppercase tracking-[0.1em] text-muted-foreground/70";
 
@@ -42,10 +43,11 @@ export function Wordmark() {
 
 /** Every top-level screen as mono tabs, Downloads included. */
 export function BrowseTabs({ className }: { className?: string }) {
+  const t = useT();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
     <nav
-      aria-label="Browse"
+      aria-label={t("shell.sidebar.browse")}
       className={cn(
         "flex flex-wrap gap-x-4 gap-y-1 font-meta text-[11px] uppercase tracking-[0.12em]",
         className,
@@ -64,7 +66,7 @@ export function BrowseTabs({ className }: { className?: string }) {
               on ? "border-acc1 text-foreground" : "border-transparent text-muted-foreground",
             )}
           >
-            {label}
+            {t(label)}
           </Link>
         );
       })}
@@ -90,6 +92,7 @@ export function IndexMasthead({
 }
 
 function Playlists({ onPick }: { onPick?: () => void }) {
+  const t = useT();
   const rows = usePlaylistRows();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const row = (id: string, title: string, mark: string) => (
@@ -110,13 +113,14 @@ function Playlists({ onPick }: { onPick?: () => void }) {
   );
   return (
     <ul>
-      {row(LIKED_ID, "Liked songs", "♥")}
+      {row(LIKED_ID, t("shell.sidebar.likedSongs"), "♥")}
       {rows.map((p, i) => row(p.id, p.title, sideLetter(i)))}
     </ul>
   );
 }
 
 function SettingsLink({ onPick }: { onPick?: () => void }) {
+  const t = useT();
   return (
     <button
       type="button"
@@ -126,7 +130,7 @@ function SettingsLink({ onPick }: { onPick?: () => void }) {
       }}
       className="flex w-full justify-between py-1 text-start uppercase tracking-[0.06em] text-muted-foreground hover:text-foreground"
     >
-      <span>Settings</span>
+      <span>{t("shell.sidebar.settings")}</span>
       <span aria-hidden>▸</span>
     </button>
   );
@@ -146,13 +150,14 @@ function Account() {
 
 /** The right column: playlists, Settings, then the account. */
 export function Appendix() {
+  const t = useT();
   return (
     <aside
-      aria-label="Appendix"
+      aria-label={t("shell.index.appendix")}
       className="app-scroll flex w-[260px] shrink-0 flex-col overflow-y-auto border-s border-w110 px-[22px] py-6"
     >
       <div className="font-meta text-xs">
-        <div className={cn(EYEBROW, "mb-2")}>Appendix · Playlists</div>
+        <div className={cn(EYEBROW, "mb-2")}>{t("shell.index.appendixPlaylists")}</div>
         <Playlists />
         <div className={cn(EYEBROW, "mb-2 mt-[22px]")}>Porchlight</div>
         <SettingsLink />
@@ -166,6 +171,7 @@ export function Appendix() {
 
 /** Compact: the appendix folds into a MENU button. Gatefold keeps it at every width. */
 export function MenuButton() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
   return (
@@ -173,12 +179,12 @@ export function MenuButton() {
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="ms-auto font-meta text-[11px] tracking-[0.12em]">
           <IconMenu2 />
-          MENU
+          {t("shell.index.menu")}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="app-scroll max-h-[70vh] w-[240px] overflow-y-auto">
         <div className="font-meta text-xs">
-          <div className={cn(EYEBROW, "mb-2")}>Playlists</div>
+          <div className={cn(EYEBROW, "mb-2")}>{t("shell.sidebar.playlists")}</div>
           <Playlists onPick={close} />
           <div className={cn(EYEBROW, "mb-2 mt-4")}>Porchlight</div>
           <SettingsLink onPick={close} />

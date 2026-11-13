@@ -36,6 +36,7 @@ import { openFullscreen } from "@/lib/store/fullscreen";
 import { currentTrack, usePlaybackStore } from "@/lib/store/playback";
 import { useScrubStore } from "@/lib/store/scrub";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 import { PopOutButton } from "../panels/parts";
 import { Wordmark } from "../index/parts";
 import { usePlayerStyle } from "../player-colour";
@@ -56,15 +57,16 @@ export function RecordPage({
   hasTrack: boolean;
   compact: boolean;
 }) {
+  const t = useT();
   const playerStyle = usePlayerStyle();
   const eyebrow = hasTrack ? (
-    <span className={cn(EYEBROW, "text-acc1")}>● Now playing</span>
+    <span className={cn(EYEBROW, "text-acc1")}>{t("player.gatefold.nowPlayingTag")}</span>
   ) : (
-    <span className={cn(EYEBROW, "text-muted-foreground")}>○ Nothing playing</span>
+    <span className={cn(EYEBROW, "text-muted-foreground")}>{t("player.gatefold.nothingPlayingTag")}</span>
   );
   return (
     <section
-      aria-label="Now playing"
+      aria-label={t("player.nowPlaying")}
       style={playerStyle}
       className={cn(
         // No player colour: --player is unset, so no ground, as before.
@@ -97,6 +99,7 @@ export function RecordPage({
 }
 
 function Playing({ compact }: { compact: boolean }) {
+  const t = useT();
   const track = usePlaybackStore(currentTrack)!;
   const length = usePlaybackStore((s) => s.duration) || track.duration || 0;
   const iTunesCover = useITunesCover(track);
@@ -107,7 +110,7 @@ function Playing({ compact }: { compact: boolean }) {
     <PlayerCoverMenu track={track}>
       <button
         type="button"
-        aria-label="Open full screen"
+        aria-label={t("player.controls.openFullscreen")}
         onClick={openFullscreen}
         className={cn(
           "relative isolate shrink-0",
@@ -171,13 +174,13 @@ function Playing({ compact }: { compact: boolean }) {
             {/* Unknown until the stream resolves; no 00:00 placeholder. */}
             {length >= 1 && (
               <>
-                <dt>Time</dt>
+                <dt>{t("player.gatefold.time")}</dt>
                 <dd>{tapeTime(length)}</dd>
               </>
             )}
             {track.album && (
               <>
-                <dt>From</dt>
+                <dt>{t("player.gatefold.from")}</dt>
                 <dd className="truncate normal-case">
                   {track.albumId ? (
                     <Link to="/album/$id" params={{ id: track.albumId }} className="hover:text-foreground hover:underline">
@@ -194,7 +197,7 @@ function Playing({ compact }: { compact: boolean }) {
       </div>
       <div className="mt-5 flex min-h-0 flex-1 flex-col">
         <div className="flex shrink-0 items-center justify-between">
-          <span className={cn(EYEBROW, "text-muted-foreground/70")}>Lyric sheet</span>
+          <span className={cn(EYEBROW, "text-muted-foreground/70")}>{t("player.gatefold.lyricSheet")}</span>
           <LyricsSourceButton state={lyrics} />
         </div>
         <div className={cn("min-h-0 flex-1 overflow-hidden", SHEET)}>
@@ -206,6 +209,7 @@ function Playing({ compact }: { compact: boolean }) {
 }
 
 function EmptySleeve({ compact }: { compact: boolean }) {
+  const t = useT();
   const filter = useAiFilter();
   const picks = homePicks(
     useHomeFeed().shelves.map((s) => ({ ...s, items: filter(s.items) })),
@@ -227,7 +231,7 @@ function EmptySleeve({ compact }: { compact: boolean }) {
             className="absolute -end-[40%] top-[12%] aspect-square w-4/5 rounded-full border border-t10 opacity-50 bg-[repeating-radial-gradient(circle,var(--k550)_0_2px,transparent_2px_4px)]"
           />
           {/* Bottom corner, clear of the record's rings. */}
-          <span className="absolute bottom-3 start-3">EMPTY SLEEVE</span>
+          <span className="absolute bottom-3 start-3">{t("player.gatefold.emptySleeve")}</span>
         </div>
         <div className="flex min-w-0 flex-col gap-1.5">
           <span
@@ -237,18 +241,18 @@ function EmptySleeve({ compact }: { compact: boolean }) {
               recordTitleClass(family),
             )}
           >
-            Nothing playing yet
+            {t("player.gatefold.nothingPlayingYet")}
           </span>
           <span className={cn("font-headline italic text-muted-foreground", compact ? "text-lg" : "text-[22px]")}>
-            Pick something to start
+            {t("player.gatefold.pickSomething")}
           </span>
         </div>
       </div>
       {picks.length > 0 && (
         <>
           <div className="mb-1 mt-6 flex justify-between border-t border-w110 pt-[7px] font-meta text-[11px] uppercase tracking-[0.08em] text-muted-foreground/70">
-            <span>{picks.length} picks from Home</span>
-            {!compact && <span>Tap to play</span>}
+            <span>{t("player.gatefold.picks", { count: picks.length })}</span>
+            {!compact && <span>{t("player.gatefold.tapToPlay")}</span>}
           </div>
           <div className={cn("grid gap-1", compact ? "grid-cols-1" : "grid-cols-3")}>
             {picks.map((it) => (
@@ -272,11 +276,12 @@ function IconTip({ label, children }: { label: string; children: React.ReactElem
 
 /** Compact only: the lyric sheet folds behind a button. Crate's deck opens it upward. */
 export function LyricsButton({ state, side = "right" }: { state: LyricsViewState; side?: "right" | "top" }) {
+  const t = useT();
   return (
     <Popover>
-      <IconTip label="Lyrics">
+      <IconTip label={t("player.controls.lyrics")}>
         <PopoverTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label="Lyrics" disabled={!state.hasTrack}>
+          <Button variant="ghost" size="icon" aria-label={t("player.controls.lyrics")} disabled={!state.hasTrack}>
             <IconMicrophoneFilled />
           </Button>
         </PopoverTrigger>
@@ -290,7 +295,7 @@ export function LyricsButton({ state, side = "right" }: { state: LyricsViewState
         className="flex h-[28rem] max-h-[var(--radix-popover-content-available-height)] w-[24rem] flex-col gap-2 p-0"
       >
         <header className="flex shrink-0 items-center justify-between border-b border-hairline px-3 py-2">
-          <span className="text-sm font-medium">Lyrics</span>
+          <span className="text-sm font-medium">{t("player.controls.lyrics")}</span>
           <LyricsSourceButton state={state} />
         </header>
         <div className="min-h-0 flex-1 overflow-hidden px-2 pb-3">
@@ -303,6 +308,7 @@ export function LyricsButton({ state, side = "right" }: { state: LyricsViewState
 
 /** The counter and the controls along the foot of the page (and under Crate's turntable). */
 export function Transport({ compact, className }: { compact: boolean; className?: string }) {
+  const t = useT();
   const { playing, status, position, duration, shuffle, repeat } = usePlaybackStore(
     useShallow((s) => ({
       playing: s.playing,
@@ -334,7 +340,7 @@ export function Transport({ compact, className }: { compact: boolean; className?
   const play = (
     <Button
       size="icon"
-      aria-label={playing ? "Pause" : "Play"}
+      aria-label={playing ? t("player.controls.pause") : t("player.controls.play")}
       onClick={toggle}
       disabled={!hasTrack}
       className={cn("shrink-0 rounded-full on-brand bg-brand text-white hover:bg-brand/90", compact ? "size-10" : "size-12")}
@@ -347,12 +353,12 @@ export function Transport({ compact, className }: { compact: boolean; className?
     </Button>
   );
   const prevBtn = (
-    <Button variant="ghost" size="icon" aria-label="Previous" onClick={prev} disabled={!hasTrack}>
+    <Button variant="ghost" size="icon" aria-label={t("player.controls.previous")} onClick={prev} disabled={!hasTrack}>
       <TransportLabel kind="prev" />
     </Button>
   );
   const nextBtn = (
-    <Button variant="ghost" size="icon" aria-label="Next" onClick={next} disabled={!hasTrack}>
+    <Button variant="ghost" size="icon" aria-label={t("player.controls.next")} onClick={next} disabled={!hasTrack}>
       <TransportLabel kind="next" />
     </Button>
   );
@@ -410,7 +416,7 @@ export function Transport({ compact, className }: { compact: boolean; className?
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Shuffle"
+            aria-label={t("player.controls.shuffle")}
             aria-pressed={shuffle}
             onClick={() => setShuffle(!shuffle)}
             className={cn(shuffle && "text-brand")}

@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { headlineClass, useLookFamily } from "@/components/theme/look-type";
 import { useWhatsNewStore } from "@/lib/store/whats-new";
 import { WHATS_NEW, whatsNewFor, type WhatsNewEntry } from "@/lib/whats-new";
+import { useT } from "@/lib/i18n";
 
 /** Rose used for hero ticks and "new" bullets. A shade off `--acc1`,
  *  which stays reserved for interactive accents. */
@@ -40,6 +41,7 @@ const isHero = (e: WhatsNewEntry) => !!e.image;
  * `useWhatsNewOnUpdate`) and manually from the About dialog.
  */
 export function WhatsNewDialog() {
+  const t = useT();
   const open = useWhatsNewStore((s) => s.open);
   const setOpen = useWhatsNewStore((s) => s.setOpen);
   const version = useWhatsNewStore((s) => s.version);
@@ -229,12 +231,12 @@ export function WhatsNewDialog() {
                 <span className="font-meta text-[13px] text-t6">{entry.date}</span>
               </div>
               <DialogDescription className="sr-only">
-                Release notes for Porchlight {entry.version}
+                {t("shell.whatsNew.releaseNotes", { version: entry.version })}
               </DialogDescription>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                aria-label="Close"
+                aria-label={t("shell.common.close")}
                 className="grid size-7 flex-none cursor-pointer place-items-center rounded-[var(--radius-button,var(--radius-lg))] border border-w070 bg-w030 text-t6 transition-colors duration-[140ms] hover:bg-w080 hover:text-t2"
               >
                 <IconX className="size-3" />
@@ -299,7 +301,7 @@ export function WhatsNewDialog() {
                     <div className="flex items-center gap-2">
                       <IconMessage className="size-3 text-t4" />
                       <span className="font-meta text-[10.5px] font-bold uppercase tracking-[0.09em] text-t4">
-                        Note from the developer
+                        {t("shell.whatsNew.noteFromDev")}
                       </span>
                     </div>
                     <NoteText text={entry.note} />
@@ -332,13 +334,14 @@ function RailStep({
   disabled: boolean;
   onClick: () => void;
 }) {
+  const t = useT();
   const Icon = dir === "up" ? IconChevronUp : IconChevronDown;
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      aria-label={dir === "up" ? "Newer release" : "Older release"}
+      aria-label={dir === "up" ? t("shell.whatsNew.newer") : t("shell.whatsNew.older")}
       className={cn(
         "grid size-6 cursor-pointer place-items-center text-t6 transition-[color,opacity] duration-[160ms] hover:text-t1",
         dir === "up" ? "mb-3" : "mt-3",

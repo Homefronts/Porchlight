@@ -57,6 +57,7 @@ import { useSettingsStore } from "@/lib/store/settings";
 import { useSourceSwitch } from "@/lib/video-mode";
 import { lookupITunesCover, cacheCoverToDisk } from "@/lib/cover-art";
 import type { QueueTrack, RepeatMode } from "@/lib/store/playback";
+import { t, useT } from "@/lib/i18n";
 
 /**
  * Look up a 3000×3000 studio cover from iTunes for the now-playing
@@ -105,10 +106,10 @@ export function formatTime(seconds: number): string {
  */
 export function repeatLabel(repeat: RepeatMode): string {
   return repeat === "one"
-    ? "Repeat one"
+    ? t("player.controls.repeatOne")
     : repeat === "all"
-      ? "Repeat all"
-      : "Repeat off";
+      ? t("player.controls.repeatAll")
+      : t("player.controls.repeatOff");
 }
 
 /**
@@ -118,6 +119,7 @@ export function repeatLabel(repeat: RepeatMode): string {
  * alternate videoId hasn't been resolved yet, we fetch it on demand.
  */
 export function SourceToggle({ track }: { track: QueueTrack }) {
+  const t = useT();
   const { selected, busy, switchTo } = useSourceSwitch(track);
 
   // Design-system toggle: one moving thumb under two 28px icon slots
@@ -146,7 +148,7 @@ export function SourceToggle({ track }: { track: QueueTrack }) {
         <TooltipTrigger asChild>
           <button
             type="button"
-            aria-label="Song version"
+            aria-label={t("player.controls.songVersion")}
             aria-pressed={selected === "song"}
             onClick={() => switchTo("song")}
             disabled={busy !== null}
@@ -162,13 +164,13 @@ export function SourceToggle({ track }: { track: QueueTrack }) {
             )}
           </button>
         </TooltipTrigger>
-        <TooltipContent>Song version</TooltipContent>
+        <TooltipContent>{t("player.controls.songVersion")}</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
           <button
             type="button"
-            aria-label="Video version"
+            aria-label={t("player.controls.videoVersion")}
             aria-pressed={selected === "video"}
             onClick={() => switchTo("video")}
             disabled={busy !== null}
@@ -184,7 +186,7 @@ export function SourceToggle({ track }: { track: QueueTrack }) {
             )}
           </button>
         </TooltipTrigger>
-        <TooltipContent>Video version</TooltipContent>
+        <TooltipContent>{t("player.controls.videoVersion")}</TooltipContent>
       </Tooltip>
     </div>
   );
@@ -274,6 +276,7 @@ export function VolumeControl({
   /** Extra classes for the speaker button (the full-screen chip). */
   className?: string;
 }) {
+  const t = useT();
   const { volume, muted } = usePlaybackStore(
     useShallow((s) => ({ volume: s.volume, muted: s.muted })),
   );
@@ -328,7 +331,7 @@ export function VolumeControl({
       <Button
         variant="ghost"
         size="icon"
-        aria-label={muted ? "Unmute" : "Mute"}
+        aria-label={muted ? t("player.controls.unmute") : t("player.controls.mute")}
         onClick={toggleMute}
         className={cn(playerIconButton, className)}
       >
@@ -362,7 +365,7 @@ export function VolumeControl({
               max={100}
               step={1}
               className="h-16 min-h-0"
-              aria-label="Volume"
+              aria-label={t("player.controls.volume")}
               onValueChange={([v]) => setVolume(v / 100)}
             />
           </div>
@@ -373,7 +376,7 @@ export function VolumeControl({
               max={100}
               step={1}
               className={compact ? "w-9" : "w-16"}
-              aria-label="Volume"
+              aria-label={t("player.controls.volume")}
               onValueChange={([v]) => setVolume(v / 100)}
             />
             <span
@@ -400,6 +403,7 @@ export function PlayerBar({
 }: {
   variant?: PlayerBarVariant;
 }) {
+  const t = useT();
   const {
     playing,
     status,
@@ -537,14 +541,14 @@ export function PlayerBar({
       >
         {status === "error" && error ? (
           <div className="truncate rounded-md bg-destructive/90 px-3 py-1 text-xs text-destructive-foreground shadow select-text">
-            Playback error: {error}
+            {t("player.playbackError", { error })}
           </div>
         ) : null}
 
         {/* The liner card's header, as on the sleeve mockup. */}
         {look.touches.numbers && track ? (
           <div className="font-meta text-[11px] tracking-[0.1em] text-acc1">
-            ● NOW PLAYING
+            {t("player.nowPlayingCaps")}
           </div>
         ) : null}
 
@@ -600,7 +604,7 @@ export function PlayerBar({
                       className="pointer-events-auto flex cursor-pointer items-center gap-2 rounded-[10px] bg-w160 px-3.5 py-[9px] text-[13px] font-semibold text-white backdrop-blur-[8px] transition-colors hover:bg-w200"
                     >
                       <IconArrowsMaximize className="size-[17px]" stroke={1.9} />
-                      Full screen
+                      {t("player.controls.fullScreen")}
                     </button>
                   </div>
                 ) : null}
@@ -623,7 +627,7 @@ export function PlayerBar({
                   family === "liner" && "text-xl leading-tight",
                 )}
               >
-                {track?.title ?? "Nothing playing"}
+                {track?.title ?? t("player.nothingPlaying")}
               </span>
               {track ? <AiTag item={track} /> : null}
             </span>
@@ -661,7 +665,7 @@ export function PlayerBar({
               </span>
             ) : (
               <span className="truncate text-sm text-muted-foreground">
-                Pick a track to start
+                {t("player.pickTrack")}
               </span>
             )}
           </div>
@@ -708,7 +712,7 @@ export function PlayerBar({
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Shuffle"
+            aria-label={t("player.controls.shuffle")}
             aria-pressed={shuffle}
             onClick={() => setShuffle(!shuffle)}
             className={cn(shuffle && "text-brand")}
@@ -718,7 +722,7 @@ export function PlayerBar({
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Previous"
+            aria-label={t("player.controls.previous")}
             onClick={prev}
             disabled={!hasTrack}
           >
@@ -726,7 +730,7 @@ export function PlayerBar({
           </Button>
           <Button
             size="icon"
-            aria-label={playing ? "Pause" : "Play"}
+            aria-label={playing ? t("player.controls.pause") : t("player.controls.play")}
             onClick={toggle}
             disabled={!hasTrack}
             className="size-12 rounded-full on-brand bg-brand text-white hover:bg-brand/90"
@@ -739,7 +743,7 @@ export function PlayerBar({
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Next"
+            aria-label={t("player.controls.next")}
             onClick={next}
             disabled={!hasTrack}
           >

@@ -8,6 +8,7 @@ import type { ComponentType } from "react";
 import { useUpdateStore } from "@/lib/store/update";
 import { downloadAvailableUpdate, restartToUpdate } from "@/lib/updater";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 type CardConfig = {
   icon: ComponentType<IconProps>;
@@ -33,6 +34,7 @@ type CardConfig = {
  * clipped by the radius, and the tint made a routine notice shout.
  */
 export function UpdateBanner() {
+  const t = useT();
   const phase = useUpdateStore((s) => s.phase);
   const version = useUpdateStore((s) => s.version);
 
@@ -53,27 +55,31 @@ export function UpdateBanner() {
     installing: {
       icon: IconArrowDown,
       iconClass: "size-[13px]",
-      title: "Installing update",
-      sub: "Restarting…",
+      title: t("shell.updateBanner.installingTitle"),
+      sub: t("shell.updateBanner.restarting"),
     },
     ready: {
       icon: IconRefresh,
       iconClass: "size-[15px]",
-      title: "Restart to update",
-      sub: version ? `Version ${version} ready` : "Ready to install",
+      title: t("shell.updateBanner.readyTitle"),
+      sub: version
+        ? t("shell.updateBanner.readyVersion", { version })
+        : t("shell.updateBanner.readyNoVersion"),
       onClick: () => void restartToUpdate(),
     },
     error: {
       icon: IconAlertTriangle,
       iconClass: "size-[15px]",
-      title: "Update failed",
-      sub: "Click to retry",
+      title: t("shell.updateBanner.failedTitle"),
+      sub: t("shell.updateBanner.clickRetry"),
       onClick: () => void downloadAvailableUpdate(),
     },
   }[phase];
 
   const Icon = cfg.icon;
-  const label = cfg.sub ? `${cfg.title} · ${cfg.sub}` : cfg.title;
+  const label = cfg.sub
+    ? t("shell.updateBanner.label", { title: cfg.title, sub: cfg.sub })
+    : cfg.title;
 
   return (
     <button

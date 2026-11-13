@@ -23,6 +23,7 @@ import { CLASSIC_ID } from "@/lib/theme/looks";
 import { useActiveLook } from "@/lib/theme/store";
 import { cn } from "@/lib/utils";
 import { PERSIST_MAX_AGE, persister, queryClient } from "@/lib/query-client";
+import { useT } from "@/lib/i18n";
 
 // Wire the store's user-facing actions to emit Tauri events instead of
 // mutating local state directly — only the main window's audio engine
@@ -111,6 +112,7 @@ export default function FloatingPlayerApp() {
  * its layout mode back to "right".
  */
 function FloatingTitleBar() {
+  const t = useT();
   const pinned = useLayoutStore((s) => s.floatingPinned);
   const setPinned = useLayoutStore((s) => s.setFloatingPinned);
 
@@ -136,7 +138,7 @@ function FloatingTitleBar() {
       <button
         type="button"
         onClick={() => setPinned(!pinned)}
-        aria-label={pinned ? "Unpin from top" : "Pin on top"}
+        aria-label={pinned ? t("shell.floating.unpin") : t("shell.floating.pin")}
         aria-pressed={pinned}
         className={cn(
           "flex h-full w-11 items-center justify-center transition-colors hover:bg-titlebar-hover",
@@ -153,7 +155,7 @@ function FloatingTitleBar() {
           // manager — both routes go through `WindowEvent::CloseRequested`.
           void invoke("close_player_window");
         }}
-        aria-label="Close"
+        aria-label={t("shell.common.close")}
         className="flex h-full w-11 items-center justify-center text-foreground/85 transition-colors hover:bg-[#c42b1c] hover:text-white"
       >
         <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden>

@@ -46,6 +46,7 @@ import { usePlaybackStore, currentTrack } from "@/lib/store/playback";
 import { useScrubStore } from "@/lib/store/scrub";
 import { useSettingsStore, type FullscreenLayout } from "@/lib/store/settings";
 import type { QueueTrack } from "@/lib/store/playback";
+import { useT, type Key } from "@/lib/i18n";
 
 /**
  * The full-screen now-playing view, per the design handoff: the cover
@@ -125,6 +126,7 @@ const sideButton = (on: boolean) =>
 /* ------------------------------------------------------------------ */
 
 function FullscreenView({ track }: { track: QueueTrack }) {
+  const t = useT();
   const setOpen = useFullscreenStore((s) => s.setOpen);
   const layout = useSettingsStore((s) => s.fullscreenLayout);
   const setLayout = useSettingsStore((s) => s.setFullscreenLayout);
@@ -265,7 +267,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
           <div className="flex shrink-0 items-center gap-2.5">
             <div
               role="radiogroup"
-              aria-label="Full screen layout"
+              aria-label={t("player.fullscreen.layoutGroup")}
               className="flex gap-0.5 rounded-[10px] border border-w080 bg-w070 p-[3px]"
             >
               {LAYOUTS.map(({ value, label, Icon }) => {
@@ -277,7 +279,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
                         type="button"
                         role="radio"
                         aria-checked={on}
-                        aria-label={label}
+                        aria-label={t(label)}
                         onClick={() => setLayout(value)}
                         className={cn(
                           "grid h-7 w-[30px] cursor-pointer place-items-center rounded-[7px] transition-colors duration-[160ms] hover:text-(--fs-title)",
@@ -289,7 +291,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
                         <Icon />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent>{label}</TooltipContent>
+                    <TooltipContent>{t(label)}</TooltipContent>
                   </Tooltip>
                 );
               })}
@@ -302,7 +304,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
             >
               <IconArrowsMinimize className="size-[15px]" stroke={1.9} />
               <span className="font-meta text-[11px] font-semibold uppercase tracking-[0.09em]">
-                Exit fullscreen
+                {t("player.fullscreen.exit")}
               </span>
             </button>
           </div>
@@ -410,7 +412,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Shuffle"
+                aria-label={t("player.controls.shuffle")}
                 aria-pressed={shuffle}
                 onClick={() => setShuffle(!shuffle)}
                 className={sideButton(shuffle)}
@@ -420,7 +422,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Previous"
+                aria-label={t("player.controls.previous")}
                 onClick={prev}
                 className={ghostButton}
               >
@@ -428,7 +430,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
               </Button>
               <Button
                 size="icon"
-                aria-label={playing ? "Pause" : "Play"}
+                aria-label={playing ? t("player.controls.pause") : t("player.controls.play")}
                 onClick={toggle}
                 className="on-brand mx-1.5 size-16 rounded-full text-white shadow-[0_6px_20px_-4px_rgba(var(--acc1rgb),0.28),inset_0_1px_1px_var(--w220)] transition-[filter,box-shadow] duration-[140ms] hover:brightness-[1.16] hover:shadow-[0_10px_28px_-6px_rgba(var(--acc1rgb),0.36),inset_0_1px_1px_var(--w260)]"
                 // The text face brings its own plain block (index.css); an
@@ -457,7 +459,7 @@ function FullscreenView({ track }: { track: QueueTrack }) {
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Next"
+                aria-label={t("player.controls.next")}
                 onClick={next}
                 className={ghostButton}
               >
@@ -525,6 +527,7 @@ function useIsLiked(track: QueueTrack): boolean {
 }
 
 function LikePill({ track }: { track: QueueTrack }) {
+  const t = useT();
   const qc = useQueryClient();
   const both = useSettingsStore((s) => s.ratingButtons === "both");
   const isDisliked = useDislikesStore((s) => !!s.ids[track.videoId]);
@@ -571,13 +574,13 @@ function LikePill({ track }: { track: QueueTrack }) {
           className={cn("size-4", isLiked && "fill-current")}
           strokeWidth={1.9}
         />
-        {isLiked ? "Liked" : "Like"}
+        {isLiked ? t("player.fullscreen.liked") : t("player.fullscreen.like")}
       </button>
       {both ? (
         <button
           type="button"
           disabled={busy}
-          aria-label={isDisliked ? "Remove dislike" : "Dislike"}
+          aria-label={isDisliked ? t("player.fullscreen.removeDislike") : t("player.fullscreen.dislike")}
           aria-pressed={isDisliked}
           onClick={() =>
             run(() =>
@@ -926,10 +929,10 @@ function ImmersiveGlyph() {
 
 const LAYOUTS: {
   value: FullscreenLayout;
-  label: string;
+  label: Key;
   Icon: () => React.JSX.Element;
 }[] = [
-  { value: "cover", label: "Centered", Icon: CoverGlyph },
-  { value: "lyrics", label: "With lyrics", Icon: LyricsGlyph },
-  { value: "immersive", label: "Immersive art", Icon: ImmersiveGlyph },
+  { value: "cover", label: "player.fullscreen.centered", Icon: CoverGlyph },
+  { value: "lyrics", label: "player.fullscreen.withLyrics", Icon: LyricsGlyph },
+  { value: "immersive", label: "player.fullscreen.immersive", Icon: ImmersiveGlyph },
 ];

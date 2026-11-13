@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArtworkOutline } from "@/components/shared/artwork-outline";
 import { Thumbnail } from "@/components/shared/thumbnail";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 import { useLookFamily } from "@/components/theme/look-type";
 import { useActiveLook } from "@/lib/theme/store";
 import {
@@ -339,6 +340,7 @@ const HeaderActions = memo(function HeaderActions({
 }: {
   config: EntityHeaderConfig;
 }) {
+  const t = useT();
   return (
     <>
       {config.onPlay ? (
@@ -347,13 +349,13 @@ const HeaderActions = memo(function HeaderActions({
           className="on-brand bg-brand text-white hover:bg-brand/90"
         >
           <PlayIcon className="fill-current" />
-          Play
+          {t("shell.entity.play")}
         </Button>
       ) : null}
       {config.onShuffle ? (
         <Button variant="outline" onClick={config.onShuffle}>
           <ShuffleIcon />
-          Shuffle
+          {t("shell.entity.shuffle")}
         </Button>
       ) : null}
       {config.actions}

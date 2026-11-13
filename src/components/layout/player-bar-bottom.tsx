@@ -50,6 +50,7 @@ import { cn } from "@/lib/utils";
 import { usePlayerCoverDrag } from "@/lib/player-drag";
 import { usePlaybackStore, currentTrack } from "@/lib/store/playback";
 import { useScrubStore } from "@/lib/store/scrub";
+import { useT } from "@/lib/i18n";
 
 /**
  * Compact horizontal player bar pinned to the bottom of the content
@@ -65,6 +66,7 @@ import { useScrubStore } from "@/lib/store/scrub";
  * `extra` lands at the end of the right wing (a layout's own buttons).
  */
 export function PlayerBarBottom({ extra }: { extra?: ReactNode } = {}) {
+  const t = useT();
   const { playing, status, error, position, duration, shuffle, repeat } =
     usePlaybackStore(
       useShallow((s) => ({
@@ -190,7 +192,7 @@ export function PlayerBarBottom({ extra }: { extra?: ReactNode } = {}) {
                   recordTitleClass(family),
                 )}
               >
-                {track?.title ?? "Nothing playing"}
+                {track?.title ?? t("player.nothingPlaying")}
               </span>
               {track ? <AiTag item={track} /> : null}
             </span>
@@ -205,7 +207,7 @@ export function PlayerBarBottom({ extra }: { extra?: ReactNode } = {}) {
               />
             ) : (
               <span className="truncate text-sm text-muted-foreground leading-tight">
-                Pick a track to start
+                {t("player.pickTrack")}
               </span>
             )}
           </div>
@@ -217,7 +219,7 @@ export function PlayerBarBottom({ extra }: { extra?: ReactNode } = {}) {
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Shuffle"
+            aria-label={t("player.controls.shuffle")}
             aria-pressed={shuffle}
             onClick={() => setShuffle(!shuffle)}
             className={cn(shuffle && "text-brand")}
@@ -227,7 +229,7 @@ export function PlayerBarBottom({ extra }: { extra?: ReactNode } = {}) {
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Previous"
+            aria-label={t("player.controls.previous")}
             onClick={prev}
             disabled={!hasTrack}
           >
@@ -235,7 +237,7 @@ export function PlayerBarBottom({ extra }: { extra?: ReactNode } = {}) {
           </Button>
           <Button
             size="icon"
-            aria-label={playing ? "Pause" : "Play"}
+            aria-label={playing ? t("player.controls.pause") : t("player.controls.play")}
             onClick={toggle}
             disabled={!hasTrack}
             className="size-12 rounded-full on-brand bg-brand text-white hover:bg-brand/90"
@@ -249,7 +251,7 @@ export function PlayerBarBottom({ extra }: { extra?: ReactNode } = {}) {
           <Button
             variant="ghost"
             size="icon"
-            aria-label="Next"
+            aria-label={t("player.controls.next")}
             onClick={next}
             disabled={!hasTrack}
           >
@@ -327,9 +329,10 @@ function LyricsPopover({
 }: {
   state: ReturnType<typeof useLyricsView>;
 }) {
+  const t = useT();
   if (!state.hasTrack) {
     return (
-      <Button variant="ghost" size="icon" disabled aria-label="Lyrics">
+      <Button variant="ghost" size="icon" disabled aria-label={t("player.controls.lyrics")}>
         <IconMicrophoneFilled />
       </Button>
     );
@@ -339,12 +342,12 @@ function LyricsPopover({
       <Tooltip>
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="Lyrics">
+            <Button variant="ghost" size="icon" aria-label={t("player.controls.lyrics")}>
               <IconMicrophoneFilled />
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>
-        <TooltipContent>Lyrics</TooltipContent>
+        <TooltipContent>{t("player.controls.lyrics")}</TooltipContent>
       </Tooltip>
       <PopoverContent
         align="end"
@@ -353,7 +356,7 @@ function LyricsPopover({
         className="flex h-[28rem] w-[24rem] flex-col gap-2 p-0"
       >
         <header className="flex shrink-0 items-center justify-between border-b border-hairline px-3 py-2">
-          <span className="text-sm font-medium">Lyrics</span>
+          <span className="text-sm font-medium">{t("player.controls.lyrics")}</span>
           <LyricsSourceButton state={state} />
         </header>
         <div className="min-h-0 flex-1 overflow-hidden px-2 pb-3">

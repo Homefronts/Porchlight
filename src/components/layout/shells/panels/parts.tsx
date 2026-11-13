@@ -15,18 +15,20 @@ import { useLayoutStore } from "@/lib/store/layout";
 import { currentTrack, usePlaybackStore } from "@/lib/store/playback";
 import { cn } from "@/lib/utils";
 import { toggleFloating } from "./floating";
+import { useT } from "@/lib/i18n";
 
 // The hairline keeps a panel apart from the ground when the look's own ground is black (Ink).
 export const PANEL = "rounded-[var(--radius-window,12px)] border border-w110 bg-background";
 
 /** The right panel: the playing record, big. */
 export function NowPlayingPanel({ className }: { className?: string }) {
+  const t = useT();
   const track = usePlaybackStore(currentTrack);
   const iTunesCover = useITunesCover(track);
   const family = useLookFamily();
   return (
     <aside
-      aria-label="Now playing"
+      aria-label={t("player.nowPlaying")}
       className={cn(
         "flex w-[270px] shrink-0 flex-col gap-3 overflow-y-auto p-4",
         PANEL,
@@ -34,13 +36,13 @@ export function NowPlayingPanel({ className }: { className?: string }) {
       )}
     >
       <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-        Now playing
+        {t("player.nowPlaying")}
       </span>
       {track ? (
         <>
           <button
             type="button"
-            aria-label="Open full screen"
+            aria-label={t("player.controls.openFullscreen")}
             onClick={openFullscreen}
             className="relative isolate aspect-square w-full shrink-0"
           >
@@ -81,11 +83,11 @@ export function NowPlayingPanel({ className }: { className?: string }) {
               COVER_RADIUS,
             )}
           >
-            Nothing yet
+            {t("player.nothingYet")}
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-xl font-semibold leading-tight text-muted-foreground">
-              Nothing playing
+              {t("player.nothingPlaying")}
             </span>
             <span
               className={cn(
@@ -93,7 +95,7 @@ export function NowPlayingPanel({ className }: { className?: string }) {
                 family === "liner" && "font-headline text-lg italic",
               )}
             >
-              Pick a record to start
+              {t("player.pickRecord")}
             </span>
           </div>
         </>
@@ -137,10 +139,11 @@ function BarButton({
 
 /** Floating on or off; the bar stays put either way. */
 export function PopOutButton({ hasTrack }: { hasTrack: boolean }) {
+  const t = useT();
   const floating = useLayoutStore((s) => s.mode === "floating");
   return (
     <BarButton
-      label={floating ? "Close floating player" : "Pop out player"}
+      label={floating ? t("player.closeFloating") : t("player.popOut")}
       pressed={floating}
       disabled={!hasTrack && !floating}
       onClick={toggleFloating}
@@ -158,8 +161,9 @@ export function NowPlayingToggle({
   open: boolean;
   onToggle: () => void;
 }) {
+  const t = useT();
   return (
-    <BarButton label="Now playing" pressed={open} onClick={onToggle}>
+    <BarButton label={t("player.nowPlaying")} pressed={open} onClick={onToggle}>
       <IconLayoutSidebarRightFilled />
     </BarButton>
   );

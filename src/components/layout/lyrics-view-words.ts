@@ -1,6 +1,7 @@
 import type { Availability } from "@/lib/lyrics/pick";
 import type { LyricsSource } from "@/lib/store/lyrics-settings";
 import type { TimedLine } from "@/lib/lyrics/types";
+import { t } from "@/lib/i18n";
 
 /** The first singer in line order; `lineAlign` puts them on the left. */
 export function firstAgentOf(lines: TimedLine[]): string | undefined {
@@ -30,11 +31,11 @@ export function singerLabelAt(
 
 export function availabilityBadge(a: Availability): string | null {
   return a === "word"
-    ? "WORD"
+    ? t("player.lyrics.badge.word")
     : a === "line"
-      ? "LINE"
+      ? t("player.lyrics.badge.line")
       : a === "plain"
-        ? "TEXT"
+        ? t("player.lyrics.badge.text")
         : null;
 }
 

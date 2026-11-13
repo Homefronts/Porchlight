@@ -25,6 +25,7 @@ import { useScrubStore } from "@/lib/store/scrub";
 import { useThemeStore } from "@/lib/theme/store";
 import type { Shelf, ShelfItem } from "@/lib/innertube/types";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 import { useLyricsView } from "@/components/layout/lyrics-view";
 import { LyricsButton, Transport } from "../gatefold/parts";
 import { useCompact } from "../compact";
@@ -126,6 +127,7 @@ function OpenLink({ item, className, children }: { item: ShelfItem; className?: 
 
 /** Play for every kind that plays; artists and moods open instead. */
 function useActions(item: ShelfItem | undefined) {
+  const t = useT();
   const album = useAlbumMenuController(item?.id ?? "");
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -136,8 +138,8 @@ function useActions(item: ShelfItem | undefined) {
     if (item.kind === "album") return void album.play(false);
     if (item.kind === "playlist")
       return void playPlaylistNow(item.id, qc)
-        .then((ok) => !ok && toast.error("This playlist is empty"))
-        .catch((e) => toast.error(`Couldn't load playlist: ${String(e)}`));
+        .then((ok) => !ok && toast.error(t("player.playlistEmpty")))
+        .catch((e) => toast.error(t("player.playlistLoadFailed", { error: String(e) })));
     if (item.kind === "artist") return void navigate({ to: "/artist/$id", params: { id: item.id } });
     if (item.kind === "category")
       return void navigate({ to: "/moods/$id", params: { id: item.id }, search: { p: item.categoryParams ?? "", t: item.title } });
@@ -146,7 +148,7 @@ function useActions(item: ShelfItem | undefined) {
   const queue = song
     ? () => {
         usePlaybackStore.getState().enqueueEnd(song);
-        toast.success(`Added to queue: ${song.title}`);
+        toast.success(t("player.crate.addedToQueue", { title: song.title }));
       }
     : item?.kind === "album"
       ? () => void album.addToQueue()
@@ -161,6 +163,7 @@ function useActions(item: ShelfItem | undefined) {
  * drawn, however long the shelf.
  */
 export function Crate({ shelves: all }: { shelves: Shelf[] }) {
+  const t = useT();
   const filter = useAiFilter();
   const shelves = all.map((s) => ({ ...s, items: filter(s.items) })).filter((s) => s.items.length > 0);
   // Remembered by title (Home's shelf identity), so a refresh or reorder keeps it.
@@ -182,14 +185,14 @@ export function Crate({ shelves: all }: { shelves: Shelf[] }) {
   if (!shelf || !item) return null;
 
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
-    const t = e.target as HTMLElement;
-    if (t.isContentEditable || t.closest("input, textarea, select")) return;
+    const el = e.target as HTMLElement;
+    if (el.isContentEditable || el.closest("input, textarea, select")) return;
     if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
       e.preventDefault();
       // From the latest index, so presses faster than a render all count.
       const dir = e.key === "ArrowRight" ? 1 : -1;
       setFrontAt((f) => crateStep(crateStep(f, 0, items.length), dir, items.length));
-    } else if (e.key === "Enter" && t === e.currentTarget) {
+    } else if (e.key === "Enter" && el === e.currentTarget) {
       // Only on the crate itself: Enter on one of its buttons is that button's.
       e.preventDefault();
       act.play();
@@ -212,10 +215,10 @@ export function Crate({ shelves: all }: { shelves: Shelf[] }) {
   const shown = items.slice(first, front + g.sleeves.length + 1);
 
   return (
-    <section aria-label="Crate" data-crate-home className="flex flex-col gap-4">
+    <section aria-label={t("player.crate.crate")} data-crate-home className="flex flex-col gap-4">
       <div
         role="group"
-        aria-label="Shelves"
+        aria-label={t("player.crate.shelves")}
         // Compact keeps the dividers to one scrolling row so the crate stays in view.
         className={cn("flex gap-2", g === FULL ? "flex-wrap" : "app-scroll -mb-2 overflow-x-auto pb-2 [&>*]:shrink-0")}
       >
@@ -238,8 +241,8 @@ export function Crate({ shelves: all }: { shelves: Shelf[] }) {
         ref={crateRef}
         tabIndex={0}
         role="group"
-        aria-roledescription="crate"
-        aria-label={`${shelf.title}: ${item.title}, ${front + 1} of ${items.length}. Arrow keys flip, Enter plays.`}
+        aria-roledescription={t("player.crate.roleDescription")}
+        aria-label={t("player.crate.flipHint", { shelf: shelf.title, title: item.title, n: front + 1, total: items.length })}
         onKeyDown={onKey}
         className="relative outline-none [perspective:1400px] focus-visible:ring-2 focus-visible:ring-ring"
         // Seen from the front record, so the sleeves recede behind it.
@@ -253,7 +256,7 @@ export function Crate({ shelves: all }: { shelves: Shelf[] }) {
               type="button"
               tabIndex={-1}
               aria-hidden={slot !== 0 || undefined}
-              aria-label={slot === 0 ? undefined : `Bring ${it.title} to the front`}
+              aria-label={slot === 0 ? undefined : t("player.crate.bring", { title: it.title })}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
                 holdFocus();
@@ -277,7 +280,7 @@ export function Crate({ shelves: all }: { shelves: Shelf[] }) {
         >
           <span className={cn(MONO, "text-acc1")}>
             {sideLetter(si)}
-            {front + 1} · {item.kind}
+            {front + 1} · {t(`player.crate.kind.${item.kind}`)}
           </span>
           {playable(item) ? title : (
             <OpenLink item={item} className="hover:underline">
@@ -305,27 +308,27 @@ export function Crate({ shelves: all }: { shelves: Shelf[] }) {
               onClick={act.play}
               className={cn(CHIP, "border-foreground bg-foreground text-background hover:bg-foreground/90 hover:text-background")}
             >
-              {act.canPlay ? "▸ Play" : "Open ▸"}
+              {act.canPlay ? t("player.crate.play") : t("player.crate.open")}
             </Button>
             {act.queue && (
               <Button variant="outline" onClick={act.queue} className={CHIP}>
-                + Queue
+                {t("player.crate.queue")}
               </Button>
             )}
             {playable(item) && <LikeDislikeButtons videoId={playable(item)!.id} track={item} />}
           </div>
           <div className={cn(MONO, "mt-3 flex items-center gap-3 text-muted-foreground")}>
-            <Button variant="ghost" size="sm" className={CHIP} aria-label="Previous record" disabled={front === 0} onClick={() => stepTo(front - 1)}>
+            <Button variant="ghost" size="sm" className={CHIP} aria-label={t("player.crate.previousRecord")} disabled={front === 0} onClick={() => stepTo(front - 1)}>
               ‹
             </Button>
             <span className="tabular-nums">
               {front + 1} / {items.length}
             </span>
-            <Button variant="ghost" size="sm" className={CHIP} aria-label="Next record" disabled={front === items.length - 1} onClick={() => stepTo(front + 1)}>
+            <Button variant="ghost" size="sm" className={CHIP} aria-label={t("player.crate.nextRecord")} disabled={front === items.length - 1} onClick={() => stepTo(front + 1)}>
               ›
             </Button>
             <Link to="/shelf/$title" params={{ title: shelf.title }} className="hover:text-foreground hover:underline">
-              See all ▸
+              {t("player.crate.seeAll")}
             </Link>
           </div>
         </div>
@@ -427,6 +430,7 @@ function ToneArm({
 }
 
 export const Turntable = forwardRef<HTMLDivElement, { compact: boolean }>(function Turntable({ compact }, ref) {
+  const t = useT();
   const track = usePlaybackStore(currentTrack);
   const { playing, queue, index } = usePlaybackStore(
     useShallow((s) => ({ playing: s.playing, queue: s.queue, index: s.index })),
@@ -442,14 +446,14 @@ export const Turntable = forwardRef<HTMLDivElement, { compact: boolean }>(functi
   return (
     <footer
       ref={ref}
-      aria-label="Turntable"
+      aria-label={t("player.crate.turntable")}
       style={playerStyle}
       // No player colour: --player is unset, so no ground, as before.
       className={cn("relative flex shrink-0 items-center border-t border-w110 bg-(--player)", compact ? "gap-4 px-5" : "gap-[22px] px-7")}
     >
       <button
         type="button"
-        aria-label={track ? "Open full screen" : "Empty platter"}
+        aria-label={track ? t("player.controls.openFullscreen") : t("player.crate.emptyPlatter")}
         disabled={!track}
         onClick={openFullscreen}
         // Clip only the record's bottom edge here, not the whole footer, so popups like volume can grow upward.
@@ -494,9 +498,9 @@ export const Turntable = forwardRef<HTMLDivElement, { compact: boolean }>(functi
         ) : (
           <>
             <span className={cn("font-semibold leading-none text-muted-foreground", compact ? "text-lg" : "text-[22px]", recordTitleClass(family))}>
-              Nothing playing
+              {t("player.nothingPlaying")}
             </span>
-            <span className="font-headline text-lg italic text-muted-foreground">Drop a record on the platter</span>
+            <span className="font-headline text-lg italic text-muted-foreground">{t("player.crate.dropRecord")}</span>
           </>
         )}
       </div>
@@ -504,14 +508,14 @@ export const Turntable = forwardRef<HTMLDivElement, { compact: boolean }>(functi
       <LyricsButton state={lyrics} side="top" />
       {!compact && (
         <div className={cn("w-[200px] shrink-0 font-meta text-[11px] text-muted-foreground", !track && "opacity-50")}>
-          <div className={cn(MONO, "text-muted-foreground/70")}>Up next</div>
+          <div className={cn(MONO, "text-muted-foreground/70")}>{t("player.crate.upNext")}</div>
           {upNext.length === 0 ? (
-            <div>Queue is empty</div>
+            <div>{t("player.crate.queueEmpty")}</div>
           ) : (
-            upNext.map((t, i) => (
-              <div key={`${t.videoId}:${i}`} className="flex justify-between gap-2 py-px">
-                <span className="truncate">{t.title}</span>
-                {t.duration ? <span className="shrink-0 tabular-nums">{formatTime(t.duration)}</span> : null}
+            upNext.map((u, i) => (
+              <div key={`${u.videoId}:${i}`} className="flex justify-between gap-2 py-px">
+                <span className="truncate">{u.title}</span>
+                {u.duration ? <span className="shrink-0 tabular-nums">{formatTime(u.duration)}</span> : null}
               </div>
             ))
           )}
