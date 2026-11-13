@@ -19,7 +19,18 @@ type State = {
  *
  * Not persisted: a drag never survives a reload.
  */
+let justCleared = false;
+
 export const useScrubStore = create<State>()((set) => ({
   scrub: null,
-  setScrub: (scrub) => set({ scrub }),
+  setScrub: (scrub) => {
+    // For an arrow key Radix calls onValueCommit (which clears) and then
+    // onValueChange, which would restart a scrub nobody is doing.
+    if (scrub !== null && justCleared) return;
+    if (scrub === null) {
+      justCleared = true;
+      queueMicrotask(() => (justCleared = false));
+    }
+    set({ scrub });
+  },
 }));
