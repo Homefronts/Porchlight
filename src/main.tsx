@@ -22,6 +22,8 @@ async function boot() {
   await import("./lib/interface-font");
   // Applies the active look to <html> in both windows.
   await import("./lib/theme/apply");
+  // Loads the chosen language and sets <html lang> in both windows.
+  await import("./lib/i18n/apply");
 
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>
