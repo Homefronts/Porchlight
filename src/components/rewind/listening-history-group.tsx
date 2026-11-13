@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Group, SettingRow } from "@/components/settings/primitives";
 import { rewindLog } from "@/lib/rewind/log";
 import { importTakeout } from "@/lib/rewind/takeout";
+import { getLocale } from "@/lib/i18n";
 import { useSettingsStore } from "@/lib/store/settings";
 
 const IMPORT_ERRORS = {
@@ -30,7 +31,7 @@ export function ListeningHistoryGroup() {
     setImporting(ctl);
     const res = await importTakeout(file, ctl.signal);
     setImporting(null);
-    if ("added" in res) toast.success(res.added ? `Imported ${res.added.toLocaleString()} plays from this quarter` : "Already imported");
+    if ("added" in res) toast.success(res.added ? `Imported ${res.added.toLocaleString(getLocale())} plays from this quarter` : "Already imported");
     else toast.error(IMPORT_ERRORS[res.error]);
   };
 

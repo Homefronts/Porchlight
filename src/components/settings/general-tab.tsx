@@ -8,19 +8,32 @@ import {
   IconBellFilled,
   IconBoltFilled,
   IconCircleArrowDownFilled,
+  IconCheck,
+  IconChevronDown,
   IconCircleCheckFilled,
+  IconLanguage,
   IconLinkFilled,
   IconLoader2,
   IconLogin,
   IconSquareXFilled,
   IconUserFilled,
 } from "@tabler/icons-react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { Group, SettingRow, TabPane } from "@/components/settings/primitives";
+import { useT } from "@/lib/i18n";
+import { LANGS, LANG_NAMES } from "@/lib/i18n/translate";
 import { IS_MAC } from "@/lib/platform";
+import { useLanguageStore } from "@/lib/store/language";
 import { authLoggedInQuery } from "@/lib/store/auth-queries";
 import { useSettingsStore } from "@/lib/store/settings";
 import { checkForUpdates } from "@/lib/updater";
@@ -170,6 +183,7 @@ function BehaviorGroup() {
 
   return (
     <Group>
+      <LanguageRow />
       <SettingRow
         icon={IconBoltFilled}
         title="Launch at Startup"
@@ -247,5 +261,68 @@ function BehaviorGroup() {
         }
       />
     </Group>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Language                                                            */
+/* ------------------------------------------------------------------ */
+
+const HELP_URL = "https://github.com/Homefronts/Porchlight/tree/main/src/locales";
+
+function LanguageRow() {
+  const t = useT();
+  const language = useLanguageStore((s) => s.language);
+  const setLanguage = useLanguageStore((s) => s.setLanguage);
+  const options = [
+    { code: "system" as const, label: t("settings.general.language.system") },
+    ...LANGS.map((code) => ({ code, label: LANG_NAMES[code] })),
+  ];
+  const current = options.find((o) => o.code === language);
+
+  return (
+    <SettingRow
+      icon={IconLanguage}
+      title={t("settings.general.language.title")}
+      description={t("settings.general.language.description")}
+      control={
+        <div className="flex flex-col items-end gap-1.5">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="flex h-8 w-[196px] cursor-pointer items-center gap-2 rounded-[var(--radius-button,10px)] border border-w090 bg-w040 px-3 text-[13px] text-t2 transition-colors duration-[140ms] hover:bg-w070 data-[state=open]:border-w200"
+              >
+                <span className="min-w-0 flex-1 truncate text-left">
+                  {current?.label}
+                </span>
+                <IconChevronDown className="size-3 shrink-0 text-t6" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="max-h-80 w-[232px]">
+              {options.map((o) => (
+                <DropdownMenuItem
+                  key={o.code}
+                  lang={o.code === "system" ? undefined : o.code}
+                  onSelect={() => setLanguage(o.code)}
+                >
+                  <span className="flex-1 truncate">{o.label}</span>
+                  {language === o.code ? (
+                    <IconCheck className="size-4 text-acc1!" stroke={2.4} />
+                  ) : null}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <button
+            type="button"
+            onClick={() => void openUrl(HELP_URL)}
+            className="cursor-pointer text-xs text-t6 underline-offset-2 hover:text-t3 hover:underline"
+          >
+            {t("settings.general.language.help")}
+          </button>
+        </div>
+      }
+    />
   );
 }

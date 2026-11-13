@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { MIN_MINUTES, MIN_SONGS } from "@/lib/rewind/build";
 import { quarterOf } from "@/lib/rewind/quarter";
 import { appSealDeps, previewQuarter } from "@/lib/rewind/seal";
+import { getLocale } from "@/lib/i18n";
 import type { Rewind } from "@/lib/rewind/types";
 
 export const Route = createFileRoute("/rewind")({
@@ -72,7 +73,7 @@ function RewindCard({ r, onOpen }: { r: Rewind; onOpen: () => void }) {
         Rewind
       </span>
       <span className={cn("text-2xl font-black leading-tight", recordTitleClass(family))}>{quarterLabel(r)}</span>
-      <span className="mt-1 font-meta text-xs text-white/70">{r.minutes.toLocaleString()} minutes</span>
+      <span className="mt-1 font-meta text-xs text-white/70">{r.minutes.toLocaleString(getLocale())} minutes</span>
     </button>
   );
 }

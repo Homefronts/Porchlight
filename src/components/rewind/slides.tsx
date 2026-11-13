@@ -3,6 +3,7 @@ import { coverBlobUrl } from "@/lib/rewind/palette";
 import { quarterRange } from "@/lib/rewind/quarter";
 import type { Ranked, Rewind } from "@/lib/rewind/types";
 import { cn } from "@/lib/utils";
+import { getLocale } from "@/lib/i18n";
 import { Confetti, SlideArt } from "./slide-art";
 
 export type SlideSpec =
@@ -117,7 +118,7 @@ export function personality(peak: number): { name: string; line: string } {
   return { name: "The Late Night Romantic", line: `You peak around ${at}, when the good songs come out.` };
 }
 
-const fmt = (n: number) => n.toLocaleString();
+const fmt = (n: number) => n.toLocaleString(getLocale());
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 /** Giant for short names, still big for long ones; sizes are % of the card's width. */
 /**

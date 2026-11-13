@@ -1,1 +1,19 @@
-{ "common": { "ok": "OK" } }
+{
+  "common": { "ok": "OK" },
+  "time": {
+    "justNow": "just now",
+    "minutesAgo": "{count}m ago",
+    "hoursAgo": "{count}h ago",
+    "daysAgo": "{count}d ago"
+  },
+  "settings": {
+    "general": {
+      "language": {
+        "title": "Language",
+        "description": "Porchlight's own text. Music from YouTube stays as it is.",
+        "system": "System default",
+        "help": "Help improve this translation"
+      }
+    }
+  }
+}
