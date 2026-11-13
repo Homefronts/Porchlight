@@ -8,7 +8,6 @@ import {
   IconBellFilled,
   IconBoltFilled,
   IconCircleArrowDownFilled,
-  IconCheck,
   IconChevronDown,
   IconCircleCheckFilled,
   IconLanguage,
@@ -25,7 +24,8 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
@@ -291,27 +291,34 @@ function LanguageRow() {
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
+                aria-label={t("settings.general.language.title")}
                 className="flex h-8 w-[196px] cursor-pointer items-center gap-2 rounded-[var(--radius-button,10px)] border border-w090 bg-w040 px-3 text-[13px] text-t2 transition-colors duration-[140ms] hover:bg-w070 data-[state=open]:border-w200"
               >
-                <span className="min-w-0 flex-1 truncate text-left">
+                <span
+                  lang={current?.code === "system" ? undefined : current?.code}
+                  className="min-w-0 flex-1 truncate text-left"
+                >
                   {current?.label}
                 </span>
                 <IconChevronDown className="size-3 shrink-0 text-t6" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="max-h-80 w-[232px]">
-              {options.map((o) => (
-                <DropdownMenuItem
-                  key={o.code}
-                  lang={o.code === "system" ? undefined : o.code}
-                  onSelect={() => setLanguage(o.code)}
-                >
-                  <span className="flex-1 truncate">{o.label}</span>
-                  {language === o.code ? (
-                    <IconCheck className="size-4 text-acc1!" stroke={2.4} />
-                  ) : null}
-                </DropdownMenuItem>
-              ))}
+              {/* Radio items so the selected language is announced. */}
+              <DropdownMenuRadioGroup
+                value={language}
+                onValueChange={(v) => setLanguage(v as typeof language)}
+              >
+                {options.map((o) => (
+                  <DropdownMenuRadioItem
+                    key={o.code}
+                    value={o.code}
+                    lang={o.code === "system" ? undefined : o.code}
+                  >
+                    <span className="flex-1 truncate">{o.label}</span>
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
           <button
