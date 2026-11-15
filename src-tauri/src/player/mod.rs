@@ -4,4 +4,6 @@
 #![allow(dead_code)]
 
 pub mod analysis;
+pub mod decode;
 pub mod dsp;
+pub mod source;

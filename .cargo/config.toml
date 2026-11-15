@@ -1,0 +1,7 @@
+[env]
+# audiopus_sys's bundled libopus declares cmake_minimum_required(3.1), which
+# CMake 4 rejects unless this floor is raised. Harmless on CMake 3.
+CMAKE_POLICY_VERSION_MINIMUM = "3.5"
+# Always build that bundled libopus (PIC, same version everywhere) instead of
+# whatever pkg-config finds on the build machine.
+LIBOPUS_NO_PKG = "1"
