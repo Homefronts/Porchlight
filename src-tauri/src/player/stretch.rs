@@ -1,10 +1,9 @@
 //! Sample-rate conversion plus pitch-preserving time-stretch.
 //!
 //! Chain: interleaved stereo at `in_rate` -> rubato FFT resampler (skipped
-//! when the rates match) -> `out_rate`, then either
-//!   * dry path: the resampled audio as is (exactly speed 1), or
-//!   * wet path: `wsola` time-stretch at the playback speed.
-//! WSOLA is fed continuously, even while bypassed, so it is always primed.
+//! when the rates match) -> `out_rate`, then either the dry path (the
+//! resampled audio as is, exactly speed 1) or the wet path (`wsola`
+//! time-stretch at the playback speed). WSOLA is fed continuously, even while bypassed, so it is always primed.
 //! Moving between the paths crossfades over ~17 ms.
 //!
 //! Runs on the decode worker, not the audio callback. At end of stream the
