@@ -349,9 +349,9 @@ impl Compressor {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Curve {
     Linear,
-    /// sin(tÂ·Ï€/2) shape: pairs with `EqualPowerOut` for a constant-power fade.
+    /// sin(t*pi/2) shape: pairs with `EqualPowerOut` for a constant-power fade.
     EqualPowerIn,
-    /// cos(tÂ·Ï€/2) shape when ramping 1 -> 0.
+    /// cos(t*pi/2) shape when ramping 1 -> 0.
     EqualPowerOut,
 }
 
