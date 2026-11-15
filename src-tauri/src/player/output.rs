@@ -10,8 +10,9 @@ pub type Render = Arc<dyn Fn(&mut [f32], usize) + Send + Sync>;
 
 /// Owned by the engine's device thread; nothing else touches it.
 pub trait Output {
-    /// Stop any running stream, then open `device` (None = system default)
-    /// and start pulling frames through `render`. Returns the sample rate.
+    /// Open `device` (None = system default), start pulling frames through
+    /// `render`, then drop any previous stream. On error the previous stream
+    /// keeps running. Returns the sample rate.
     fn start(&mut self, device: Option<&str>, render: Render) -> Result<u32, String>;
     fn stop(&mut self);
     fn list_devices(&self) -> Vec<String>;
@@ -37,7 +38,6 @@ impl CpalOutput {
 impl Output for CpalOutput {
     fn start(&mut self, device: Option<&str>, render: Render) -> Result<u32, String> {
         use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-        self.stop();
         let dev = match device {
             Some(name) => self
                 .host
@@ -64,6 +64,7 @@ impl Output for CpalOutput {
             )
             .map_err(|e| e.to_string())?;
         stream.play().map_err(|e| e.to_string())?;
+        // Replacing drops the old stream only now that the new one plays.
         self.stream = Some(stream);
         self.lost = lost;
         Ok(config.sample_rate.0)
@@ -104,6 +105,10 @@ pub struct Fake {
     /// Device the stream is open on, None when stopped.
     pub current: Option<String>,
     pub lost: bool,
+    /// Devices that are listed but fail to open.
+    pub broken: Vec<String>,
+    /// Successful start() calls.
+    pub starts: usize,
     render: Option<Render>,
 }
 
@@ -116,6 +121,8 @@ impl FakeOutput {
             default: devices[0].to_string(),
             current: None,
             lost: false,
+            broken: Vec::new(),
+            starts: 0,
             render: None,
         })))
     }
@@ -150,11 +157,12 @@ impl Output for FakeOutput {
     fn start(&mut self, device: Option<&str>, render: Render) -> Result<u32, String> {
         let mut f = self.state();
         let name = device.map_or(f.default.clone(), str::to_string);
-        if !f.devices.contains(&name) {
+        if !f.devices.contains(&name) || f.broken.contains(&name) {
             return Err("no such output device".into());
         }
         f.current = Some(name);
         f.lost = false;
+        f.starts += 1;
         f.render = Some(render);
         Ok(f.rate)
     }

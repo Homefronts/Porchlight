@@ -20,17 +20,30 @@ fn fixture(name: &str) -> String {
 }
 
 fn rig() -> Rig {
+    rig_idle(Duration::from_secs(10))
+}
+
+fn rig_idle(idle_after: Duration) -> Rig {
     let out = FakeOutput::new(RATE, &["Speakers", "USB DAC"]);
     let o = out.clone();
-    let engine = Engine::new(move || Box::new(o));
+    let engine = Engine::build(move || Box::new(o), idle_after);
     engine.poll_device();
     let events = Arc::new(Mutex::new(Vec::new()));
     let ev = events.clone();
-    engine.subscribe(Box::new(move |e| ev.lock().unwrap().push(e)));
+    engine.subscribe(Box::new(move |e| {
+        ev.lock().unwrap().push(e);
+        true
+    }));
     Rig { engine, out, events }
 }
 
 impl Rig {
+    /// play(), then wait until the device thread has (re)opened the stream.
+    fn play(&self, slot: Slot) {
+        self.engine.play(slot);
+        self.engine.poll_device();
+    }
+
     fn load(&self, slot: Slot, generation: u64) {
         self.engine.load(slot, fixture("tone440-3s.webm"), 0.0, None, generation);
     }
@@ -91,7 +104,7 @@ fn peak(x: &[f32]) -> f32 {
 fn load_and_play_outputs_audio_and_reports_generation() {
     let r = rig();
     r.load(Slot::A, 7);
-    r.engine.play(Slot::A);
+    r.play(Slot::A);
     let out = r.pull(0.5);
     assert!(peak(&out) > 0.05, "silent output");
     assert!(r.wait_for(|e| matches!(e,
@@ -103,7 +116,7 @@ fn load_and_play_outputs_audio_and_reports_generation() {
 fn pause_ramps_to_silence_without_a_click() {
     let r = rig();
     r.load(Slot::A, 1);
-    r.engine.play(Slot::A);
+    r.play(Slot::A);
     let before = r.pull(0.3);
     let p = peak(&before);
     r.engine.pause(Slot::A);
@@ -121,7 +134,7 @@ fn pause_ramps_to_silence_without_a_click() {
 fn seek_reports_new_position() {
     let r = rig();
     r.load(Slot::A, 1);
-    r.engine.play(Slot::A);
+    r.play(Slot::A);
     r.pull(0.2);
     r.engine.seek(Slot::A, 1.0);
     assert!(r.wait_for(|e| matches!(e,
@@ -135,7 +148,7 @@ fn seek_reports_new_position() {
 fn seek_past_end_reports_ended_once() {
     let r = rig();
     r.load(Slot::A, 1);
-    r.engine.play(Slot::A);
+    r.play(Slot::A);
     r.pull(0.1);
     r.engine.seek(Slot::A, 10.0);
     for _ in 0..10 {
@@ -146,7 +159,7 @@ fn seek_past_end_reports_ended_once() {
     assert_eq!(ended.len(), 1, "{ended:?}");
     assert!((ended[0].1 - 3.0).abs() < 0.05 && !ended[0].2, "{ended:?}");
     // Like <audio>: play() after the end starts over.
-    r.engine.play(Slot::A);
+    r.play(Slot::A);
     assert!(peak(&r.pull(0.1)) > 0.05);
     assert!(r.engine.position(0) < 0.2);
 }
@@ -155,12 +168,12 @@ fn seek_past_end_reports_ended_once() {
 fn reload_drops_reports_of_the_old_generation() {
     let r = rig();
     r.load(Slot::A, 1);
-    r.engine.play(Slot::A);
+    r.play(Slot::A);
     r.pull(0.2);
     r.engine.seek(Slot::A, 2.0);
     r.load(Slot::A, 2);
     let mark = r.states(Slot::A).len();
-    r.engine.play(Slot::A);
+    r.play(Slot::A);
     r.pull(0.3);
     std::thread::sleep(Duration::from_millis(600));
     let after = &r.states(Slot::A)[mark..];
@@ -170,29 +183,30 @@ fn reload_drops_reports_of_the_old_generation() {
 
 #[test]
 fn equal_power_crossfade_keeps_unit_power_even_when_reversed() {
+    // B runs a quarter period of 440 Hz (27 frames) behind A, so the two
+    // tones are in quadrature: the mix's amplitude is sqrt(a^2 + b^2) of one
+    // tone, i.e. it measures power the way uncorrelated music would.
     let r = rig();
     r.load(Slot::A, 1);
-    r.load(Slot::B, 1);
+    r.engine.load(Slot::B, fixture("tone440-3s.webm"), 27.0 / RATE as f64, None, 1);
+    r.wait_loaded(Slot::A);
+    r.wait_loaded(Slot::B);
     r.engine.fade(Slot::B, 0.0, 0.0, Curve::Linear);
-    r.engine.play(Slot::A);
-    r.engine.play(Slot::B);
-    r.pull(0.05);
+    r.play(Slot::A);
+    r.play(Slot::B);
+    let one = peak(&r.pull(0.1)[RATE as usize / 20 * 2..]);
     r.engine.fade(Slot::A, 0.0, 1.0, Curve::EqualPowerOut);
     r.engine.fade(Slot::B, 1.0, 1.0, Curve::EqualPowerIn);
-    let mut last = (1.0, 0.0);
     for k in 0..150 {
         if k == 40 {
             // Skip back mid-fade.
             r.engine.fade(Slot::A, 1.0, 1.0, Curve::EqualPowerIn);
             r.engine.fade(Slot::B, 0.0, 1.0, Curve::EqualPowerOut);
         }
-        r.out.pull(CHUNK);
-        let (a, b) = r.engine.fade_gains();
-        assert!((a * a + b * b - 1.0).abs() < 0.01, "{k}: {a} {b}");
-        assert!((a - last.0).abs() < 0.05 && (b - last.1).abs() < 0.05, "{k}: jump");
-        last = (a, b);
+        let level = peak(&r.pull(CHUNK as f64 / RATE as f64)) / one;
+        assert!((level - 1.0).abs() < 0.03, "{k}: level {level}");
     }
-    assert_eq!(last, (1.0, 0.0));
+    assert_eq!(r.engine.fade_gains(), (1.0, 0.0));
 }
 
 #[test]
@@ -203,8 +217,8 @@ fn slots_progress_at_their_own_speed() {
     r.engine.set_speed(Slot::B, 4.0);
     r.wait_loaded(Slot::A);
     r.wait_loaded(Slot::B);
-    r.engine.play(Slot::A);
-    r.engine.play(Slot::B);
+    r.play(Slot::A);
+    r.play(Slot::B);
     r.pull(0.5);
     let (a, b) = (r.engine.position(0), r.engine.position(1));
     assert!((a - 0.5).abs() < 0.05, "A {a}");
@@ -214,13 +228,14 @@ fn slots_progress_at_their_own_speed() {
 #[test]
 fn lost_device_falls_back_to_default_and_keeps_playing() {
     let r = rig();
-    assert_eq!(r.out.state().current.as_deref(), Some("Speakers"));
     r.load(Slot::A, 1);
-    r.engine.play(Slot::A);
+    r.play(Slot::A);
+    assert_eq!(r.out.state().current.as_deref(), Some("Speakers"));
     assert!(peak(&r.pull(0.2)) > 0.05);
     // A device at another rate: playback carries on from the same spot.
     r.out.state().rate = 44100;
     r.engine.select_device(Some("USB DAC".into()));
+    r.engine.poll_device();
     assert_eq!(r.out.state().current.as_deref(), Some("USB DAC"));
     // `pull` counts 48 kHz chunks: 0.2 s of chunks is 0.218 s at 44.1 kHz.
     assert!(peak(&r.pull(0.2)) > 0.05);
@@ -235,6 +250,9 @@ fn lost_device_falls_back_to_default_and_keeps_playing() {
 #[test]
 fn default_device_change_is_followed() {
     let r = rig();
+    r.load(Slot::A, 1);
+    r.play(Slot::A);
+    assert_eq!(r.out.state().current.as_deref(), Some("Speakers"));
     r.out.state().default = "USB DAC".into();
     r.engine.poll_device();
     assert_eq!(r.out.state().current.as_deref(), Some("USB DAC"));
@@ -242,11 +260,141 @@ fn default_device_change_is_followed() {
 }
 
 #[test]
+fn unopenable_device_falls_back_once_and_is_not_retried() {
+    let r = rig();
+    r.load(Slot::A, 1);
+    r.play(Slot::A);
+    r.out.state().broken = vec!["USB DAC".into()];
+    r.engine.select_device(Some("USB DAC".into()));
+    r.engine.poll_device();
+    assert_eq!(r.out.state().current.as_deref(), Some("Speakers"));
+    let starts = r.out.state().starts;
+    for _ in 0..3 {
+        r.engine.poll_device();
+    }
+    assert_eq!(r.out.state().starts, starts, "reopened the stream");
+    assert!(peak(&r.pull(0.1)) > 0.05);
+    // A change in the device list allows a new attempt.
+    r.out.state().broken.clear();
+    r.out.state().devices.push("HDMI".into());
+    r.engine.poll_device();
+    assert_eq!(r.out.state().current.as_deref(), Some("USB DAC"));
+}
+
+#[test]
+fn idle_output_closes_and_reopens_on_play() {
+    let r = rig_idle(Duration::from_millis(50));
+    r.load(Slot::A, 1);
+    r.play(Slot::A);
+    assert!(peak(&r.pull(0.1)) > 0.05);
+    r.engine.pause(Slot::A);
+    r.pull(0.02);
+    r.engine.poll_device(); // starts the idle clock
+    std::thread::sleep(Duration::from_millis(80));
+    r.engine.poll_device();
+    assert_eq!(r.out.state().current, None, "stream still open");
+    r.play(Slot::A);
+    assert_eq!(r.out.state().current.as_deref(), Some("Speakers"));
+    assert!(peak(&r.pull(0.1)) > 0.05);
+}
+
+#[test]
+fn settings_changed_while_stopped_apply_on_start() {
+    let r = rig();
+    // More changes than any command queue would hold while nothing renders.
+    for k in 0..1000 {
+        r.engine.set_gain(Slot::A, k as f32 / 1000.0);
+    }
+    r.engine.set_eq(true, [-40.0; 9]);
+    r.engine.set_gain(Slot::A, 0.5);
+    r.load(Slot::A, 1);
+    r.play(Slot::A);
+    let out = r.pull(0.3);
+    assert!(peak(&out[RATE as usize / 5 * 2..]) < 0.005, "EQ not applied");
+    r.engine.set_eq(false, [0.0; 9]);
+    let out = r.pull(0.3);
+    // EQ off again, gain 0.5 of the ~0.09 tone.
+    let p = peak(&out[RATE as usize / 5 * 2..]);
+    assert!((p - 0.045).abs() < 0.008, "{p}");
+}
+
+#[test]
+fn speed_change_is_heard_at_once() {
+    let r = rig();
+    r.load(Slot::A, 1);
+    r.play(Slot::A);
+    r.pull(0.2);
+    // Let the worker fill the whole ring: the buffered audio must not delay it.
+    std::thread::sleep(Duration::from_millis(50));
+    r.engine.set_speed(Slot::A, 4.0);
+    r.pull(0.03);
+    let p1 = r.engine.position(0);
+    r.pull(0.1);
+    let p2 = r.engine.position(0);
+    assert!((p2 - p1 - 0.4).abs() < 0.06, "advanced {}", p2 - p1);
+    assert!((p1 - 0.2).abs() < 0.15, "{p1}");
+}
+
+/// Largest sample-to-sample step on the left channel.
+fn max_step(x: &[f32]) -> f32 {
+    x.windows(3).step_by(2).map(|w| (w[2] - w[0]).abs()).fold(0f32, f32::max)
+}
+
+#[test]
+fn seek_and_load_while_playing_do_not_click() {
+    let r = rig();
+    r.load(Slot::A, 1);
+    r.play(Slot::A);
+    let mut out = r.pull(0.2);
+    let p = peak(&out);
+    r.engine.seek(Slot::A, 1.5);
+    out.extend(r.pull(0.2));
+    r.load(Slot::A, 2);
+    r.play(Slot::A);
+    out.extend(r.pull(0.2));
+    assert!(max_step(&out) < 0.1 * p, "step {} peak {p}", max_step(&out));
+}
+
+#[test]
+fn unload_ramps_to_silence() {
+    let r = rig();
+    r.load(Slot::A, 1);
+    r.play(Slot::A);
+    let mut out = r.pull(0.2);
+    let p = peak(&out);
+    r.engine.unload(Slot::A);
+    let after = r.pull(0.05);
+    assert_eq!(peak(&after[RATE as usize / 100 * 2..]), 0.0);
+    out.extend(after);
+    assert!(max_step(&out) < 0.1 * p);
+}
+
+#[test]
+fn missing_file_reports_network_error() {
+    let r = rig();
+    r.engine.load(Slot::A, fixture("missing.webm"), 0.0, None, 1);
+    assert!(r.wait_for(|e| matches!(e,
+        PlayerEvent::State { slot: Slot::A, loading: false, error_code: Some(2), .. })));
+}
+
+#[test]
+fn start_at_is_honoured() {
+    let r = rig();
+    r.engine.load(Slot::A, fixture("tone440-3s.webm"), 2.0, None, 1);
+    assert!(r.wait_for(|e| matches!(e,
+        PlayerEvent::State { slot: Slot::A, position, .. } if *position == 2.0)));
+    r.play(Slot::A);
+    assert!(peak(&r.pull(0.1)) > 0.05);
+    let p = r.engine.position(0);
+    assert!((p - 2.1).abs() < 0.02, "{p}");
+}
+
+#[test]
 fn analysis_frames_stop_when_disabled() {
     let r = rig();
     let count = || r.events.lock().unwrap().iter().filter(|e| matches!(e, PlayerEvent::Analysis { .. })).count();
     r.load(Slot::A, 1);
-    r.engine.play(Slot::A);
+    r.play(Slot::A);
     r.engine.set_analysis(true);
     r.pull(0.2);
     std::thread::sleep(Duration::from_millis(200));

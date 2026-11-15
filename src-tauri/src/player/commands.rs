@@ -9,7 +9,7 @@ use tauri::State;
 #[tauri::command]
 pub fn player_subscribe(engine: State<'_, Engine>, channel: Channel<PlayerEvent>) {
     engine.subscribe(Box::new(move |e| {
-        let _ = channel.send(e);
+        channel.send(e).is_ok()
     }));
 }
 

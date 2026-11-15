@@ -42,6 +42,8 @@ const GAIN_SEC: f32 = 0.02;
 const REPORT_EVERY: Duration = Duration::from_millis(250);
 const TICK: Duration = Duration::from_millis(16);
 const DEVICE_POLL: Duration = Duration::from_secs(1);
+/// Close the output after this long with nothing playing (lets Windows sleep).
+const IDLE_STOP: Duration = Duration::from_secs(10);
 /// Sample rate assumed until the first stream opens.
 const DEFAULT_RATE: u32 = 48000;
 
@@ -82,7 +84,8 @@ pub enum PlayerEvent {
     },
 }
 
-pub type Sink = Box<dyn Fn(PlayerEvent) + Send>;
+/// Returns false once the receiver is gone; the engine then drops it.
+pub type Sink = Box<dyn Fn(PlayerEvent) -> bool + Send>;
 
 #[derive(Clone, Copy, Default)]
 struct Frame {
@@ -93,18 +96,31 @@ struct Frame {
     epoch: u32,
 }
 
+/// Fades are events (each one starts a ramp now), so they queue.
 #[derive(Clone, Copy)]
-enum Cmd {
-    Fade(usize, f32, f32, Curve),
-    Gain(usize, f32),
-    Eq(bool, [f32; 9]),
-    Mono(bool),
-    Normalize(bool),
+struct Fade(usize, f32, f32, Curve);
+
+/// Settings are state: the latest value wins, so they never queue and a
+/// change made while no stream runs is applied when one starts.
+#[derive(Clone, Copy, PartialEq)]
+struct Settings {
+    eq: (bool, [f32; 9]),
+    mono: bool,
+    normalize: bool,
+    gain: [f32; 2],
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Settings { eq: (false, [0.0; 9]), mono: false, normalize: false, gain: [1.0; 2] }
+    }
 }
 
 enum Ctl {
     Seek(f64, u32),
     Speed(f32),
+    /// play(): stop blocking while paused.
+    Wake,
 }
 
 /// Control-side slot state. Never touched by the audio callback.
@@ -142,11 +158,19 @@ struct SlotShared {
 
 struct Inner {
     slots: [SlotShared; 2],
-    cmds: Mutex<Producer<Cmd>>,
+    fades: Mutex<Producer<Fade>>,
+    settings: Mutex<Settings>,
+    /// Settings changed since the callback last copied them.
+    settings_dirty: AtomicBool,
+    /// The callback is producing sound (some declick ramp is above 0).
+    active: AtomicBool,
     out_rate: AtomicU32,
     analysis: AtomicBool,
     sink: Mutex<Option<Sink>>,
     shutdown: AtomicBool,
+    reporter: std::sync::OnceLock<std::thread::Thread>,
+    /// Last device list seen by the device thread (read without blocking).
+    devices: Mutex<Vec<String>>,
 }
 
 fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
@@ -154,9 +178,22 @@ fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
 }
 
 impl Inner {
-    fn send(&self, c: Cmd) {
-        if lock(&self.cmds).push(c).is_err() {
-            eprintln!("[player] command ring full, dropped");
+    fn fade(&self, f: Fade) {
+        if lock(&self.fades).push(f).is_err() {
+            eprintln!("[player] fade ring full, dropped");
+        }
+    }
+
+    fn settings(&self, change: impl FnOnce(&mut Settings)) {
+        change(&mut lock(&self.settings));
+        self.settings_dirty.store(true, Relaxed);
+    }
+
+    /// Ask the reporter for an immediate state report of slot `i`.
+    fn wake(&self, i: usize) {
+        self.slots[i].notify.store(true, Relaxed);
+        if let Some(t) = self.reporter.get() {
+            t.unpark();
         }
     }
 
@@ -181,12 +218,14 @@ impl Inner {
         if let Some(w) = &info.worker {
             let _ = w.send(Ctl::Seek(t, info.epoch));
         }
-        self.slots[i].notify.store(true, Relaxed);
+        self.wake(i);
     }
 
     fn emit(&self, e: PlayerEvent) {
-        if let Some(sink) = lock(&self.sink).as_ref() {
-            sink(e);
+        let mut sink = lock(&self.sink);
+        // A closed Channel (webview reloaded) stays dead: stop serializing for it.
+        if sink.as_ref().is_some_and(|s| !s(e)) {
+            *sink = None;
         }
     }
 
@@ -280,14 +319,13 @@ impl SlotRender {
 pub(crate) struct Renderer {
     inner: Arc<Inner>,
     slots: [SlotRender; 2],
-    cmds: Consumer<Cmd>,
+    fades: Consumer<Fade>,
     tap: Producer<f32>,
     rate: f32,
     eq: Eq9,
-    eq_set: (bool, [f32; 9]),
     comp: Compressor,
-    mono: bool,
-    normalize: bool,
+    /// Settings as last applied.
+    set: Settings,
 }
 
 /// Denormals would slow the filters to a crawl during long silences.
@@ -313,28 +351,37 @@ impl Renderer {
     fn set_rate(&mut self, rate: u32) {
         self.rate = rate as f32;
         self.eq = Eq9::new(self.rate);
-        self.eq.set(self.eq_set.0, self.eq_set.1);
+        self.eq.set(self.set.eq.0, self.set.eq.1);
         self.comp = Compressor::new(self.rate);
     }
 
-    fn apply(&mut self, c: Cmd) {
-        match c {
-            Cmd::Fade(i, target, secs, curve) => self.slots[i].fade.to(target, secs, self.rate, curve),
-            Cmd::Gain(i, g) => self.slots[i].gain.to(g, GAIN_SEC, self.rate, Curve::Linear),
-            Cmd::Eq(on, gains) => {
-                self.eq_set = (on, gains);
-                self.eq.set(on, gains);
-            }
-            Cmd::Mono(on) => self.mono = on,
-            Cmd::Normalize(on) => self.normalize = on,
+    /// Copy changed settings. try_lock only: if control holds the lock right
+    /// now, the change lands on the next callback.
+    fn pull_settings(&mut self) {
+        if !self.inner.settings_dirty.swap(false, Relaxed) {
+            return;
         }
+        let Ok(new) = self.inner.settings.try_lock().map(|s| *s) else {
+            self.inner.settings_dirty.store(true, Relaxed);
+            return;
+        };
+        if new.eq != self.set.eq {
+            self.eq.set(new.eq.0, new.eq.1);
+        }
+        for (i, slot) in self.slots.iter_mut().enumerate() {
+            if new.gain[i] != self.set.gain[i] {
+                slot.gain.to(new.gain[i], GAIN_SEC, self.rate, Curve::Linear);
+            }
+        }
+        self.set = new;
     }
 
     /// The audio callback: no locks, no allocation, never blocks.
     fn render(&mut self, buf: &mut [f32], channels: usize) {
         flush_denormals();
-        while let Ok(c) = self.cmds.pop() {
-            self.apply(c);
+        self.pull_settings();
+        while let Ok(Fade(i, target, secs, curve)) = self.fades.pop() {
+            self.slots[i].fade.to(target, secs, self.rate, curve);
         }
         let inner = &self.inner;
         let mut live = inner.slots.each_ref().map(|s| Live {
@@ -352,10 +399,10 @@ impl Renderer {
                 m[1] += x[1];
             }
             self.eq.process(&mut m);
-            if self.mono {
+            if self.set.mono {
                 dsp::fold_mono(&mut m);
             }
-            if self.normalize {
+            if self.set.normalize {
                 self.comp.process(&mut m);
             }
             if tap {
@@ -378,6 +425,8 @@ impl Renderer {
                 s.notify.store(true, Relaxed);
             }
         }
+        let active = self.slots.iter().any(|r| r.run_target > 0.0 || r.run.value() > 0.0);
+        inner.active.store(active, Relaxed);
     }
 }
 
@@ -394,12 +443,15 @@ struct Job {
 
 fn open_source(url: &str) -> Result<Box<dyn symphonia::core::io::MediaSource>, MediaError> {
     if url.starts_with("http://") || url.starts_with("https://") {
+        // shortcut: a superseded load keeps its request open until the server answers (up to 130 s); add a cancel flag to HttpSource if rapid skipping piles up threads.
         return Ok(Box::new(source::HttpSource::open(url)?));
     }
     #[cfg(test)]
-    if let Ok(f) = std::fs::File::open(url) {
-        return Ok(Box::new(f));
-    }
+    return match std::fs::File::open(url) {
+        Ok(f) => Ok(Box::new(f)),
+        Err(e) => Err(MediaError::Network(e.to_string())),
+    };
+    #[cfg(not(test))]
     Err(MediaError::Unsupported(format!("not a stream url: {url}")))
 }
 
@@ -434,7 +486,7 @@ fn run_worker(inner: Arc<Inner>, i: usize, job: Job, rx: Receiver<Ctl>) {
             return;
         }
         info.loading = false;
-        s.notify.store(true, Relaxed);
+        inner.wake(i);
         match opened {
             Ok(d) => {
                 info.duration = d.duration();
@@ -483,7 +535,14 @@ impl Worker {
             }
             if self.sent < self.pending.len() {
                 if !self.push() {
-                    match rx.recv_timeout(Duration::from_millis(5)) {
+                    // Ring full. Paused, it won't drain: block until play()
+                    // (Ctl::Wake) or another command instead of polling.
+                    let msg = if self.inner.slots[self.i].playing.load(Relaxed) {
+                        rx.recv_timeout(Duration::from_millis(5))
+                    } else {
+                        rx.recv().map_err(|_| RecvTimeoutError::Disconnected)
+                    };
+                    match msg {
                         Ok(c) => self.handle(c),
                         Err(RecvTimeoutError::Timeout) => {}
                         Err(RecvTimeoutError::Disconnected) => return,
@@ -562,6 +621,7 @@ impl Worker {
     fn handle(&mut self, c: Ctl) {
         match c {
             Ctl::Speed(v) => self.speed = v,
+            Ctl::Wake => {}
             Ctl::Seek(t, epoch) => {
                 self.epoch = epoch;
                 self.pending.clear();
@@ -597,7 +657,7 @@ impl Worker {
         let mut info = lock(&s.info);
         if info.load_id == self.load_id {
             info.error = Some(e.code());
-            s.notify.store(true, Relaxed);
+            self.inner.wake(self.i);
         }
     }
 }
@@ -608,7 +668,14 @@ fn run_reporter(inner: Arc<Inner>, mut tap: Consumer<f32>) {
     let mut analyser = Analyser::new();
     let mut last = Instant::now();
     while !inner.shutdown.load(Relaxed) {
-        std::thread::sleep(TICK);
+        // 60 Hz only while something plays or the visualizer is on; idle,
+        // wake 4 times a second or when `Inner::wake` unparks us.
+        let busy = inner.analysis.load(Relaxed) || inner.slots.iter().any(|s| s.playing.load(Relaxed));
+        if busy {
+            std::thread::sleep(TICK);
+        } else {
+            std::thread::park_timeout(REPORT_EVERY);
+        }
         while let Ok(x) = tap.pop() {
             analyser.push([x, x]);
         }
@@ -630,8 +697,11 @@ fn run_reporter(inner: Arc<Inner>, mut tap: Consumer<f32>) {
 // ---------------------------------------------------------------- device thread
 
 enum DevMsg {
-    Select(Option<String>, Sender<()>),
-    List(Sender<Vec<String>>),
+    Select(Option<String>),
+    /// play(): open the stream if it was stopped for idleness.
+    Wake,
+    /// Refresh the cached device list.
+    Refresh,
     #[cfg(test)]
     Poll(Sender<()>),
 }
@@ -644,29 +714,84 @@ struct Device {
     selected: Option<String>,
     /// Device the stream is running on.
     current: Option<String>,
+    /// A stream should be running: set by play(), cleared after idling.
+    wanted: bool,
+    idle_after: Duration,
+    idle_since: Option<Instant>,
+    /// Selected device that failed to open, with the device list it failed
+    /// under: not retried until the list changes.
+    failed: Option<(String, Vec<String>)>,
 }
 
 impl Device {
+    fn refresh_list(&mut self) -> Vec<String> {
+        let devices = self.out.list_devices();
+        *lock(&self.inner.devices) = devices.clone();
+        devices
+    }
+
     /// Keep the stream on the selected device, else on the system default,
     /// following default changes and recovering from a lost device.
     fn ensure(&mut self) {
-        let devices = self.out.list_devices();
-        let default = self.out.default_device();
-        let want = self.selected.clone().filter(|n| devices.contains(n)).or(default.clone());
-        if self.current.is_some() && self.current == want && !self.out.lost() {
+        if !self.wanted {
             return;
         }
+        let lost = self.out.lost();
+        let default = self.out.default_device();
+        let want = match self.selected.clone() {
+            // Following the default: no need to enumerate every device.
+            None => default.clone(),
+            Some(name) => {
+                let devices = self.refresh_list();
+                let failed = self.failed.as_ref().is_some_and(|(f, d)| *f == name && *d == devices);
+                if devices.contains(&name) && !failed {
+                    Some(name)
+                } else {
+                    default.clone()
+                }
+            }
+        };
         for name in [want, default].into_iter().flatten() {
+            if !lost && self.current.as_ref() == Some(&name) {
+                return;
+            }
+            // Output::start opens the new stream before dropping the old one,
+            // so a failed open leaves the current stream playing.
             match self.out.start(Some(&name), self.render.clone()) {
                 Ok(rate) => {
                     self.current = Some(name);
                     self.rate_changed(rate);
                     return;
                 }
-                Err(e) => eprintln!("[player] can't open output {name}: {e}"),
+                Err(e) => {
+                    eprintln!("[player] can't open output {name}: {e}");
+                    if self.selected.as_ref() == Some(&name) {
+                        self.failed = Some((name, lock(&self.inner.devices).clone()));
+                    }
+                }
             }
         }
-        self.current = None;
+        if lost {
+            self.out.stop();
+            self.current = None;
+        }
+    }
+
+    /// Close the stream once nothing has played for `idle_after`, so an
+    /// open stream doesn't keep Windows from sleeping.
+    fn check_idle(&mut self) {
+        let active = self.inner.active.load(Relaxed) || self.inner.slots.iter().any(|s| s.playing.load(Relaxed));
+        if !self.wanted || active {
+            self.idle_since = None;
+            return;
+        }
+        let since = *self.idle_since.get_or_insert_with(Instant::now);
+        if since.elapsed() >= self.idle_after {
+            self.out.stop();
+            self.current = None;
+            self.wanted = false;
+            self.idle_since = None;
+        }
     }
 
     fn rate_changed(&mut self, rate: u32) {
@@ -685,24 +810,34 @@ impl Device {
         }
     }
 
-    fn run(mut self, rx: Receiver<DevMsg>) {
+    fn tick(&mut self) {
+        self.check_idle();
         self.ensure();
+    }
+
+    fn run(mut self, rx: Receiver<DevMsg>) {
+        self.refresh_list();
         loop {
             match rx.recv_timeout(DEVICE_POLL) {
-                Ok(DevMsg::Select(name, reply)) => {
+                Ok(DevMsg::Select(name)) => {
                     self.selected = name;
+                    self.failed = None;
                     self.ensure();
-                    let _ = reply.send(());
                 }
-                Ok(DevMsg::List(reply)) => {
-                    let _ = reply.send(self.out.list_devices());
+                Ok(DevMsg::Wake) => {
+                    self.wanted = true;
+                    self.idle_since = None;
+                    self.ensure();
+                }
+                Ok(DevMsg::Refresh) => {
+                    self.refresh_list();
                 }
                 #[cfg(test)]
                 Ok(DevMsg::Poll(reply)) => {
-                    self.ensure();
+                    self.tick();
                     let _ = reply.send(());
                 }
-                Err(RecvTimeoutError::Timeout) => self.ensure(),
+                Err(RecvTimeoutError::Timeout) => self.tick(),
                 Err(RecvTimeoutError::Disconnected) => break,
             }
         }
@@ -723,7 +858,12 @@ pub struct Engine {
 
 impl Engine {
     /// `make_output` runs on the device thread (cpal streams are not Send).
+    /// No stream is opened until the first play().
     pub fn new(make_output: impl FnOnce() -> Box<dyn Output> + Send + 'static) -> Engine {
+        Self::build(make_output, IDLE_STOP)
+    }
+
+    fn build(make_output: impl FnOnce() -> Box<dyn Output> + Send + 'static, idle_after: Duration) -> Engine {
         let mut cons = Vec::new();
         let slots = [(); 2].map(|_| {
             let (p, c) = RingBuffer::new(RING_FRAMES);
@@ -752,16 +892,21 @@ impl Engine {
                 producer: Mutex::new(p),
             }
         });
-        let (cmd_p, cmd_c) = RingBuffer::new(256);
+        let (fade_p, fade_c) = RingBuffer::new(256);
         // ~0.4 s of mono at 48 kHz: the reporter drains it every 16 ms.
         let (tap_p, tap_c) = RingBuffer::new(1 << 14);
         let inner = Arc::new(Inner {
             slots,
-            cmds: Mutex::new(cmd_p),
+            fades: Mutex::new(fade_p),
+            settings: Mutex::new(Settings::default()),
+            settings_dirty: AtomicBool::new(false),
+            active: AtomicBool::new(false),
             out_rate: AtomicU32::new(DEFAULT_RATE),
             analysis: AtomicBool::new(false),
             sink: Mutex::new(None),
             shutdown: AtomicBool::new(false),
+            reporter: std::sync::OnceLock::new(),
+            devices: Mutex::new(Vec::new()),
         });
         let rate = DEFAULT_RATE as f32;
         let mut cons = cons.into_iter();
@@ -779,14 +924,12 @@ impl Engine {
         let renderer = Arc::new(Mutex::new(Renderer {
             inner: inner.clone(),
             slots: [slot(cons.next().unwrap()), slot(cons.next().unwrap())],
-            cmds: cmd_c,
+            fades: fade_c,
             tap: tap_p,
             rate,
             eq: Eq9::new(rate),
-            eq_set: (false, [0.0; 9]),
             comp: Compressor::new(rate),
-            mono: false,
-            normalize: false,
+            set: Settings::default(),
         }));
         let r = renderer.clone();
         let render: Render = Arc::new(move |buf: &mut [f32], ch| match r.try_lock() {
@@ -798,15 +941,27 @@ impl Engine {
         std::thread::Builder::new()
             .name("player-device".into())
             .spawn(move || {
-                let device = Device { inner: di, renderer: dr, out: make_output(), render, selected: None, current: None };
+                let device = Device {
+                    inner: di,
+                    renderer: dr,
+                    out: make_output(),
+                    render,
+                    selected: None,
+                    current: None,
+                    wanted: false,
+                    idle_after,
+                    idle_since: None,
+                    failed: None,
+                };
                 device.run(dev_rx);
             })
             .expect("spawn player-device");
         let ri = inner.clone();
-        std::thread::Builder::new()
+        let reporter = std::thread::Builder::new()
             .name("player-report".into())
             .spawn(move || run_reporter(ri, tap_c))
             .expect("spawn player-report");
+        let _ = inner.reporter.set(reporter.thread().clone());
         Engine {
             inner,
             #[cfg(test)]
@@ -854,7 +1009,7 @@ impl Engine {
             info.loading = false;
             info.error = Some(2);
         }
-        s.notify.store(true, Relaxed);
+        self.inner.wake(i);
     }
 
     /// Like `<audio>`, play() after the end starts over.
@@ -865,18 +1020,18 @@ impl Engine {
         if info.loaded && info.epoch != 0 && s.ended_epoch.load(Relaxed) == info.epoch {
             self.inner.seek(i, &mut info, 0.0);
         }
+        s.playing.store(true, Relaxed);
+        if let Some(w) = &info.worker {
+            let _ = w.send(Ctl::Wake);
+        }
         drop(info);
-        self.set_playing(slot, true);
+        self.inner.wake(i);
+        let _ = self.dev.send(DevMsg::Wake);
     }
 
     pub fn pause(&self, slot: Slot) {
-        self.set_playing(slot, false);
-    }
-
-    fn set_playing(&self, slot: Slot, on: bool) {
-        let s = &self.inner.slots[slot.idx()];
-        s.playing.store(on, Relaxed);
-        s.notify.store(true, Relaxed);
+        self.inner.slots[slot.idx()].playing.store(false, Relaxed);
+        self.inner.wake(slot.idx());
     }
 
     pub fn seek(&self, slot: Slot, seconds: f64) {
@@ -890,30 +1045,40 @@ impl Engine {
         }
     }
 
-    /// Tempo with pitch kept; today's range is 0.75..4.
+    /// Tempo with pitch kept; today's range is 0.75..4. Applied as an
+    /// in-place re-seek at the playing position, so it is heard at once
+    /// instead of after the buffered audio.
     pub fn set_speed(&self, slot: Slot, speed: f32) {
         if !speed.is_finite() {
             return;
         }
         let speed = speed.clamp(0.25, 4.0);
-        let mut info = lock(&self.inner.slots[slot.idx()].info);
+        let i = slot.idx();
+        let mut info = lock(&self.inner.slots[i].info);
+        if info.speed == speed {
+            return;
+        }
         info.speed = speed;
         if let Some(w) = &info.worker {
             let _ = w.send(Ctl::Speed(speed));
+        }
+        if info.loaded {
+            let pos = self.inner.position(i, &info);
+            self.inner.seek(i, &mut info, pos);
         }
     }
 
     /// Crossfade ramp, multiplied with the slot's gain.
     pub fn fade(&self, slot: Slot, target_gain: f32, seconds: f32, curve: Curve) {
         if target_gain.is_finite() && seconds.is_finite() {
-            self.inner.send(Cmd::Fade(slot.idx(), target_gain.clamp(0.0, 1.0), seconds.max(0.0), curve));
+            self.inner.fade(Fade(slot.idx(), target_gain.clamp(0.0, 1.0), seconds.max(0.0), curve));
         }
     }
 
     /// Linear gain (the volume curve stays in TypeScript); glides 20 ms.
     pub fn set_gain(&self, slot: Slot, gain: f32) {
         if gain.is_finite() {
-            self.inner.send(Cmd::Gain(slot.idx(), gain.clamp(0.0, 1.0)));
+            self.inner.settings(|s| s.gain[slot.idx()] = gain.clamp(0.0, 1.0));
         }
     }
 
@@ -930,38 +1095,38 @@ impl Engine {
 
     pub fn set_eq(&self, enabled: bool, gains_db: [f32; 9]) {
         let gains_db = gains_db.map(|g| if g.is_finite() { g.clamp(-40.0, 40.0) } else { 0.0 });
-        self.inner.send(Cmd::Eq(enabled, gains_db));
+        self.inner.settings(|s| s.eq = (enabled, gains_db));
     }
 
     pub fn set_mono(&self, on: bool) {
-        self.inner.send(Cmd::Mono(on));
+        self.inner.settings(|s| s.mono = on);
     }
 
     pub fn set_normalize(&self, on: bool) {
-        self.inner.send(Cmd::Normalize(on));
+        self.inner.settings(|s| s.normalize = on);
     }
 
     pub fn set_analysis(&self, enabled: bool) {
         self.inner.analysis.store(enabled, Relaxed);
+        if let Some(t) = self.inner.reporter.get() {
+            t.unpark();
+        }
     }
 
-    /// None follows the system default.
+    /// None follows the system default. Returns at once; the device thread
+    /// switches.
     pub fn select_device(&self, name: Option<String>) {
-        let (tx, rx) = mpsc::channel();
-        if self.dev.send(DevMsg::Select(name, tx)).is_ok() {
-            let _ = rx.recv();
-        }
+        let _ = self.dev.send(DevMsg::Select(name));
     }
 
+    /// The device thread's last list, refreshed in the background on each
+    /// call (and every second while a named device is selected).
     pub fn list_devices(&self) -> Vec<String> {
-        let (tx, rx) = mpsc::channel();
-        if self.dev.send(DevMsg::List(tx)).is_err() {
-            return Vec::new();
-        }
-        rx.recv().unwrap_or_default()
+        let _ = self.dev.send(DevMsg::Refresh);
+        lock(&self.inner.devices).clone()
     }
 
-    /// Re-check the device now instead of at the next 1 s poll.
+    /// Run the device thread's periodic check now and wait for it.
     #[cfg(test)]
     pub fn poll_device(&self) {
         let (tx, rx) = mpsc::channel();
@@ -995,7 +1160,9 @@ impl Engine {
         let cons = &mut r.slots[i].cons;
         let Ok(chunk) = cons.read_chunk(cons.slots()) else { return false };
         let (a, b) = chunk.as_slices();
-        a.iter().chain(b).filter(|f| f.epoch == want).count() >= n
+        // Stale frames at the front: only rendering drops them and frees
+        // the ring for the worker, so render now.
+        a.first().is_some_and(|f| f.epoch < want) || a.iter().chain(b).filter(|f| f.epoch == want).count() >= n
     }
 }
 
