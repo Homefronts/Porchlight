@@ -1,4 +1,4 @@
-import { currentAnalyser } from "@/lib/audio-graph";
+import { subscribeAnalysis } from "@/lib/native-media";
 
 /** Below this level (about -48 dB) a stretch counts as silence. */
 const QUIET = 0.004;
@@ -10,32 +10,32 @@ const QUIET_MS = 1500;
 export const SKIP_RATE = 4;
 const TICK_MS = 150;
 
+/** The slice of the playing element this reads and drives. */
+type Playable = { paused: boolean; currentTime: number; playbackRate: number };
+
 type Watch = {
   /** Which element is playing right now (it swaps on a crossfade). */
-  active: () => HTMLMediaElement | null;
+  active: () => Playable | null;
   /** Whether skipping is on and something is playing. */
   wanted: () => boolean;
   /** The listener's chosen speed, to go back to when the sound returns. */
   speed: () => number;
 };
 
-/** RMS of one time-domain frame, 0 for silence to about 0.7 for a full-scale sine. */
-export function rms(frame: Float32Array): number {
-  let sum = 0;
-  for (const v of frame) sum += v * v;
-  return Math.sqrt(sum / (frame.length || 1));
-}
-
 /**
  * Plays long silences (a gap before a hidden track, a long quiet tail) at
  * SKIP_RATE, then drops back to the listener's speed when sound returns.
  * Speeding up rather than seeking means it never jumps past where the music
- * starts again. Returns a stop function.
+ * starts again. The level is the RMS of the engine's latest analysis frame
+ * (0 for silence to about 0.7 for a full-scale sine). Returns a stop function.
  */
 export function watchSilences({ active, wanted, speed }: Watch): () => void {
   let quietFor = 0;
-  let boosted: HTMLMediaElement | null = null;
-  let frame = new Float32Array(0);
+  let boosted: Playable | null = null;
+  let level: number | null = null;
+  const unsubscribe = subscribeAnalysis((_bins, rms) => {
+    level = rms;
+  });
   const settle = () => {
     if (boosted) boosted.playbackRate = speed();
     boosted = null;
@@ -43,13 +43,9 @@ export function watchSilences({ active, wanted, speed }: Watch): () => void {
   };
   const timer = setInterval(() => {
     const el = active();
-    const analyser = currentAnalyser();
-    if (!el || !analyser || !wanted() || el.paused) return settle();
-    // The element changed under us (a new track loaded): its rate is already reset.
+    if (!el || level === null || !wanted() || el.paused) return settle();
+    // The element changed under us (a crossfade): its next load resets its rate.
     if (boosted && boosted !== el) boosted = null;
-    if (frame.length !== analyser.fftSize) frame = new Float32Array(analyser.fftSize);
-    analyser.getFloatTimeDomainData(frame);
-    const level = rms(frame);
     if (boosted) {
       if (level > LOUD) settle();
       return;
@@ -63,6 +59,7 @@ export function watchSilences({ active, wanted, speed }: Watch): () => void {
   }, TICK_MS);
   return () => {
     clearInterval(timer);
+    unsubscribe();
     settle();
   };
 }

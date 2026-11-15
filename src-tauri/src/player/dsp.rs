@@ -1,5 +1,6 @@
-//! The DSP stages of the native player, replicating the WebAudio chain in
-//! `src/lib/audio-graph.ts`: 9-band EQ -> mono -> compressor, plus ramps.
+//! The DSP stages of the native player, replicating the
+//! WebAudio chain the app used before (the removed `src/lib/audio-graph.ts`):
+//! 9-band EQ -> mono -> compressor, plus ramps.
 //!
 //! Everything here runs inside the audio callback: no allocation, no locks.
 

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { pickThumbnail } from "@/components/shared/thumbnail";
 import type { QueueTrack } from "@/lib/store/playback";
-import { currentAnalyser } from "@/lib/audio-graph";
+import { subscribeAnalysis } from "@/lib/native-media";
 import { pickCoverColour } from "@/lib/cover-colour";
 
 const POINTS = 64;
@@ -69,7 +69,11 @@ export function EchoVisualizer({ track, light }: { track: QueueTrack; light: boo
     const g = el?.getContext("2d");
     if (!el || !g || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const trails = TRAILS.map(() => new Float32Array(POINTS));
-    let bins = new Uint8Array(0);
+    // The engine's latest 256 frequency bins (0..255), as getByteFrequencyData gave.
+    let bins: number[] = [];
+    const unsubscribe = subscribeAnalysis((b) => {
+      bins = b;
+    });
     let frame = 0;
     let last = performance.now();
     let phase = 0;
@@ -89,11 +93,6 @@ export function EchoVisualizer({ track, light }: { track: QueueTrack; light: boo
 
     const draw = (now: number) => {
       frame = requestAnimationFrame(draw);
-      const analyser = currentAnalyser();
-      if (analyser && bins.length !== analyser.frequencyBinCount) {
-        bins = new Uint8Array(analyser.frequencyBinCount);
-      }
-      analyser?.getByteFrequencyData(bins);
       // The kick and bass, roughly below 300 Hz at a usual sample rate, push the whole line.
       const bass = ((bins[0] ?? 0) + (bins[1] ?? 0) + (bins[2] ?? 0)) / 765;
       // A hit is the bass jumping above its recent level: the kick drum, mostly.
@@ -152,6 +151,7 @@ export function EchoVisualizer({ track, light }: { track: QueueTrack; light: boo
     frame = requestAnimationFrame(draw);
     return () => {
       cancelAnimationFrame(frame);
+      unsubscribe();
       observer.disconnect();
     };
   }, []);

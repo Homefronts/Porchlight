@@ -37,7 +37,7 @@ type State = {
   /** Jumps past SponsorBlock sponsor segments in podcast episodes (off by default). */
   skipSponsors: boolean;
   setSkipSponsors: (v: boolean) => void;
-  /** `MediaDeviceInfo.deviceId`, or "" for the system default. */
+  /** Output device name from `player_list_devices`, or "" for the system default. */
   outputDeviceId: string;
   /** What Previous does part-way into a track. */
   backButton: BackButtonMode;
@@ -84,9 +84,9 @@ export function eqGains(state: {
  * The Playback tab's settings.
  *
  * Read by the audio engine (`src/lib/audio-engine.ts`): crossfade runs on
- * its second element, the equaliser, mono and normalisation live in the
- * WebAudio graph (`src/lib/audio-graph.ts`), the output device goes to
- * `setSinkId`, and the Previous rule is applied in `prev()` of the
+ * its second slot, the equaliser, mono, normalisation and output device go
+ * to the native engine (`player_set_*`, `player_select_device`), and the
+ * Previous rule is applied in `prev()` of the
  * playback store. `resumePlayback` decides whether the store keeps the
  * persisted position on launch.
  */
@@ -138,6 +138,13 @@ export const usePlaybackSettings = create<State>()(
     {
       name: "ytm-playback-settings",
       storage: createJSONStorage(() => safeLocalStorage),
+      // v1: the device is a native engine device name. A v0 WebAudio device id
+      // can't match one, so it falls back to the system default once.
+      version: 1,
+      migrate: (persisted, version) => {
+        const p = (persisted ?? {}) as Partial<State>;
+        return (version < 1 ? { ...p, outputDeviceId: "" } : p) as State;
+      },
     },
   ),
 );

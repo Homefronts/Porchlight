@@ -10,14 +10,13 @@ import { getLikedIdsSet } from "@/components/shared/like-buttons";
 import { toggleLiked } from "@/lib/like-actions";
 import { fetchRadio, fetchWatchQueueContinuation } from "@/lib/innertube/radio";
 import { prefetchStream, saveTrackMeta, streamUrlFor } from "@/lib/stream";
-import { AudioGraph, canSelectOutputDevice } from "@/lib/audio-graph";
+import { NativeMedia } from "@/lib/native-media";
 import { SNIPPET_FADE_SEC, isEpisode, isHeldAi, snippetWindow, usePlaybackStore, type QueueTrack } from "@/lib/store/playback";
 import { useEpisodesStore } from "@/lib/store/episodes";
 import { queueNextEpisode, startPosition } from "@/lib/next-episode";
 import { eqGains, usePlaybackSettings } from "@/lib/store/playback-settings";
 import { playbackAllowed, usePlaybackAllowed } from "@/lib/store/premium";
 import { useSettingsStore } from "@/lib/store/settings";
-import { useFullscreenStore } from "@/lib/store/fullscreen";
 import { takeEndOfSongStop, useSleepTimer } from "@/lib/store/sleep-timer";
 import { watchSilences } from "@/lib/skip-silences";
 import { fetchSponsorSegments, segmentToSkip, type Segment } from "@/lib/sponsorblock";
@@ -29,8 +28,9 @@ import { isUnwanted } from "@/lib/ai/use-ai";
 import { refillFiltered } from "@/lib/ai/filter";
 
 /**
- * AudioEngine binds the playback store to a singleton HTMLAudioElement and
- * drives the native media controls.
+ * AudioEngine binds the playback store to the native audio engine
+ * (src-tauri/src/player, through the NativeMedia adapter in
+ * src/lib/native-media.ts) and drives the native media controls.
  *
  * On Windows and Linux that happens from Rust via souvlaki (SMTC / MPRIS; see
  * src-tauri/src/media.rs), and the webview's own media session stays disabled
@@ -40,34 +40,33 @@ import { refillFiltered } from "@/lib/ai/filter";
  * through `navigator.mediaSession` and skip souvlaki entirely — without that, a
  * bare <audio> element leaves next/previous unhandled and the keys do nothing.
  *
- * Two <audio> elements exist, one active and one standby. Crossfade
- * preloads the next track on the standby element a few seconds before the
- * end, then ramps the two against each other and swaps roles; the store
- * moves to the next track the moment the fade starts, so everything
+ * Two engine slots ("elements") exist, one active and one standby. Crossfade
+ * preloads the next track on the standby slot a few seconds before the
+ * end, then fades the two against each other in the engine and swaps roles;
+ * the store moves to the next track the moment the fade starts, so everything
  * downstream (SMTC, scrobbling, prefetch) sees an ordinary track change.
- * The equaliser, mono and normalisation live in an AudioGraph built on
- * first use (see src/lib/audio-graph.ts).
+ * The equaliser, mono, normalisation and output device are engine settings.
  *
- * Mount this hook once, near the root. It owns the <audio> elements' lifecycle.
+ * Mount this hook once, near the root. It owns the slots' lifecycle.
  */
 
 /** Start loading the next track this long before the crossfade begins. */
 const CROSSFADE_PRELOAD_LEAD_SEC = 8;
-/** Fade ramp resolution. */
-const CROSSFADE_TICK_MS = 40;
+/** NativeMedia's readyState once it can play (HTMLMediaElement.HAVE_FUTURE_DATA). */
+const HAVE_FUTURE_DATA = 3;
 
 /** The next track, loading or loaded on the standby element. */
 type PendingNext = {
   index: number;
   streamVideoId: string;
-  el: HTMLAudioElement;
+  el: NativeMedia;
   src?: string;
 };
 
-/** The in-progress ramp between the outgoing and the incoming element. */
+/** The in-progress engine fade between the outgoing and the incoming slot. */
 type Fade = {
-  from: HTMLAudioElement;
-  to: HTMLAudioElement;
+  from: NativeMedia;
+  to: NativeMedia;
   timer: number;
 };
 
@@ -80,9 +79,8 @@ const elementVolume = (volume: number) => Math.max(0, Math.min(1, volume)) ** 3;
 export function useAudioEngine() {
   // The element currently owning playback; `audioRef` keeps the name the
   // effects below were written against.
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const standbyRef = useRef<HTMLAudioElement | null>(null);
-  const graphRef = useRef<AudioGraph | null>(null);
+  const audioRef = useRef<NativeMedia | null>(null);
+  const standbyRef = useRef<NativeMedia | null>(null);
   const pendingRef = useRef<PendingNext | null>(null);
   const fadeRef = useRef<Fade | null>(null);
   // Set when a crossfade moves the store to the next track: the resolve
@@ -120,20 +118,20 @@ export function useAudioEngine() {
   // thumbnail toolbar's heart, and written when that heart is clicked.
   const queryClient = useQueryClient();
 
-  // Ensure the pair of <audio> elements exists.
+  // Ensure the pair of engine slots exists.
   useEffect(() => {
     if (audioRef.current) return;
-    const make = () => {
-      const el = new Audio();
-      el.preload = "auto";
-      // Streams come from our own axum server (streamUrlFor), which
-      // answers with CORS headers, so the element can be read by the
-      // WebAudio graph. Without this the graph would play silence.
-      el.crossOrigin = "anonymous";
+    const make = (slot: "a" | "b") => {
+      const el = new NativeMedia(slot);
+      // The engine outlives a webview reload: stop what it was playing, undo
+      // a fade-out left on this slot, and force the volume effect to send.
+      el.removeAttribute("src");
+      el.fadeTo(1, 0);
+      el.volume = 0;
       return el;
     };
-    const a = make();
-    const b = make();
+    const a = make("a");
+    const b = make("b");
     audioRef.current = a;
     standbyRef.current = b;
     // The default survives each new track's load; the rate is the one playing now.
@@ -204,29 +202,11 @@ export function useAudioEngine() {
     const f = fadeRef.current;
     if (!f) return;
     fadeRef.current = null;
-    window.clearInterval(f.timer);
+    window.clearTimeout(f.timer);
     f.from.pause();
     f.from.removeAttribute("src");
     f.from.load();
-    f.to.volume = elementVolume(usePlaybackStore.getState().volume);
-  };
-
-  /** Build the WebAudio graph on first need and route both elements
-   *  through it. One-way: elements cannot be detached again. */
-  const ensureGraph = (): AudioGraph | null => {
-    if (graphRef.current) return graphRef.current;
-    if (typeof AudioContext === "undefined") return null;
-    try {
-      const g = new AudioGraph();
-      graphRef.current = g;
-      for (const el of [audioRef.current, standbyRef.current]) {
-        if (el) g.attach(el);
-      }
-      return g;
-    } catch (e) {
-      if (import.meta.env.DEV) console.error("[audio] graph failed:", e);
-      return null;
-    }
+    f.to.fadeTo(1, 0);
   };
 
   // Wire element → store events. Both elements are listened to; events
@@ -244,7 +224,7 @@ export function useAudioEngine() {
      * Two thresholds: preload the next track on the standby element a
      * little ahead, then, once it has buffered, start the ramp.
      */
-    const maybeCrossfade = (el: HTMLAudioElement) => {
+    const maybeCrossfade = (el: NativeMedia) => {
       const s = store();
       // Rewind's snippet mode always crossfades, whatever the setting.
       const cf = s.snippets ? SNIPPET_FADE_SEC : usePlaybackSettings.getState().crossfadeSec;
@@ -293,6 +273,8 @@ export function useAudioEngine() {
           .then((src) => {
             if (pendingRef.current !== p) return;
             p.src = src;
+            // Silent until the crossfade fades it in.
+            standby.fadeTo(0, 0);
             standby.src = src;
             standby.load();
           })
@@ -306,21 +288,19 @@ export function useAudioEngine() {
       if (
         ready?.src &&
         remaining <= cf &&
-        ready.el.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA
+        ready.el.readyState >= HAVE_FUTURE_DATA
       ) {
         startCrossfade(el, ready, cf);
       }
     };
 
     const startCrossfade = (
-      from: HTMLAudioElement,
+      from: NativeMedia,
       next: PendingNext,
       seconds: number,
     ) => {
       const to = next.el;
       pendingRef.current = null;
-      to.muted = store().muted;
-      to.volume = 0;
       // Swap roles first so the incoming element's `playing` counts as
       // the active one, then tell the store, whose track change the
       // resolve effect below recognises via adoptRef and leaves alone.
@@ -333,32 +313,27 @@ export function useAudioEngine() {
       };
       store().next();
       if (store().snippets && Number.isFinite(to.duration)) to.currentTime = snippetWindow(to.duration)[0];
-      graphRef.current?.resume();
       void to.play().catch(() => {});
 
-      const started = performance.now();
-      const ms = seconds * 1000;
-      const timer = window.setInterval(() => {
-        const base = elementVolume(store().volume);
-        const t = Math.min(1, (performance.now() - started) / ms);
-        // Equal-power ramp: the sum of the two stays at a steady loudness.
-        from.volume = base * Math.cos((t * Math.PI) / 2);
-        to.volume = base * Math.sin((t * Math.PI) / 2);
-        if (t >= 1) cancelFade();
-      }, CROSSFADE_TICK_MS);
+      // Equal-power ramps in the engine: the sum of the two stays at a steady
+      // loudness. The fade multiplies the slot volume, so the user's volume
+      // still applies throughout.
+      from.fadeTo(0, seconds, "equalPowerOut");
+      to.fadeTo(1, seconds, "equalPowerIn");
+      const timer = window.setTimeout(cancelFade, seconds * 1000);
       fadeRef.current = { from, to, timer };
     };
 
     const onTimeUpdate = (e: Event) => {
       if (!isActive(e)) return;
-      const el = e.currentTarget as HTMLAudioElement;
+      const el = e.currentTarget as NativeMedia;
       store().setPosition(el.currentTime);
       if (!el.paused && Date.now() - episodeSavedAtRef.current >= EPISODE_SAVE_MS) saveEpisode();
       maybeCrossfade(el);
     };
     const onDurationChange = (e: Event) => {
       if (!isActive(e)) return;
-      const el = e.currentTarget as HTMLAudioElement;
+      const el = e.currentTarget as NativeMedia;
       if (Number.isFinite(el.duration) && el.duration > 0) {
         store().setDuration(el.duration);
       }
@@ -368,14 +343,14 @@ export function useAudioEngine() {
       // already moved on.
       if (!isActive(e)) return;
       // A finished episode is played: save it at its full length.
-      saveEpisode((e.currentTarget as HTMLAudioElement).duration);
+      saveEpisode((e.currentTarget as NativeMedia).duration);
       // Sleep timer: move on to the next song, but don't let it start.
       const sleeping = takeEndOfSongStop();
       store().next();
       if (sleeping) store().setPlaying(false);
     };
     const onError = (e: Event) => {
-      const el = e.currentTarget as HTMLAudioElement;
+      const el = e.currentTarget as NativeMedia;
       if (!isActive(e)) {
         // A preload that failed just means no crossfade for this
         // transition: the track is resolved afresh when it's due.
@@ -633,7 +608,6 @@ export function useAudioEngine() {
           { once: true },
         );
         if (usePlaybackStore.getState().playing) {
-          graphRef.current?.resume();
           void el.play().catch((e) => {
             // AbortError is what we get when a pending play() is
             // interrupted by a new load (e.g. user clicked the next
@@ -681,7 +655,6 @@ export function useAudioEngine() {
     }
     if (!el.src) return;
     if (playing) {
-      graphRef.current?.resume();
       void el.play().catch((e) => {
         if (e?.name === "AbortError") return;
         usePlaybackStore.getState().setStatus("error", e?.message ?? String(e));
@@ -699,24 +672,19 @@ export function useAudioEngine() {
   const volume = usePlaybackStore((s) => s.volume);
   const muted = usePlaybackStore((s) => s.muted);
   useEffect(() => {
-    const el = audioRef.current;
-    if (!el) return;
-    // <audio>.volume is linear amplitude (0..1), but loudness perception
+    // The slot volume is linear amplitude (0..1), but loudness perception
     // is logarithmic — a linear slider crams almost all the perceivable
     // change into the bottom ~20% and 20–100% sounds nearly identical.
-    // Apply a cubic curve so the slider tracks perceived loudness.
-    // During a crossfade the ramp owns both elements' volumes and reads
-    // the store's value on every tick, so only mute is applied here.
-    if (!fadeRef.current) el.volume = elementVolume(volume);
-    el.muted = muted;
-    const standby = standbyRef.current;
-    if (standby) standby.muted = muted;
+    // Apply a cubic curve so the slider tracks perceived loudness. Mute is
+    // a volume of 0. A crossfade's ramp is a separate multiplier in the
+    // engine (fadeTo), so both slots always take the volume.
+    for (const el of [audioRef.current, standbyRef.current]) {
+      if (el) el.volume = muted ? 0 : elementVolume(volume);
+    }
   }, [volume, muted]);
 
-  // Equaliser, mono and normalisation follow the Playback settings. The
-  // graph is built the first time any of them is switched on (or an output
-  // device is chosen) and stays for the session; while all are off it is
-  // never built, so a plain <audio> path remains the default.
+  // Equaliser, mono, normalisation and the output device follow the
+  // Playback settings; the engine applies them to both slots.
   const { eqEnabled, eqPreset, eqCustomGains, monoAudio, normalizeVolume } =
     usePlaybackSettings(
       useShallow((s) => ({
@@ -728,14 +696,10 @@ export function useAudioEngine() {
       })),
     );
   const outputDeviceId = usePlaybackSettings((s) => s.outputDeviceId);
-  const fullscreenOpen = useFullscreenStore((s) => s.open);
-  const visualizerOn = useSettingsStore((s) => s.fullscreenVisualizer);
-  const wantsVisualizer = fullscreenOpen && visualizerOn;
   const skipSilences = usePlaybackSettings((s) => s.skipSilences);
-  const wantsGraph =
-    eqEnabled || monoAudio || normalizeVolume || outputDeviceId !== "" || wantsVisualizer || skipSilences;
 
-  // Long silences play fast while the setting is on; it reads the graph's analyser.
+  // Long silences play fast while the setting is on; it reads the engine's
+  // analysis frames (which run only while it or the visualizer listens).
   useEffect(() => {
     if (!skipSilences) return;
     return watchSilences({
@@ -786,40 +750,20 @@ export function useAudioEngine() {
     return () => clearInterval(timer);
   }, [skipSponsors]);
   useEffect(() => {
-    const g = wantsGraph ? ensureGraph() : graphRef.current;
-    if (!g) return;
-    g.setEq(eqEnabled, eqGains({ eqPreset, eqCustomGains }));
-    g.setMono(monoAudio);
-    g.setNormalize(normalizeVolume);
-    if (usePlaybackStore.getState().playing) g.resume();
-  }, [
-    wantsGraph,
-    eqEnabled,
-    eqPreset,
-    eqCustomGains,
-    monoAudio,
-    normalizeVolume,
-  ]);
-
-  // Output device. Once the graph exists the context is what renders, so
-  // the sink is set there; before that, on the elements themselves. A
-  // device that has gone away rejects and playback stays on the default.
+    void invoke("player_set_eq", { enabled: eqEnabled, gainsDb: eqGains({ eqPreset, eqCustomGains }) }).catch(() => {});
+  }, [eqEnabled, eqPreset, eqCustomGains]);
   useEffect(() => {
-    if (!canSelectOutputDevice()) return;
-    const g = graphRef.current;
-    const apply = g
-      ? g.setSinkId(outputDeviceId)
-      : Promise.all(
-          [audioRef.current, standbyRef.current].map((el) =>
-            el ? el.setSinkId(outputDeviceId) : Promise.resolve(),
-          ),
-        );
-    void apply.catch((e) => {
-      if (import.meta.env.DEV) console.warn("[audio] setSinkId failed:", e);
-    });
-    // `wantsGraph` so the sink is re-applied on the context the moment the
-    // graph takes over rendering from the elements.
-  }, [outputDeviceId, wantsGraph]);
+    void invoke("player_set_mono", { enabled: monoAudio }).catch(() => {});
+  }, [monoAudio]);
+  useEffect(() => {
+    void invoke("player_set_normalize", { enabled: normalizeVolume }).catch(() => {});
+  }, [normalizeVolume]);
+
+  // Output device by name; "" follows the system default. A device that is
+  // not plugged in plays on the default until it comes back.
+  useEffect(() => {
+    void invoke("player_select_device", { name: outputDeviceId || null }).catch(() => {});
+  }, [outputDeviceId]);
 
   // Handle seek requests.
   const pendingSeek = usePlaybackStore((s) => s.pendingSeek);
@@ -843,7 +787,6 @@ export function useAudioEngine() {
     // the element is paused, so seeking to 0 alone leaves it silent. Resume
     // here when the store wants playback but the element is paused.
     if (usePlaybackStore.getState().playing && el.paused && el.src) {
-      graphRef.current?.resume();
       void el.play().catch((e) => {
         if (e?.name === "AbortError") return;
         usePlaybackStore.getState().setStatus("error", e?.message ?? String(e));

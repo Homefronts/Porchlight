@@ -31,7 +31,7 @@ import {
   type BackButtonMode,
   type EqPreset,
 } from "@/lib/store/playback-settings";
-import { canSelectOutputDevice } from "@/lib/audio-graph";
+import { invoke } from "@tauri-apps/api/core";
 import { cn } from "@/lib/utils";
 import { useSettingsStore } from "@/lib/store/settings";
 import { useFreePlaybackStore, usePremiumStore } from "@/lib/store/premium";
@@ -63,7 +63,7 @@ export function PlaybackTab() {
       <EqualizerGroup />
       <Group>
         <MonoRow />
-        {canSelectOutputDevice() ? <OutputDeviceRow /> : null}
+        <OutputDeviceRow />
       </Group>
       <BackButtonGroup />
       <Group>
@@ -505,60 +505,22 @@ function EqBand({
 /* Output device                                                       */
 /* ------------------------------------------------------------------ */
 
-/** Only devices Chromium lets us name (and therefore select). */
-function listOutputs(all: MediaDeviceInfo[]): MediaDeviceInfo[] {
-  return all.filter(
-    (d) =>
-      d.kind === "audiooutput" &&
-      d.label &&
-      d.deviceId &&
-      d.deviceId !== "default",
-  );
-}
-
 function OutputDeviceRow() {
   const deviceId = usePlaybackSettings((s) => s.outputDeviceId);
   const setDeviceId = usePlaybackSettings((s) => s.setOutputDeviceId);
-  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
-  const unlockedRef = useRef(false);
+  const [devices, setDevices] = useState<string[]>([]);
 
-  // Chromium only names output devices (and only lets `setSinkId` pick
-  // one) once the page has been granted media capture, so the list is
-  // empty until `unlockLabels` below has run. It refreshes when
-  // something is plugged in or unplugged.
-  useEffect(() => {
-    const md = navigator.mediaDevices;
-    if (!md?.enumerateDevices) return;
-    const load = () => {
-      void md
-        .enumerateDevices()
-        .then((all) => setDevices(listOutputs(all)))
-        .catch(() => setDevices([]));
-    };
-    load();
-    md.addEventListener("devicechange", load);
-    return () => md.removeEventListener("devicechange", load);
+  // The engine's list is cached and can be empty before its first refresh,
+  // so it is asked again every time the menu opens.
+  const load = useCallback(() => {
+    void invoke<string[]>("player_list_devices")
+      .then(setDevices)
+      .catch(() => setDevices([]));
   }, []);
+  useEffect(load, [load]);
 
-  // Opening the menu with nothing to show asks for a (silent, instantly
-  // released) microphone stream: that grant is what unlocks the names.
-  // On Windows the Rust side answers the request for our own pages
-  // (src-tauri/src/webview_permissions.rs), so no dialog appears.
-  const unlockLabels = async () => {
-    const md = navigator.mediaDevices;
-    if (!md?.getUserMedia || unlockedRef.current || devices.length) return;
-    unlockedRef.current = true;
-    try {
-      const stream = await md.getUserMedia({ audio: true });
-      for (const t of stream.getTracks()) t.stop();
-      setDevices(listOutputs(await md.enumerateDevices()));
-    } catch {
-      unlockedRef.current = false;
-    }
-  };
-
-  const current = devices.find((d) => d.deviceId === deviceId);
-  const label = current?.label ?? "System default";
+  // A saved device that is not plugged in plays on the default, so say so.
+  const label = deviceId && devices.includes(deviceId) ? deviceId : "System default";
 
   return (
     <SettingRow
@@ -568,7 +530,7 @@ function OutputDeviceRow() {
       control={
         <DropdownMenu
           onOpenChange={(open) => {
-            if (open) void unlockLabels();
+            if (open) load();
           }}
         >
           <DropdownMenuTrigger asChild>
@@ -589,12 +551,9 @@ function OutputDeviceRow() {
               ) : null}
             </DropdownMenuItem>
             {devices.map((d) => (
-              <DropdownMenuItem
-                key={d.deviceId}
-                onSelect={() => setDeviceId(d.deviceId)}
-              >
-                <span className="flex-1 truncate">{d.label}</span>
-                {deviceId === d.deviceId ? (
+              <DropdownMenuItem key={d} onSelect={() => setDeviceId(d)}>
+                <span className="flex-1 truncate">{d}</span>
+                {deviceId === d ? (
                   <IconCheck className="size-4 text-acc1!" stroke={2.4} />
                 ) : null}
               </DropdownMenuItem>
