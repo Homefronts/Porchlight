@@ -37,11 +37,16 @@ function ensureChannel() {
   void invoke("player_subscribe", { channel });
 }
 
-/** Frames from the engine's analyser (Task 7 feeds the visualizer and Skip Silences). */
+/** Frames from the engine's analyser, for the visualizer and Skip Silences. The
+ *  engine analyses only while at least one subscriber is listening. */
 export function subscribeAnalysis(fn: (bins: number[], rms: number) => void): () => void {
   ensureChannel();
-  analysisSubs.add(fn);
-  return () => void analysisSubs.delete(fn);
+  const listener = (bins: number[], rms: number) => fn(bins, rms); // unique, so two subs of one fn count twice
+  analysisSubs.add(listener);
+  if (analysisSubs.size === 1) send("player_set_analysis", { enabled: true });
+  return () => {
+    if (analysisSubs.delete(listener) && analysisSubs.size === 0) send("player_set_analysis", { enabled: false });
+  };
 }
 
 // A reload (HMR) must not leave a dead Channel and stale slots behind.
@@ -60,6 +65,7 @@ export class NativeMedia extends EventTarget {
   private gen = 0;
   private url = "";
   private rate = 1;
+  private defRate = 1;
   private vol = 1;
   private pos = 0;
   private anchor = 0; // performance.now() when `pos` was taken
@@ -103,6 +109,12 @@ export class NativeMedia extends EventTarget {
     this.url = url;
     this.gen++;
     this.reset();
+    // Like <audio>, a load starts at defaultPlaybackRate (drops a Skip Silences boost).
+    // The engine keeps a slot's speed across loads, so only a change is sent.
+    if (this.rate !== this.defRate) {
+      this.rate = this.defRate;
+      send("player_set_speed", { slot: this.id, speed: this.rate });
+    }
     const gen = this.gen;
     invoke("player_load", { slot: this.id, url, startAt: 0, fallbackDuration: null, generation: gen }).catch((e) => {
       console.error("[native-media] player_load failed:", e);
@@ -110,7 +122,6 @@ export class NativeMedia extends EventTarget {
       this.err = { code: 2, message: String(e) };
       this.emit("error");
     });
-    if (this.rate !== 1) send("player_set_speed", { slot: this.id, speed: this.rate });
   }
 
   /** `removeAttribute("src")` + `load()` is how audio-engine.ts unloads an element. */
@@ -180,12 +191,15 @@ export class NativeMedia extends EventTarget {
     this.pos = this.currentTime;
     this.anchor = performance.now();
     this.rate = r;
-    if (this.url) send("player_set_speed", { slot: this.id, speed: r });
+    // Sent even while unloaded: the engine keeps it for the slot's next load.
+    send("player_set_speed", { slot: this.id, speed: r });
   }
   get defaultPlaybackRate() {
-    return this.rate;
+    return this.defRate;
   }
-  set defaultPlaybackRate(_: number) {}
+  set defaultPlaybackRate(r: number) {
+    this.defRate = r;
+  }
 
   play(): Promise<void> {
     if (this.isEnded) {

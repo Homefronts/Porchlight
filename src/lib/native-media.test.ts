@@ -68,6 +68,17 @@ describe("NativeMedia", () => {
     expect(calls("player_set_speed")).toHaveLength(1);
   });
 
+  it("a load starts at defaultPlaybackRate, like <audio>", () => {
+    m.defaultPlaybackRate = 1.25;
+    m.playbackRate = 1.25;
+    m.src = "http://x/1";
+    m.playbackRate = 5; // a Skip Silences boost
+    m.src = "http://x/2";
+    expect(m.playbackRate).toBe(1.25);
+    const speeds = calls("player_set_speed").map((c) => (c[1] as { speed: number }).speed);
+    expect(speeds).toEqual([1.25, 5, 1.25]);
+  });
+
   it("does not advance while paused", async () => {
     m.src = "http://x/1";
     report({ position: 4 });
@@ -179,8 +190,21 @@ describe("NativeMedia", () => {
     expect(b.currentTime).toBe(9);
     expect(m.currentTime).toBe(0);
     const f = vi.fn();
-    subscribeAnalysis(f);
+    const stop = subscribeAnalysis(f);
     h.state.channel!.onmessage({ kind: "analysis", bins: [1], rms: 0.2 });
     expect(f).toHaveBeenCalledWith([1], 0.2);
+    stop();
+  });
+
+  it("analysis runs only while someone listens", () => {
+    const flags = () => calls("player_set_analysis").map((c) => (c[1] as { enabled: boolean }).enabled);
+    const stopA = subscribeAnalysis(() => {});
+    const stopB = subscribeAnalysis(() => {});
+    expect(flags()).toEqual([true]);
+    stopA();
+    expect(flags()).toEqual([true]);
+    stopB();
+    stopB();
+    expect(flags()).toEqual([true, false]);
   });
 });
