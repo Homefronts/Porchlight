@@ -3622,6 +3622,7 @@ dependencies = [
  "rand 0.8.6",
  "reqwest 0.12.28",
  "resvg",
+ "rubato",
  "rustfft",
  "serde",
  "serde_json",
@@ -3650,6 +3651,7 @@ dependencies = [
  "webview2-com",
  "windows 0.61.3",
  "windows-sys 0.59.0",
+ "wsola",
 ]
 
 [[package]]
@@ -3977,6 +3979,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "20675572f6f24e9e76ef639bc5552774ed45f1c30e2951e1e99c59888861c539"
 
 [[package]]
+name = "realfft"
+version = "3.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "538895ccf2006b473aafbe8d72770e21038961ab67aae34f3c577485fc703a7d"
+dependencies = [
+ "rustfft",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.5.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4210,6 +4221,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1964b10c76125c36f8afe190065a4bf9a87bf324842c05701330bba9f1cacbb"
 dependencies = [
  "memchr",
+]
+
+[[package]]
+name = "rubato"
+version = "0.16.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5258099699851cfd0082aeb645feb9c084d9a5e1f1b8d5372086b989fc5e56a1"
+dependencies = [
+ "num-complex",
+ "num-integer",
+ "num-traits",
+ "realfft",
 ]
 
 [[package]]
@@ -7418,6 +7441,15 @@ dependencies = [
  "windows-core 0.61.2",
  "windows-version",
  "x11-dl",
+]
+
+[[package]]
+name = "wsola"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8149cd82a73bbde439d2b42a40a032de7dc28b1ec01919fcd0bd0456ecea75e6"
+dependencies = [
+ "thiserror 2.0.18",
 ]
 
 [[package]]

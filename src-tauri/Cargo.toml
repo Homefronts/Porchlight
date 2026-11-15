@@ -79,6 +79,12 @@ opus = "0.3"
 # Link libopus statically everywhere (Linux would otherwise default to the
 # shared lib), so shipped builds carry no runtime libopus dependency.
 audiopus_sys = { version = "0.2", features = ["static"] }
+rubato = "0.16"
+wsola = "0.3.0"
+
+# wsola is a tight time-domain loop; keep it optimized in dev/test builds.
+[profile.dev.package.wsola]
+opt-level = 3
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.59", features = [

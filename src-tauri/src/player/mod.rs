@@ -7,3 +7,4 @@ pub mod analysis;
 pub mod decode;
 pub mod dsp;
 pub mod source;
+pub mod stretch;
