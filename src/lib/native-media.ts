@@ -44,6 +44,13 @@ export function subscribeAnalysis(fn: (bins: number[], rms: number) => void): ()
   return () => void analysisSubs.delete(fn);
 }
 
+// A reload (HMR) must not leave a dead Channel and stale slots behind.
+import.meta.hot?.dispose(() => {
+  channel = null;
+  slots.clear();
+  analysisSubs.clear();
+});
+
 const send = (cmd: string, args: Record<string, unknown>) => {
   void invoke(cmd, args).catch((e) => console.error(`[native-media] ${cmd} failed:`, e));
 };
@@ -61,8 +68,9 @@ export class NativeMedia extends EventTarget {
   private isPlaying = false; // engine's word, from the last report
   private isEnded = false;
   private isLoading = false;
-  private seekPending = false;
-  private err: { code: number } | null = null;
+  private seekTarget: number | null = null;
+  private seekAt = 0;
+  private err: { code: number; message?: string } | null = null;
   readyState = 0;
   // Inert here: the engine decodes itself. Kept so audio-engine.ts can still set them.
   muted = false;
@@ -95,7 +103,13 @@ export class NativeMedia extends EventTarget {
     this.url = url;
     this.gen++;
     this.reset();
-    send("player_load", { slot: this.id, url, startAt: 0, fallbackDuration: null, generation: this.gen });
+    const gen = this.gen;
+    invoke("player_load", { slot: this.id, url, startAt: 0, fallbackDuration: null, generation: gen }).catch((e) => {
+      console.error("[native-media] player_load failed:", e);
+      if (gen !== this.gen || this.err) return;
+      this.err = { code: 2, message: String(e) };
+      this.emit("error");
+    });
     if (this.rate !== 1) send("player_set_speed", { slot: this.id, speed: this.rate });
   }
 
@@ -116,7 +130,7 @@ export class NativeMedia extends EventTarget {
     this.isPlaying = false;
     this.isEnded = false;
     this.isLoading = false;
-    this.seekPending = false;
+    this.seekTarget = null;
     this.err = null;
     this.readyState = 0;
   }
@@ -131,7 +145,8 @@ export class NativeMedia extends EventTarget {
     this.pos = s;
     this.anchor = performance.now();
     this.isEnded = false;
-    this.seekPending = true;
+    this.seekTarget = s;
+    this.seekAt = performance.now();
     send("player_seek", { slot: this.id, seconds: s });
   }
 
@@ -194,15 +209,22 @@ export class NativeMedia extends EventTarget {
   }
 
   fadeTo(gain: number, seconds: number, curve: FadeCurve = "linear") {
-    this.vol = gain;
     send("player_fade", { slot: this.id, targetGain: gain, seconds, curve });
   }
 
   /** @internal Called by the shared channel. */
   _report(r: StateReport) {
     if (r.generation !== this.gen || !this.url) return;
-    this.pos = r.position;
-    this.anchor = performance.now();
+    // After a seek, ignore positions until one lands near the target (older reports are in flight).
+    let seeked = false;
+    if (this.seekTarget !== null) {
+      seeked = Math.abs(r.position - this.seekTarget) < 0.5 || performance.now() - this.seekAt > 2000;
+      if (seeked) this.seekTarget = null;
+    }
+    if (this.seekTarget === null) {
+      this.pos = r.position;
+      this.anchor = performance.now();
+    }
 
     if (r.duration !== null && r.duration !== this.dur) {
       const first = Number.isNaN(this.dur);
@@ -229,14 +251,13 @@ export class NativeMedia extends EventTarget {
     } else if (!r.playing) {
       this.isPlaying = false;
     }
-    if (this.seekPending) {
-      this.seekPending = false;
-      this.emit("seeked");
-    }
+    if (seeked) this.emit("seeked");
     this.emit("timeupdate");
     if (r.ended && !this.isEnded) {
       this.isEnded = true;
+      const was = this.isPaused;
       this.isPaused = true;
+      if (!was) this.emit("pause");
       this.emit("ended");
     }
     if (r.error_code && !this.err) {

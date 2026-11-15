@@ -124,6 +124,53 @@ describe("NativeMedia", () => {
     expect(calls("player_fade")[0][1]).toEqual({ slot: "A", targetGain: 0, seconds: 2, curve: "equalPowerOut" });
   });
 
+  it("a fade does not change the slot gain, so a later equal volume still sends", async () => {
+    m.src = "http://x/1";
+    m.fadeTo(0.2, 1, "linear");
+    m.volume = 0.2;
+    expect(calls("player_set_gain")).toHaveLength(1);
+  });
+
+  it("seeks from a loadedmetadata handler: seeked only after a report near the target", async () => {
+    m.src = "http://x/1";
+    m.addEventListener("loadedmetadata", () => {
+      m.currentTime = 30;
+    });
+    const seeked = vi.fn();
+    m.addEventListener("seeked", seeked);
+    report({ position: 0 }); // first duration: handler seeks
+    expect(seeked).not.toHaveBeenCalled();
+    expect(m.currentTime).toBe(30);
+    report({ position: 0.2 }); // in-flight, old position
+    expect(m.currentTime).toBe(30);
+    expect(seeked).not.toHaveBeenCalled();
+    report({ position: 30.1 });
+    expect(seeked).toHaveBeenCalledTimes(1);
+    expect(m.currentTime).toBeCloseTo(30.1, 5);
+  });
+
+  it("a rejected load fires error code 2", async () => {
+    h.invoke.mockImplementationOnce(async () => {
+      throw new Error("boom");
+    });
+    const onError = vi.fn();
+    m.addEventListener("error", onError);
+    m.src = "http://x/1";
+    await vi.advanceTimersByTimeAsync(0);
+    expect(m.error?.code).toBe(2);
+    expect(onError).toHaveBeenCalledTimes(1);
+  });
+
+  it("fires pause before ended", async () => {
+    m.src = "http://x/1";
+    void m.play();
+    const order: string[] = [];
+    m.addEventListener("pause", () => order.push(`pause:${m.paused}`));
+    m.addEventListener("ended", () => order.push("ended"));
+    report({ position: 100, ended: true });
+    expect(order).toEqual(["pause:true", "ended"]);
+  });
+
   it("routes by slot and forwards analysis frames", async () => {
     const b = new NativeMedia("b");
     b.src = "http://x/b";
