@@ -220,7 +220,8 @@
   "player": {
     "badges": {
       "endOfSong": "end of song",
-      "minutes": "{count} min",
+      "minutes_one": "{count} min",
+      "minutes_other": "{count} min",
       "sleepAria": "Sleep timer, {label}. Click to cancel",
       "sleepTitle": "Sleep timer: {label}. Click to cancel",
       "skipSponsors": "Skip sponsors",
@@ -267,7 +268,8 @@
       "emptySleeve": "EMPTY SLEEVE",
       "nothingPlayingYet": "Nothing playing yet",
       "pickSomething": "Pick something to start",
-      "picks": "{count} picks from Home",
+      "picks_one": "{count} pick from Home",
+      "picks_other": "{count} picks from Home",
       "tapToPlay": "Tap to play"
     },
     "playlistEmpty": "This playlist is empty",
@@ -331,7 +333,8 @@
     },
     "sleep": {
       "cancelEnd": "Cancel sleep timer (end of song)",
-      "cancelLeft": "Cancel sleep timer ({count} min left)",
+      "cancelLeft_one": "Cancel sleep timer ({count} min left)",
+      "cancelLeft_other": "Cancel sleep timer ({count} min left)",
       "title": "Sleep timer",
       "minutes": "{count} minutes",
       "endOfSong": "End of this song"

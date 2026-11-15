@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { Group, SettingRow, TabPane } from "@/components/settings/primitives";
-import { useT } from "@/lib/i18n";
+import { SHIPPED_LANGS, useT } from "@/lib/i18n";
 import { LANGS, LANG_NAMES } from "@/lib/i18n/translate";
 import { IS_MAC } from "@/lib/platform";
 import { useLanguageStore } from "@/lib/store/language";
@@ -183,7 +183,7 @@ function BehaviorGroup() {
 
   return (
     <Group>
-      <LanguageRow />
+      {SHIPPED_LANGS.length > 1 && <LanguageRow />}
       <SettingRow
         icon={IconBoltFilled}
         title="Launch at Startup"

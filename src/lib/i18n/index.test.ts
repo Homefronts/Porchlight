@@ -11,7 +11,7 @@ Object.defineProperty(globalThis, "localStorage", {
   },
 });
 
-const { getLocale, loadLanguage, onLanguageChange, t } = await import(".");
+const { SHIPPED_LANGS, getLocale, loadLanguage, onLanguageChange, t } = await import(".");
 const { useLanguageStore } = await import("../store/language");
 
 vi.mock("../../locales/fr.json", () => ({ default: { common: { ok: "D'accord" } } }));
@@ -41,7 +41,8 @@ describe("i18n runtime", () => {
 
   it("getLocale follows resolveLanguage", () => {
     vi.stubGlobal("navigator", { language: "pt-PT" });
-    expect(getLocale()).toBe("pt-BR");
+    // System default only picks a shipped language; pt-BR isn't one yet.
+    expect(getLocale()).toBe(SHIPPED_LANGS.includes("pt-BR") ? "pt-BR" : "en");
     vi.stubGlobal("navigator", { language: "xx" });
     expect(getLocale()).toBe("en");
     useLanguageStore.setState({ language: "ko" });

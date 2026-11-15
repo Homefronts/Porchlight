@@ -9,12 +9,16 @@ export type { Key } from "./keys";
 const files = import.meta.glob<{ default: Dict }>("../../locales/*.json");
 const dicts: Partial<Record<Lang, Dict>> = { en };
 
+/** Languages with written translations. "System default" never resolves to
+ *  one outside this list, and the Settings picker stays hidden until there's
+ *  a second one. Add each language here when its file is filled in. */
+export const SHIPPED_LANGS: readonly Lang[] = ["en"];
+
 /** The resolved language; use it for every toLocale* and Intl call. */
 export function getLocale(): Lang {
-  return resolveLanguage(
-    useLanguageStore.getState().language,
-    typeof navigator !== "undefined" ? navigator.language : "en",
-  );
+  const pref = useLanguageStore.getState().language;
+  const lang = resolveLanguage(pref, typeof navigator !== "undefined" ? navigator.language : "en");
+  return pref === "system" && !SHIPPED_LANGS.includes(lang) ? "en" : lang;
 }
 
 /** Works outside React; reads the current language. Falls back to English until its file loads. */
