@@ -3,6 +3,7 @@
 
 use std::fmt;
 use std::io::{self, Read, Seek, SeekFrom};
+use std::time::Duration;
 use symphonia::core::io::MediaSource;
 
 /// Codes match HTMLMediaElement's MEDIA_ERR_* (src/lib/audio-engine.ts).
@@ -43,16 +44,23 @@ pub struct HttpSource {
 }
 
 impl HttpSource {
+    /// Blocking (reqwest::blocking): call, use and drop it on a plain
+    /// thread, never on a tokio worker thread.
     pub fn open(url: &str) -> Result<Self, MediaError> {
-        // The stream server holds the request until the file is cached (up to
-        // 120 s) and the body is read at decode speed, so no total timeout.
-        // shortcut: a server that stalls mid-body hangs the decode thread; add a read timeout if that shows up.
+        // The stream server holds the first request until the file is cached
+        // (up to 120 s); after that a body read that stalls 30 s is an error.
+        Self::open_with(url, Duration::from_secs(130), Duration::from_secs(30))
+    }
+
+    fn open_with(url: &str, first_wait: Duration, read_timeout: Duration) -> Result<Self, MediaError> {
+        // reqwest blocking's `timeout` bounds the wait for headers and each
+        // body read alike, so it is our read timeout.
         let client = reqwest::blocking::Client::builder()
-            .timeout(None)
-            .connect_timeout(std::time::Duration::from_secs(10))
+            .timeout(read_timeout)
+            .connect_timeout(Duration::from_secs(10))
             .build()
             .map_err(|e| MediaError::Network(e.to_string()))?;
-        let resp = request(&client, url, 0).map_err(|e| MediaError::Network(e.to_string()))?;
+        let resp = request(&client, url, 0, Some(first_wait)).map_err(|e| MediaError::Network(e.to_string()))?;
         // 206 carries the total after the slash; a plain 200 is the whole file.
         let len = resp
             .headers()
@@ -60,17 +68,25 @@ impl HttpSource {
             .and_then(|v| v.to_str().ok()?.rsplit('/').next()?.parse().ok())
             .or(resp.content_length())
             .ok_or_else(|| MediaError::Network("stream has no length".into()))?;
-        Ok(Self { client, url: url.to_string(), len, pos: 0, body: std::sync::Mutex::new(Some(resp)) })
+        // That response's body reads would inherit the long wait, so drop it;
+        // the first read re-requests (from cache by now) with the read timeout.
+        drop(resp);
+        Ok(Self { client, url: url.to_string(), len, pos: 0, body: std::sync::Mutex::new(None) })
     }
 }
 
 /// GET `url` from byte `from` on; any non-2xx status is an error.
-fn request(client: &reqwest::blocking::Client, url: &str, from: u64) -> io::Result<reqwest::blocking::Response> {
-    let resp = client
-        .get(url)
-        .header(reqwest::header::RANGE, format!("bytes={from}-"))
-        .send()
-        .map_err(io::Error::other)?;
+fn request(
+    client: &reqwest::blocking::Client,
+    url: &str,
+    from: u64,
+    wait: Option<Duration>,
+) -> io::Result<reqwest::blocking::Response> {
+    let mut req = client.get(url).header(reqwest::header::RANGE, format!("bytes={from}-"));
+    if let Some(wait) = wait {
+        req = req.timeout(wait);
+    }
+    let resp = req.send().map_err(io::Error::other)?;
     let status = resp.status();
     if !status.is_success() {
         return Err(io::Error::other(format!("HTTP {status}")));
@@ -88,11 +104,14 @@ impl Read for HttpSource {
         }
         let body = self.body.get_mut().unwrap_or_else(|e| e.into_inner());
         if body.is_none() {
-            *body = Some(request(&self.client, &self.url, self.pos)?);
+            *body = Some(request(&self.client, &self.url, self.pos, None)?);
         }
-        let n = body.as_mut().unwrap().read(buf)?;
+        // Never UnexpectedEof: the decoder reads that as a clean end of file,
+        // but a body that fails or ends before `len` is a network error.
+        let aborted = |e: io::Error| io::Error::new(io::ErrorKind::ConnectionAborted, e);
+        let n = body.as_mut().unwrap().read(buf).map_err(aborted)?;
         if n == 0 {
-            return Err(io::ErrorKind::UnexpectedEof.into()); // body ended before len
+            return Err(aborted(io::Error::other("body ended before its length")));
         }
         self.pos += n as u64;
         Ok(n)
@@ -176,6 +195,55 @@ mod tests {
         let mut tail = Vec::new();
         src.read_to_end(&mut tail).unwrap();
         assert_eq!(&tail[..], &file[file.len() - 10..]);
+    }
+
+    /// Answers every request with a 206 whose Content-Range promises the
+    /// whole fixture but sends only its first `sent` bytes. `stall`: the
+    /// Content-Length promises the rest too and the socket is held open;
+    /// otherwise the body ends cleanly (Content-Length = sent), short of the range.
+    fn short_server(sent: usize, stall: bool) -> String {
+        use std::io::Write;
+        let file = std::fs::read(FIXTURE).unwrap();
+        let l = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let base = format!("http://{}", l.local_addr().unwrap());
+        std::thread::spawn(move || {
+            for mut s in l.incoming().flatten() {
+                let file = file.clone();
+                std::thread::spawn(move || {
+                    let _ = s.read(&mut [0u8; 4096]);
+                    let n = file.len();
+                    let body_len = if stall { n } else { sent };
+                    let head = format!(
+                        "HTTP/1.1 206 Partial Content\r\nContent-Range: bytes 0-{}/{n}\r\nContent-Length: {body_len}\r\n\r\n",
+                        n - 1
+                    );
+                    let _ = s.write_all(head.as_bytes());
+                    let _ = s.write_all(&file[..sent]);
+                    let _ = s.flush();
+                    if stall {
+                        std::thread::sleep(Duration::from_secs(20));
+                    }
+                });
+            }
+        });
+        base
+    }
+
+    #[test]
+    fn truncated_body_is_network_error() {
+        let src = HttpSource::open(&format!("{}/stream/x", short_server(200, false))).unwrap();
+        let err = crate::player::decode::Decoder::open(Box::new(src), None).err().unwrap();
+        assert_eq!(err.code(), 2, "{err}");
+    }
+
+    #[test]
+    fn stalled_body_times_out_as_network_error() {
+        let url = format!("{}/stream/x", short_server(200, true));
+        let src = HttpSource::open_with(&url, Duration::from_secs(5), Duration::from_millis(300)).unwrap();
+        let t = std::time::Instant::now();
+        let err = crate::player::decode::Decoder::open(Box::new(src), None).err().unwrap();
+        assert_eq!(err.code(), 2, "{err}");
+        assert!(t.elapsed() < Duration::from_secs(3), "{:?}", t.elapsed());
     }
 
     #[test]

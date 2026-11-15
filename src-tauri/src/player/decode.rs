@@ -6,7 +6,7 @@ use super::source::MediaError;
 use std::io::ErrorKind;
 use symphonia::core::audio::SampleBuffer;
 use symphonia::core::codecs::{DecoderOptions, CODEC_TYPE_NULL, CODEC_TYPE_OPUS};
-use symphonia::core::errors::Error as SymError;
+use symphonia::core::errors::{Error as SymError, SeekErrorKind};
 use symphonia::core::formats::{FormatOptions, FormatReader, Packet, SeekMode, SeekTo};
 use symphonia::core::io::{MediaSource, MediaSourceStream};
 use symphonia::core::meta::MetadataOptions;
@@ -18,6 +18,8 @@ use symphonia::core::units::{Time, TimeBase};
 const PREROLL: f64 = 0.08;
 /// Largest Opus packet: 120 ms at 48 kHz.
 const OPUS_MAX_FRAMES: usize = 5760;
+/// This many undecodable packets in a row (about 1 s) fail the stream.
+const MAX_SKIPPED_RUN: u32 = 50;
 
 enum Codec {
     Symphonia(Box<dyn symphonia::core::codecs::Decoder>, Option<SampleBuffer<f32>>),
@@ -38,6 +40,11 @@ pub struct Decoder {
     /// Output before this frame index is dropped (seek target).
     discard_to: u64,
     eof: bool,
+    /// Packets decoded and skipped as undecodable since open, and the
+    /// current run of skipped ones.
+    decoded: u64,
+    skipped: u64,
+    skipped_run: u32,
     /// Interleaved stereo scratch for one packet.
     pcm: Vec<f32>,
 }
@@ -69,11 +76,16 @@ impl Decoder {
                 e => MediaError::Unsupported(e.to_string()),
             })?
             .format;
+        let codecs = symphonia::default::get_codecs();
+        // First track we can decode (skips video, subtitles, unknown codecs).
         let track = format
             .tracks()
             .iter()
-            .find(|t| t.codec_params.codec != CODEC_TYPE_NULL)
-            .ok_or_else(|| MediaError::Unsupported("no audio track".into()))?;
+            .find(|t| {
+                let c = t.codec_params.codec;
+                c != CODEC_TYPE_NULL && (c == CODEC_TYPE_OPUS || codecs.get_codec(c).is_some())
+            })
+            .ok_or_else(|| MediaError::Unsupported("no decodable audio track".into()))?;
         let params = &track.codec_params;
         let (codec, rate, delay) = if params.codec == CODEC_TYPE_OPUS {
             // OpusHead: magic(8) version(1) channels(1) pre_skip(u16 LE) ...
@@ -85,10 +97,11 @@ impl Decoder {
             let dec = opus::Decoder::new(48000, opus::Channels::Stereo).map_err(|e| MediaError::Decode(e.to_string()))?;
             (Codec::Opus(dec), 48000, delay)
         } else {
-            let dec = symphonia::default::get_codecs()
+            let dec = codecs
                 .make(params, &DecoderOptions::default())
                 .map_err(media_err)?;
             let rate = params.sample_rate.ok_or_else(|| MediaError::Unsupported("no sample rate".into()))?;
+            // shortcut: AAC encoder priming (~23 ms) and Opus end padding are not trimmed; add gapless trim if track joins click.
             (Codec::Symphonia(dec, None), rate, 0)
         };
         let time_base = params.time_base.unwrap_or_else(|| TimeBase::new(1, rate));
@@ -109,6 +122,9 @@ impl Decoder {
             pos: 0,
             discard_to: 0,
             eof: false,
+            decoded: 0,
+            skipped: 0,
+            skipped_run: 0,
             pcm: Vec::new(),
         })
     }
@@ -150,9 +166,20 @@ impl Decoder {
                 continue;
             }
             match self.decode_packet(&packet) {
-                Ok(()) => {}
-                // A corrupt packet is skipped, as browsers do.
-                Err(MediaError::Decode(_)) => continue,
+                Ok(()) => {
+                    self.decoded += 1;
+                    self.skipped_run = 0;
+                }
+                // A corrupt packet is skipped, as browsers do, unless the
+                // stream is mostly corrupt.
+                Err(MediaError::Decode(e)) => {
+                    self.skipped += 1;
+                    self.skipped_run += 1;
+                    if self.skipped_run >= MAX_SKIPPED_RUN {
+                        return Err(MediaError::Decode(e));
+                    }
+                    continue;
+                }
                 Err(e) => return Err(e),
             }
             let frames = (self.pcm.len() / 2) as i64;
@@ -164,6 +191,11 @@ impl Decoder {
                 out.extend_from_slice(&self.pcm[skip as usize * 2..]);
                 return Ok(true);
             }
+        }
+        // Scrambled AAC still decodes now and then (to noise), so the test at
+        // the end is "mostly undecodable", which includes "nothing decoded".
+        if self.skipped > self.decoded {
+            return Err(MediaError::Decode(format!("{} of {} packets undecodable", self.skipped, self.skipped + self.decoded)));
         }
         Ok(false)
     }
@@ -180,10 +212,16 @@ impl Decoder {
                 self.pcm.truncate(n * 2);
             }
             Codec::Symphonia(dec, buf) => {
-                let decoded = dec.decode(packet).map_err(media_err)?;
+                // Every failure here, I/O-flavoured bit-reader underruns and
+                // "unsupported" features of a scrambled frame included, is a bad packet.
+                let decoded = dec.decode(packet).map_err(|e| MediaError::Decode(e.to_string()))?;
                 let spec = *decoded.spec();
                 let ch = spec.channels.count();
-                if buf.as_ref().is_none_or(|b| b.capacity() < decoded.capacity()) {
+                if ch == 0 {
+                    return Err(MediaError::Unsupported("no channels".into()));
+                }
+                // capacity() is in samples, decoded.capacity() in frames
+                if buf.as_ref().is_none_or(|b| b.capacity() < decoded.capacity() * ch) {
                     *buf = Some(SampleBuffer::new(decoded.capacity() as u64, spec));
                 }
                 let buf = buf.as_mut().unwrap();
@@ -209,11 +247,12 @@ impl Decoder {
         let to = SeekTo::Time { time: Time::from(container), track_id: Some(self.track_id) };
         match self.format.seek(SeekMode::Accurate, to) {
             Ok(_) => {}
-            Err(e) if is_eof(&e) || matches!(e, SymError::SeekError(_)) => {
+            Err(e) if is_eof(&e) || matches!(e, SymError::SeekError(SeekErrorKind::OutOfRange)) => {
                 self.eof = true;
                 return Ok(self.duration.map_or(t, |d| d.min(t)));
             }
-            Err(e) => return Err(media_err(e)),
+            Err(e @ SymError::IoError(_)) => return Err(media_err(e)),
+            Err(e) => return Err(MediaError::Decode(e.to_string())),
         }
         match &mut self.codec {
             Codec::Opus(dec) => dec.reset_state().map_err(|e| MediaError::Decode(e.to_string()))?,
@@ -325,6 +364,33 @@ mod tests {
             d.seek(10.0).unwrap();
             assert!(!d.next_frames(&mut Vec::new()).unwrap(), "{name}");
         }
+    }
+
+    #[test]
+    fn fragmented_mp4_is_3s_of_440() {
+        check_tone("tone440-3s-frag.m4a", None);
+    }
+
+    #[test]
+    fn corrupt_audio_is_decode_error() {
+        // container intact, every AAC frame scrambled
+        let path = format!("{}/tests/fixtures/tone440-3s.m4a", env!("CARGO_MANIFEST_DIR"));
+        let mut bytes = std::fs::read(path).unwrap();
+        let mdat = bytes.windows(4).position(|w| w == b"mdat").unwrap() + 4;
+        let size = u32::from_be_bytes(bytes[mdat - 8..mdat - 4].try_into().unwrap()) as usize;
+        for (i, b) in bytes[mdat..mdat - 8 + size].iter_mut().enumerate() {
+            *b ^= (i * 7919 % 251) as u8 | 1;
+        }
+        let mut d = Decoder::open(Box::new(std::io::Cursor::new(bytes)), None).unwrap();
+        let mut buf = Vec::new();
+        let err = loop {
+            match d.next_frames(&mut buf) {
+                Ok(true) => continue,
+                Ok(false) => panic!("corrupt stream ended quietly"),
+                Err(e) => break e,
+            }
+        };
+        assert_eq!(err.code(), 3, "{err}");
     }
 
     #[test]
