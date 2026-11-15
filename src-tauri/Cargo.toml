@@ -81,6 +81,10 @@ opus = "0.3"
 audiopus_sys = { version = "0.2", features = ["static"] }
 rubato = "0.16"
 wsola = "0.3.0"
+# Audio output (WASAPI on Windows, ALSA on Linux) and the lock-free SPSC rings
+# between the decode workers, the audio callback and the reporter. See src/player/.
+cpal = "0.16"
+rtrb = "0.3"
 
 # wsola is a tight time-domain loop; keep it optimized in dev/test builds.
 [profile.dev.package.wsola]

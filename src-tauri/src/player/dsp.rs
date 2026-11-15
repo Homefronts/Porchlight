@@ -346,10 +346,13 @@ impl Compressor {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// Serialized camelCase: "linear", "equalPowerIn", "equalPowerOut".
+#[derive(Clone, Copy, Debug, PartialEq, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub enum Curve {
     Linear,
-    /// sin(t*pi/2) shape: pairs with `EqualPowerOut` for a constant-power fade.
+    /// sin(t*pi/2) shape from 0 to 1. Both equal-power names move power by
+    /// sin^2 and behave the same; the two names read better at call sites.
     EqualPowerIn,
     /// cos(t*pi/2) shape when ramping 1 -> 0.
     EqualPowerOut,
@@ -397,19 +400,29 @@ impl Ramp {
             } else {
                 let t = self.i as f32 / self.n as f32;
                 let half_pi = std::f32::consts::FRAC_PI_2;
-                let shape = match self.curve {
-                    Curve::Linear => t,
-                    Curve::EqualPowerIn => (t * half_pi).sin(),
-                    Curve::EqualPowerOut => 1.0 - (t * half_pi).cos(),
-                };
-                self.start + (self.target - self.start) * shape
+                match self.curve {
+                    Curve::Linear => self.start + (self.target - self.start) * t,
+                    // Power moves by sin^2: from 0/1 this is exactly sin/cos,
+                    // and any pair started together from unit power stays
+                    // at unit power, so a fade reversed mid-way is seamless.
+                    Curve::EqualPowerIn | Curve::EqualPowerOut => {
+                        let w = (t * half_pi).sin().powi(2);
+                        let (p0, p1) = (self.start * self.start, self.target * self.target);
+                        (p0 + (p1 - p0) * w).max(0.0).sqrt()
+                    }
+                }
             };
         }
         self.value
     }
 
+    #[cfg(test)]
     pub fn is_done(&self) -> bool {
         self.i >= self.n
+    }
+
+    pub fn value(&self) -> f32 {
+        self.value
     }
 }
 
@@ -615,6 +628,26 @@ mod tests {
         }
         assert!(b.is_done());
         assert_eq!((a.next(), b.next()), (1.0, 0.0));
+    }
+
+    #[test]
+    fn equal_power_reversed_mid_fade_keeps_unit_power() {
+        let mut a = Ramp::new(0.0);
+        let mut b = Ramp::new(1.0);
+        a.to(1.0, 0.5, SR, Curve::EqualPowerIn);
+        b.to(0.0, 0.5, SR, Curve::EqualPowerOut);
+        for _ in 0..7000 {
+            a.next();
+            b.next();
+        }
+        // The user skips back mid-fade: both curves restart from where they are.
+        a.to(0.0, 0.5, SR, Curve::EqualPowerOut);
+        b.to(1.0, 0.5, SR, Curve::EqualPowerIn);
+        while !a.is_done() {
+            let (x, y) = (a.next(), b.next());
+            assert!((x * x + y * y - 1.0).abs() < 1e-3, "{x} {y}");
+        }
+        assert_eq!((a.value(), b.value()), (0.0, 1.0));
     }
 
     #[test]

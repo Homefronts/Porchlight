@@ -133,6 +133,7 @@ impl Decoder {
         self.rate
     }
 
+    #[cfg(test)]
     /// Always 2: output is stereo whatever the source.
     pub fn channels(&self) -> usize {
         2

@@ -4518,6 +4518,21 @@ pub fn run() {
             listenbrainz::listenbrainz_flush,
             listenbrainz::listenbrainz_forget,
             lastfm::lastfm_artist_tags,
+            player::commands::player_subscribe,
+            player::commands::player_load,
+            player::commands::player_play,
+            player::commands::player_pause,
+            player::commands::player_seek,
+            player::commands::player_set_speed,
+            player::commands::player_fade,
+            player::commands::player_set_gain,
+            player::commands::player_unload,
+            player::commands::player_set_eq,
+            player::commands::player_set_mono,
+            player::commands::player_set_normalize,
+            player::commands::player_set_analysis,
+            player::commands::player_select_device,
+            player::commands::player_list_devices,
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
@@ -4554,6 +4569,9 @@ pub fn run() {
         .setup(move |app| {
             // First: everything below reads the data folder this fills.
             migrate::start(app.handle());
+            // The one audio engine; created here, after the single-instance
+            // check, so a second launch never opens the output device.
+            app.manage(player::Engine::new(|| Box::new(player::output::CpalOutput::new())));
             if let Ok(dir) = app.path().app_data_dir() {
                 appid::refresh_shell_icons_once(&dir, &app.package_info().version.to_string());
             }
