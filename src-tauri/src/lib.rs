@@ -32,6 +32,7 @@ mod lastfm;
 mod listenbrainz;
 mod media;
 mod migrate;
+mod player;
 mod power;
 // Taskbar thumbnail toolbar (prev / play-pause / next under the taskbar
 // preview). Windows-only shell surface; see src/thumbbar.rs.
