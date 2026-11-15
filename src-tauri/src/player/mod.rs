@@ -32,8 +32,8 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use stretch::Stretcher;
 
-/// Per-slot PCM ring: ~170 ms at 48 kHz. Also the delay before a speed
-/// change is heard; seeks and loads flush it.
+/// Per-slot PCM ring: ~170 ms at 48 kHz. Seeks, loads and speed changes
+/// flush it (a speed change re-seeks), so it adds no control latency.
 const RING_FRAMES: usize = 8192;
 /// Pause / play / seek declick ramp.
 const DECLICK_SEC: f32 = 0.005;
