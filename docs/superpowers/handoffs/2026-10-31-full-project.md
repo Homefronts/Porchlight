@@ -416,6 +416,13 @@ The user asked (2026-10-31) that **every change gets added to this write-up as i
 
 ## State right now
 
+- **PICK UP HERE (2026-11-15 late): native audio engine built, user stopped after the first live check.** Branch `native-audio` (not merged, not pushed), plan `docs/superpowers/plans/2026-11-15-native-audio-engine.md`, ledger `.superpowers/sdd/2026-11-15-native-audio-engine/progress.md`. Tasks 1-7 built and each reviewed (fix rounds on 3-7): Rust engine in `src-tauri/src/player/` (DSP parity with WebAudio, analysis tap, Symphonia + libopus decode over the local stream server, rubato + wsola speed with a bit-exact 1x bypass, two-slot cpal engine with idle stream close after 10 s so the PC can sleep), `src/lib/native-media.ts` adapter, `audio-engine.ts` switched, `audio-graph.ts` deleted, the silent microphone grant (`webview_permissions.rs`) removed, playback settings migrate the old WebAudio device id to "System default" once. Tests at the end: vitest 869, cargo 139.
+  - **Live check so far:** a song played through the native engine; the user confirmed it plays fine and Windows shows Porchlight as the audio source, which was the goal (Wave Link). User: "this is a fine stopping point as it will work for me".
+  - **Not done yet:** the rest of Task 8 by ear (crossfade, speed and 4x, Skip Silences, EQ/mono/normalize, device switch, video mode, podcast resume, offline download, Rewind snippet, sleep timer end-of-song, repeat one, visualizer side by side), the final whole-branch review, README/What's New notes, merging into `main`. The ledger lists each.
+  - **Build needs on this PC:** CMake (installed at `C:\Program Files\CMake\bin`) for libopus; `.cargo/config.toml` sets `CMAKE_POLICY_VERSION_MINIMUM` and `LIBOPUS_NO_PKG`. Linux CI gained `cmake` and `libasound2-dev`.
+  - Dev run backup: `C:\Users\homefrontbase\PorchlightDataBackup-20261115-2220-pre-native-audio`; registry keys re-imported, data folders left as is (only WebView2 cache churn and one cached song).
+  - After this: project 2 (YouTube Music client in Rust), then project 3 (Slint UI), per `docs/superpowers/specs/2026-11-15-native-porchlight-overview.md`.
+
 - **PICK UP HERE (2026-11-15): native Porchlight, off the web engine.** User decisions:
   - Why: Elgato Wave Link can't capture Porchlight's audio (WebView2 plays it from `msedgewebview2.exe`, not `porchlight.exe`), and the user doesn't want the app to be a web browser underneath (two WebView2 process trees; the hidden session keeper at `lib.rs:1361` is a second one that never closes).
   - Platforms: Windows and Linux. Linux gets tested on this PC through WSL (not installed yet: needs `wsl --install`, admin, restart). macOS is dropped (confirm with the user if it comes up).
