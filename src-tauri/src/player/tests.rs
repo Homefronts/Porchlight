@@ -407,3 +407,31 @@ fn analysis_frames_stop_when_disabled() {
     std::thread::sleep(Duration::from_millis(300));
     assert_eq!(count(), n);
 }
+
+#[test]
+fn analysis_goes_quiet_once_paused_and_decayed() {
+    let r = rig();
+    let analysis = || -> Vec<(Vec<u8>, f32)> {
+        r.events.lock().unwrap().iter().filter_map(|e| match e {
+            PlayerEvent::Analysis { bins, rms } => Some((bins.clone(), *rms)),
+            _ => None,
+        }).collect()
+    };
+    r.engine.set_analysis(true);
+    r.load(Slot::A, 1);
+    r.play(Slot::A);
+    r.pull(0.2);
+    r.engine.pause(Slot::A);
+    r.pull(0.05);
+    // Starved (nothing pulls), the analyser clears and the bins decay.
+    std::thread::sleep(Duration::from_millis(800));
+    let quiet = analysis();
+    let (bins, rms) = quiet.last().unwrap();
+    assert!(*rms == 0.0 && bins.iter().all(|&b| b == 0), "last frame not silent");
+    std::thread::sleep(Duration::from_millis(300));
+    assert_eq!(analysis().len(), quiet.len(), "still sending while idle");
+    r.play(Slot::A);
+    r.pull(0.1);
+    std::thread::sleep(Duration::from_millis(100));
+    assert!(analysis().len() > quiet.len() + 3, "did not resume on play");
+}

@@ -671,11 +671,14 @@ fn run_reporter(inner: Arc<Inner>, mut tap: Consumer<f32>) {
     let mut analyser = Analyser::new();
     let mut fed = Instant::now();
     let mut last = Instant::now();
+    // The last analysis frame sent was all zero.
+    let mut sent_silence = false;
+    let idle = || !inner.active.load(Relaxed) && !inner.slots.iter().any(|s| s.playing.load(Relaxed));
     while !inner.shutdown.load(Relaxed) {
-        // 60 Hz only while something plays or the visualizer is on; idle,
-        // wake 4 times a second or when `Inner::wake` unparks us.
-        let busy = inner.analysis.load(Relaxed) || inner.slots.iter().any(|s| s.playing.load(Relaxed));
-        if busy {
+        // 60 Hz only while something plays or analysis has a frame to send;
+        // idle, wake 4 times a second or when `Inner::wake` unparks us.
+        let analysing = inner.analysis.load(Relaxed) && !(sent_silence && idle());
+        if analysing || !idle() {
             std::thread::sleep(TICK);
         } else {
             std::thread::park_timeout(REPORT_EVERY);
@@ -698,8 +701,14 @@ fn run_reporter(inner: Arc<Inner>, mut tap: Consumer<f32>) {
                 inner.emit_state(i);
             }
         }
-        if inner.analysis.load(Relaxed) {
-            inner.emit(PlayerEvent::Analysis { bins: analyser.bins().to_vec(), rms: analyser.rms() });
+        // Nothing playing and the analyser decayed: one all-zero frame, then
+        // nothing until playback wakes us. Switched on, it sends at least one.
+        if !inner.analysis.load(Relaxed) {
+            sent_silence = false;
+        } else if !(sent_silence && idle()) {
+            let (bins, rms) = (analyser.bins(), analyser.rms());
+            sent_silence = rms == 0.0 && bins.iter().all(|&b| b == 0);
+            inner.emit(PlayerEvent::Analysis { bins: bins.to_vec(), rms });
         }
     }
 }
