@@ -35,6 +35,8 @@ function ensureChannel() {
     else slots.get(e.slot)?._report(e);
   };
   void invoke("player_subscribe", { channel });
+  // The engine outlives a webview reload; analysis left on there has no listener now.
+  send("player_set_analysis", { enabled: false });
 }
 
 /** Frames from the engine's analyser, for the visualizer and Skip Silences. The
@@ -220,6 +222,15 @@ export class NativeMedia extends EventTarget {
     this.isPaused = true;
     send("player_pause", { slot: this.id });
     this.emit("pause");
+  }
+
+  /** The engine outlives a webview reload: unload the slot and send the
+   *  adapter's speed, volume and a full fade, so its cache matches the engine. */
+  syncEngine() {
+    this.removeAttribute("src");
+    send("player_set_speed", { slot: this.id, speed: this.rate });
+    send("player_set_gain", { slot: this.id, gain: this.vol });
+    this.fadeTo(1, 0);
   }
 
   fadeTo(gain: number, seconds: number, curve: FadeCurve = "linear") {

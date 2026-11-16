@@ -664,8 +664,12 @@ impl Worker {
 
 // ---------------------------------------------------------------- reporter
 
+/// Longer than any device period, so a playing stream never counts as starved.
+const STARVED: Duration = Duration::from_millis(100);
+
 fn run_reporter(inner: Arc<Inner>, mut tap: Consumer<f32>) {
     let mut analyser = Analyser::new();
+    let mut fed = Instant::now();
     let mut last = Instant::now();
     while !inner.shutdown.load(Relaxed) {
         // 60 Hz only while something plays or the visualizer is on; idle,
@@ -678,6 +682,12 @@ fn run_reporter(inner: Arc<Inner>, mut tap: Consumer<f32>) {
         }
         while let Ok(x) = tap.pop() {
             analyser.push([x, x]);
+            fed = Instant::now();
+        }
+        // No samples for a while (output closed when idle): read as silence, not
+        // the last frame. Not per tick: a device period can be longer than a tick.
+        if fed.elapsed() >= STARVED {
+            analyser.clear();
         }
         let periodic = last.elapsed() >= REPORT_EVERY;
         if periodic {

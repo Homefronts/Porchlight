@@ -123,11 +123,9 @@ export function useAudioEngine() {
     if (audioRef.current) return;
     const make = (slot: "a" | "b") => {
       const el = new NativeMedia(slot);
-      // The engine outlives a webview reload: stop what it was playing, undo
-      // a fade-out left on this slot, and force the volume effect to send.
-      el.removeAttribute("src");
-      el.fadeTo(1, 0);
-      el.volume = 0;
+      // The engine outlives a webview reload: reset the slot to the adapter's
+      // defaults, so the speed and volume set below really reach it.
+      el.syncEngine();
       return el;
     };
     const a = make("a");

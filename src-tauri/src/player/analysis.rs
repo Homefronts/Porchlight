@@ -65,6 +65,12 @@ impl Analyser {
         out
     }
 
+    /// Nothing is playing: the window goes silent, so bins decay through the
+    /// smoothing (as WebAudio's do) and rms reads 0.
+    pub fn clear(&mut self) {
+        self.ring = [0.0; N];
+    }
+
     /// RMS of the last 512 mono samples.
     pub fn rms(&self) -> f32 {
         (self.ring.iter().map(|x| x * x).sum::<f32>() / N as f32).sqrt()
@@ -92,6 +98,18 @@ mod tests {
 
     fn peak(b: &[u8; BINS]) -> usize {
         (0..BINS).max_by_key(|&k| b[k]).unwrap()
+    }
+
+    #[test]
+    fn clear_silences_and_bins_decay() {
+        let mut a = Analyser::new();
+        feed_sine(&mut a, 10f32.powf(-50.0 / 20.0), N);
+        let k = peak(&settle(&mut a));
+        a.clear();
+        assert_eq!(a.rms(), 0.0);
+        let first = a.bins()[k];
+        assert!(first > 0, "decays, does not snap");
+        assert_eq!(settle(&mut a)[k], 0);
     }
 
     #[test]

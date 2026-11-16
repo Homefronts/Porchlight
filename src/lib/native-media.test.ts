@@ -207,4 +207,22 @@ describe("NativeMedia", () => {
     stopB();
     expect(flags()).toEqual([true, false]);
   });
+
+  it("a fresh channel turns analysis off first (a reload can leave it on)", async () => {
+    vi.resetModules();
+    h.invoke.mockClear();
+    const fresh = await import("./native-media");
+    fresh.subscribeAnalysis(() => {});
+    const flags = calls("player_set_analysis").map((c) => (c[1] as { enabled: boolean }).enabled);
+    expect(flags).toEqual([false, true]);
+  });
+
+  it("syncEngine puts the engine slot back to the adapter's state", () => {
+    h.invoke.mockClear();
+    m.syncEngine();
+    expect(calls("player_unload")).toEqual([["player_unload", { slot: "A" }]]);
+    expect(calls("player_set_speed")).toEqual([["player_set_speed", { slot: "A", speed: 1 }]]);
+    expect(calls("player_set_gain")).toEqual([["player_set_gain", { slot: "A", gain: 1 }]]);
+    expect(calls("player_fade")).toEqual([["player_fade", { slot: "A", targetGain: 1, seconds: 0, curve: "linear" }]]);
+  });
 });
