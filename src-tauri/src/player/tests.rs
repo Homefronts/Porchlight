@@ -358,6 +358,20 @@ fn render(slot: &mut super::SlotRender, eos: u32, n: usize) -> Vec<f32> {
 }
 
 #[test]
+fn a_panic_while_rendering_does_not_silence_the_engine_for_good() {
+    let r = rig();
+    let renderer = r.engine.renderer.clone();
+    let _ = std::thread::spawn(move || {
+        let _g = renderer.lock().unwrap();
+        panic!("poison the renderer");
+    })
+    .join();
+    r.load(Slot::A, 1);
+    r.play(Slot::A);
+    assert!(peak(&r.pull(0.2)) > 0.05, "silent after a poisoned lock");
+}
+
+#[test]
 fn running_dry_ramps_out_instead_of_cutting() {
     let (mut slot, mut p) = bare_slot();
     feed(&mut p, 4000, 0.5); // DC: the worst case for a cut

@@ -28,7 +28,8 @@ use serde::{Deserialize, Serialize};
 use source::MediaError;
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering::Relaxed};
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender, TryRecvError};
-use std::sync::{Arc, Mutex};
+use std::panic::AssertUnwindSafe;
+use std::sync::{Arc, Mutex, TryLockError};
 use std::time::{Duration, Instant};
 use stretch::Stretcher;
 
@@ -175,6 +176,14 @@ struct Inner {
 
 fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
     m.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+/// For the audio callback: one line, not one per buffer.
+fn log_once(msg: &str) {
+    static LOGGED: AtomicBool = AtomicBool::new(false);
+    if !LOGGED.swap(true, Relaxed) {
+        eprintln!("[player] {msg}");
+    }
 }
 
 impl Inner {
@@ -977,9 +986,22 @@ impl Engine {
             set: Settings::default(),
         }));
         let r = renderer.clone();
-        let render: Render = Arc::new(move |buf: &mut [f32], ch| match r.try_lock() {
-            Ok(mut r) => r.render(buf, ch),
-            Err(_) => buf.fill(0.0),
+        let render: Render = Arc::new(move |buf: &mut [f32], ch| {
+            let mut r = match r.try_lock() {
+                Ok(r) => r,
+                // A panic under the lock elsewhere: carry on rather than stay silent.
+                Err(TryLockError::Poisoned(e)) => {
+                    log_once("renderer lock poisoned; recovered");
+                    r.clear_poison();
+                    e.into_inner()
+                }
+                Err(TryLockError::WouldBlock) => return buf.fill(0.0),
+            };
+            // A panic here would take the stream down with it.
+            if std::panic::catch_unwind(AssertUnwindSafe(|| r.render(buf, ch))).is_err() {
+                log_once("audio callback panicked; rendering silence for this buffer");
+                buf.fill(0.0);
+            }
         });
         let (dev, dev_rx) = mpsc::channel();
         let (di, dr) = (inner.clone(), renderer.clone());
