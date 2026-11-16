@@ -8,6 +8,7 @@ const RE = {
   han: /[\u3400-\u4dbf\u4e00-\u9fff]/,
   cyrl: /[\u0400-\u04ff]/,
   grek: /[\u0370-\u03ff\u1f00-\u1fff]/,
+  // eslint-disable-next-line no-misleading-character-class -- code point ranges, not combined characters
   other: /[\u0590-\u05ff\u0600-\u06ff\u0750-\u077f\u0900-\u097f\u0e00-\u0e7f]/,
 };
 

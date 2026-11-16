@@ -19,6 +19,8 @@ describe("scriptOf / needsRomanization", () => {
 describe("romanizeLines", () => {
   it("Korean", async () => {
     expect(await romanizeLines(["사랑해", "한국어"])).toEqual(["saranghae", "hangugeo"]);
+    // l before n becomes ll (lateralisation)
+    expect(await romanizeLines(["설날"])).toEqual(["seollal"]);
   });
   it("Russian", async () => {
     expect(await romanizeLines(["Я тебя люблю"])).toEqual(["Ya tebya lyublyu"]);

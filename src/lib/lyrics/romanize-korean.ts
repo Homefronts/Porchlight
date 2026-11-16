@@ -32,12 +32,14 @@ export function romanizeKorean(text: string): string {
       // liaison; an h-final is silent
       a.c = KEEP[a.t] ?? "";
       b.i = T[a.t][1];
+    } else if (b.l === 2 && a.c === "l") {
+      b.i = "l"; // l before n: ll
     } else if (b.l === 2 || b.l === 6) {
       a.c = NASAL[a.c] ?? a.c;
     } else if (b.l === 5) {
       if (a.c === "n" || a.c === "l") { a.c = "l"; b.i = "l"; }
       else if (NASAL[a.c]) { a.c = NASAL[a.c]; b.i = "n"; }
-    } else if (b.l === 2 && a.c === "l") b.i = "l";
+    }
   }
   return syl.map((s) => (s.l < 0 ? s.i : s.i + s.v + s.c)).join("");
 }
