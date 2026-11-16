@@ -466,8 +466,11 @@ impl Renderer {
             s.pos.store(r.pos.to_bits(), Relaxed);
             s.pos_epoch.store(r.pos_epoch, Relaxed);
             if l.ended {
-                s.playing.store(false, Relaxed);
                 s.ended_epoch.store(r.ended_epoch, Relaxed);
+                // A seek or load that landed during this callback keeps its play state.
+                if s.want_epoch.load(Relaxed) == r.ended_epoch {
+                    s.playing.store(false, Relaxed);
+                }
                 s.notify.store(true, Relaxed);
             }
         }
