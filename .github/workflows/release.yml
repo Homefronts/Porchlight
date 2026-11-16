@@ -1,4 +1,4 @@
-# Builds Windows (x64 and ARM64), Linux, and a universal macOS installer,
+# Builds Windows (x64 and ARM64) and Linux installers,
 # then publishes a single draft GitHub Release
 # whenever a `v*` tag is pushed. Publish flow:
 #   git tag v0.1.0 && git push origin v0.1.0
@@ -16,7 +16,7 @@ on:
       - "v*"
   # Manual run against a tag ref (gh workflow run Release --ref vX.Y.Z).
   # Only for re-running: a tag push already starts this workflow, and a
-  # second run builds and uploads macOS twice.
+  # second run builds and uploads every installer twice.
   workflow_dispatch:
 
 jobs:
@@ -39,10 +39,6 @@ jobs:
             os: windows-latest
             args: "--target aarch64-pc-windows-msvc"
             rust_targets: "aarch64-pc-windows-msvc"
-          - name: macOS Universal
-            os: macos-latest
-            args: "--target universal-apple-darwin"
-            rust_targets: "aarch64-apple-darwin,x86_64-apple-darwin"
           - name: Linux
             os: ubuntu-22.04
             args: ""
@@ -93,13 +89,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          # Ad-hoc macOS signature so Apple Silicon can run the build after
-          # the user approves it in Privacy & Security. No Developer ID cert
-          # yet; when one exists, export the APPLE_* env vars from a guarded
-          # $GITHUB_ENV step instead of `${{ secrets.* }}` here — a missing
-          # secret still SETS the env var (empty), which sends the bundler
-          # down the certificate-import path and fails the build.
-          APPLE_SIGNING_IDENTITY: "-"
           # Baked into the build by src-tauri/build.rs. Add these as repo
           # Actions secrets. If unset, the released build just ships with
           # scrobbling disabled and nothing else breaks.
@@ -158,8 +147,6 @@ jobs:
                 continue ;;
               *_arm64-setup.exe)           new="Porchlight_${version}_Windows_arm64_Setup.exe" ;;
               *-setup.exe)                 new="Porchlight_${version}_Windows_x64_Setup.exe" ;;
-              *.app.tar.gz)                new="Porchlight_${version}_macOS_Universal.app.tar.gz" ;;
-              *.dmg)                       new="Porchlight_${version}_macOS_Universal.dmg" ;;
               *.AppImage)                  new="Porchlight_${version}_Linux_x86_64.AppImage" ;;
               *.deb)                       new="Porchlight_${version}_Linux_x86_64.deb" ;;
               *.rpm)                       new="Porchlight_${version}_Linux_x86_64.rpm" ;;

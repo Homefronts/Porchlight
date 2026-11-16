@@ -212,7 +212,7 @@ Pick a look and a layout on first launch, with a live preview of your own librar
 - **Auto-updates**: the app updates itself from GitHub Releases, checks every 6 hours while open, has a Check now button, and keeps its yt-dlp copy fresh.
 - **Moves over from YTubic Plus**: your library, settings, looks and downloads come with you automatically on first launch.
 - **Its own app**: Porchlight sits next to the original YTubic without the two getting in each other's way.
-- **Every desktop**: Windows (x64 and arm64), macOS and Linux (both in beta).
+- **Windows and Linux**: Windows (x64 and arm64) and Linux (beta). macOS builds stopped after 1.2.1.
 
 > **Disclaimer:** YTubic is an unofficial client. It is not affiliated with,
 > endorsed by, or sponsored by Google or YouTube. "YouTube" and "YouTube Music"
@@ -234,20 +234,17 @@ Download the latest installer from the [Releases](https://github.com/Homefronts/
 
 - **Windows 10/11:** run the `.exe` NSIS installer. Pick the `x64` build, or
   the `arm64` one on a Windows on ARM device.
-- **macOS 10.15+ (beta):** open the universal `.dmg`; the same build supports
-  Apple Silicon and Intel. Login cookies are encrypted with a Keychain-backed
-  key.
 - **Linux (beta):** install the `.deb` or `.rpm`, or run the `.AppImage`.
-  Playback requires WebKitGTK 4.1, GTK 3 and the GStreamer base, good and
-  libav plugins. Signing in also requires a desktop Secret Service provider
+  Requires WebKitGTK 4.1, GTK 3 and ALSA (PipeWire and PulseAudio work
+  through it); Porchlight plays the music itself. Signing in also requires a desktop Secret Service provider
   such as GNOME Keyring or a compatible KWallet setup.
 - On first launch the app downloads its own copy of yt-dlp (~12 MB) into its
   data folder and keeps it updated automatically.
 - Signing in is optional: browse and playback work anonymously; sign in to get
   your library, likes, and playlists.
 
-> **Tested on Windows. macOS and Linux builds are included, but haven't been
-> tested on real machines yet.** They are compiled and unit-tested in CI. If something
+> **Tested on Windows. Linux builds are included, but haven't been
+> tested on a real machine yet.** They are compiled and unit-tested in CI. If something
 > breaks, please [open an issue](../../issues) — or use the in-app reporter
 > (⋯ menu → Report an issue), which attaches your app version and OS
 > automatically.
