@@ -267,6 +267,15 @@ struct SlotRender {
     pos: f64,
     pos_epoch: u32,
     ended_epoch: u32,
+    /// Enough frames of this epoch are buffered to start.
+    primed: bool,
+    /// Last frame played, held while ramping out of an underrun.
+    last: [f32; 2],
+}
+
+/// Frames to buffer before ramping in: 30 ms.
+fn prime_frames(rate: f32) -> usize {
+    (rate * 0.03) as usize
 }
 
 /// Per-callback copy of a slot's atomics.
@@ -278,9 +287,26 @@ struct Live {
 }
 
 impl SlotRender {
+    fn new(cons: Consumer<Frame>) -> SlotRender {
+        SlotRender {
+            cons,
+            epoch: 0,
+            run: Ramp::new(0.0),
+            run_target: 0.0,
+            fade: Ramp::new(1.0),
+            gain: Ramp::new(1.0),
+            pos: 0.0,
+            pos_epoch: 0,
+            ended_epoch: 0,
+            primed: false,
+            last: [0.0; 2],
+        }
+    }
+
     fn next(&mut self, l: &mut Live, rate: f32) -> [f32; 2] {
         if self.epoch != l.want && self.run.value() == 0.0 {
             self.epoch = l.want;
+            self.primed = false;
         }
         let stale = self.epoch != l.want;
         // Epochs only grow: drop older frames, keep newer ones for after
@@ -292,19 +318,30 @@ impl SlotRender {
             let _ = self.cons.pop();
         }
         let has = self.cons.peek().is_ok_and(|f| f.epoch == self.epoch);
-        let target = if l.playing && !stale && has { 1.0 } else { 0.0 };
+        // After a seek, load, speed change or underrun, ramp in only once a
+        // cushion is buffered (or the stream's end is), so it doesn't run dry at once.
+        if !has {
+            self.primed = false;
+        } else if !self.primed && (self.cons.slots() >= prime_frames(rate) || l.eos == self.epoch) {
+            self.primed = true;
+        }
+        let target = if l.playing && !stale && has && self.primed { 1.0 } else { 0.0 };
         if target != self.run_target {
             self.run.to(target, DECLICK_SEC, rate, Curve::Linear);
             self.run_target = target;
         }
         let g = self.run.next();
         let mut x = [0.0; 2];
-        if g > 0.0 && has {
-            if let Ok(f) = self.cons.pop() {
-                x = [f.s[0] * g, f.s[1] * g];
-                self.pos = f.pos;
-                self.pos_epoch = f.epoch;
+        if g > 0.0 {
+            if has {
+                if let Ok(f) = self.cons.pop() {
+                    self.last = f.s;
+                    self.pos = f.pos;
+                    self.pos_epoch = f.epoch;
+                }
             }
+            // Run dry: the last sample is held through the ramp-out, not cut to 0.
+            x = [self.last[0] * g, self.last[1] * g];
         }
         if !stale && !has && self.epoch != 0 && l.eos == self.epoch && self.ended_epoch != self.epoch {
             self.ended_epoch = self.epoch;
@@ -929,20 +966,9 @@ impl Engine {
         });
         let rate = DEFAULT_RATE as f32;
         let mut cons = cons.into_iter();
-        let slot = |c: Consumer<Frame>| SlotRender {
-            cons: c,
-            epoch: 0,
-            run: Ramp::new(0.0),
-            run_target: 0.0,
-            fade: Ramp::new(1.0),
-            gain: Ramp::new(1.0),
-            pos: 0.0,
-            pos_epoch: 0,
-            ended_epoch: 0,
-        };
         let renderer = Arc::new(Mutex::new(Renderer {
             inner: inner.clone(),
-            slots: [slot(cons.next().unwrap()), slot(cons.next().unwrap())],
+            slots: [SlotRender::new(cons.next().unwrap()), SlotRender::new(cons.next().unwrap())],
             fades: fade_c,
             tap: tap_p,
             rate,
@@ -1176,6 +1202,8 @@ impl Engine {
             return true;
         }
         let mut r = lock(&self.renderer);
+        // A slot that has to (re)prime waits for its cushion first.
+        let n = if r.slots[i].primed { n } else { n.max(prime_frames(r.rate)) };
         let cons = &mut r.slots[i].cons;
         let Ok(chunk) = cons.read_chunk(cons.slots()) else { return false };
         let (a, b) = chunk.as_slices();

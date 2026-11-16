@@ -340,6 +340,46 @@ fn max_step(x: &[f32]) -> f32 {
     x.windows(3).step_by(2).map(|w| (w[2] - w[0]).abs()).fold(0f32, f32::max)
 }
 
+/// A slot renderer fed straight from a ring (no engine, no threads).
+fn bare_slot() -> (super::SlotRender, rtrb::Producer<super::Frame>) {
+    let (p, c) = rtrb::RingBuffer::new(super::RING_FRAMES);
+    (super::SlotRender::new(c), p)
+}
+
+fn feed(p: &mut rtrb::Producer<super::Frame>, n: usize, v: f32) {
+    for _ in 0..n {
+        p.push(super::Frame { s: [v, v], pos: 0.0, epoch: 1 }).unwrap();
+    }
+}
+
+fn render(slot: &mut super::SlotRender, eos: u32, n: usize) -> Vec<f32> {
+    let mut l = super::Live { want: 1, playing: true, eos, ended: false };
+    (0..n).map(|_| slot.next(&mut l, RATE as f32)[0]).collect()
+}
+
+#[test]
+fn running_dry_ramps_out_instead_of_cutting() {
+    let (mut slot, mut p) = bare_slot();
+    feed(&mut p, 4000, 0.5); // DC: the worst case for a cut
+    let out = render(&mut slot, 0, 6000);
+    let step = out.windows(2).map(|w| (w[1] - w[0]).abs()).fold(0f32, f32::max);
+    assert!(step < 0.01, "step {step}");
+    assert_eq!(*out.last().unwrap(), 0.0);
+}
+
+#[test]
+fn ramp_in_waits_for_enough_frames() {
+    let (mut slot, mut p) = bare_slot();
+    feed(&mut p, 100, 0.5);
+    assert_eq!(peak(&render(&mut slot, 0, 200)), 0.0, "started on 100 frames");
+    feed(&mut p, 2000, 0.5);
+    assert!(peak(&render(&mut slot, 0, 400)) > 0.4);
+    // At the end of the stream, a short tail plays without waiting.
+    let (mut slot, mut p) = bare_slot();
+    feed(&mut p, 100, 0.5);
+    assert!(peak(&render(&mut slot, 1, 100)) > 0.0);
+}
+
 #[test]
 fn seek_and_load_while_playing_do_not_click() {
     let r = rig();
