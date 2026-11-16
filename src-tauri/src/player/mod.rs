@@ -284,7 +284,8 @@ struct SlotRender {
 
 /// Frames to buffer before ramping in: 30 ms.
 fn prime_frames(rate: f32) -> usize {
-    (rate * 0.03) as usize
+    // Capped at half the ring: above ~273 kHz a 30 ms cushion would never fit.
+    ((rate * 0.03) as usize).min(RING_FRAMES / 2)
 }
 
 /// Per-callback copy of a slot's atomics.

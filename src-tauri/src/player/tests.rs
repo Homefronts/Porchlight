@@ -489,3 +489,11 @@ fn analysis_goes_quiet_once_paused_and_decayed() {
     std::thread::sleep(Duration::from_millis(100));
     assert!(analysis().len() > quiet.len() + 3, "did not resume on play");
 }
+
+#[test]
+fn start_cushion_fits_the_ring_at_any_rate() {
+    // A 384 kHz device would otherwise never collect its 30 ms cushion.
+    for rate in [44100.0, 48000.0, 192000.0, 384000.0, 768000.0] {
+        assert!(super::prime_frames(rate) <= super::RING_FRAMES / 2, "rate {rate}");
+    }
+}

@@ -236,7 +236,7 @@ Download the latest installer from the [Releases](https://github.com/Homefronts/
   the `arm64` one on a Windows on ARM device.
 - **Linux (beta):** install the `.deb` or `.rpm`, or run the `.AppImage`.
   Requires WebKitGTK 4.1, GTK 3 and ALSA (PipeWire and PulseAudio work
-  through it); Porchlight plays the music itself. Signing in also requires a desktop Secret Service provider
+  through it). Music videos also need the GStreamer base, good and libav plugins. Signing in also requires a desktop Secret Service provider
   such as GNOME Keyring or a compatible KWallet setup.
 - On first launch the app downloads its own copy of yt-dlp (~12 MB) into its
   data folder and keeps it updated automatically.
