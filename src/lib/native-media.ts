@@ -34,7 +34,10 @@ function ensureChannel() {
     if (e.kind === "analysis") analysisSubs.forEach((f) => f(e.bins, e.rms));
     else slots.get(e.slot)?._report(e);
   };
-  void invoke("player_subscribe", { channel });
+  void invoke("player_subscribe", { channel }).catch((e) => {
+    console.error("[native-media] player_subscribe failed:", e);
+    channel = null; // the next ensureChannel() tries again
+  });
   // The engine outlives a webview reload; analysis left on there has no listener now.
   send("player_set_analysis", { enabled: false });
 }
@@ -85,6 +88,8 @@ export class NativeMedia extends EventTarget {
   preload = "";
   crossOrigin: string | null = null;
   preservesPitch = true;
+  /** Seconds, set before `src`: the duration to use when the file states none (a DASH m4a). */
+  fallbackDuration: number | null = null;
 
   constructor(slot: Slot) {
     super();
@@ -118,7 +123,7 @@ export class NativeMedia extends EventTarget {
       send("player_set_speed", { slot: this.id, speed: this.rate });
     }
     const gen = this.gen;
-    invoke("player_load", { slot: this.id, url, startAt: 0, fallbackDuration: null, generation: gen }).catch((e) => {
+    invoke("player_load", { slot: this.id, url, startAt: 0, fallbackDuration: this.fallbackDuration, generation: gen }).catch((e) => {
       console.error("[native-media] player_load failed:", e);
       if (gen !== this.gen || this.err) return;
       this.err = { code: 2, message: String(e) };
@@ -251,9 +256,11 @@ export class NativeMedia extends EventTarget {
       this.anchor = performance.now();
     }
 
-    if (r.duration !== null && r.duration !== this.dur) {
+    // Loaded without a duration: Infinity, as Chromium does, so readyState still moves on.
+    const duration = r.duration ?? (r.loading || r.error_code ? null : Infinity);
+    if (duration !== null && duration !== this.dur) {
       const first = Number.isNaN(this.dur);
-      this.dur = r.duration;
+      this.dur = duration;
       if (first) {
         this.readyState = 1;
         this.emit("loadedmetadata");

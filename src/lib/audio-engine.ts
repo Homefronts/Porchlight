@@ -273,6 +273,7 @@ export function useAudioEngine() {
             p.src = src;
             // Silent until the crossfade fades it in.
             standby.fadeTo(0, 0);
+            standby.fallbackDuration = nextTrack.duration ?? null;
             standby.src = src;
             standby.load();
           })
@@ -579,6 +580,11 @@ export function useAudioEngine() {
         if (token !== resolveTokenRef.current) return;
         if (import.meta.env.DEV) {
           console.debug("[audio] setting src for", videoId, "→", src);
+        }
+        {
+          // A DASH m4a states no duration: the engine falls back to the track's known length.
+          const st = usePlaybackStore.getState();
+          el.fallbackDuration = (st.index >= 0 ? st.queue[st.index]?.duration : undefined) ?? null;
         }
         el.src = src;
         usePlaybackStore.getState().setStreamUrl(src);

@@ -369,7 +369,10 @@ mod tests {
 
     #[test]
     fn fragmented_mp4_is_3s_of_440() {
-        check_tone("tone440-3s-frag.m4a", None);
+        // A DASH m4a states no duration (mdhd 0): the caller's fallback is used.
+        assert_eq!(open("tone440-3s-frag.m4a", None).duration(), None);
+        let d = check_tone("tone440-3s-frag.m4a", Some(3.25));
+        assert_eq!(d.duration(), Some(3.25));
     }
 
     #[test]

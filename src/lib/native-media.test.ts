@@ -124,6 +124,36 @@ describe("NativeMedia", () => {
     expect(m.duration).toBe(90);
   });
 
+  it("sends the track's known length as the load's fallback duration", () => {
+    m.fallbackDuration = 200;
+    m.src = "http://x/1";
+    expect((calls("player_load")[0][1] as { fallbackDuration: unknown }).fallbackDuration).toBe(200);
+  });
+
+  it("a load the engine finds no duration for still fires loadedmetadata, with Infinity", () => {
+    m.src = "http://x/1";
+    const meta = vi.fn();
+    const canplay = vi.fn();
+    m.addEventListener("loadedmetadata", meta);
+    m.addEventListener("canplay", canplay);
+    report({ duration: null, loading: true });
+    expect(meta).not.toHaveBeenCalled();
+    report({ duration: null, loading: false });
+    report({ duration: null, loading: false });
+    expect(meta).toHaveBeenCalledTimes(1);
+    expect(canplay).toHaveBeenCalledTimes(1);
+    expect(m.duration).toBe(Infinity);
+    expect(m.readyState).toBe(4);
+  });
+
+  it("a failed load fires no loadedmetadata", () => {
+    m.src = "http://x/1";
+    const meta = vi.fn();
+    m.addEventListener("loadedmetadata", meta);
+    report({ duration: null, loading: false, error_code: 2 });
+    expect(meta).not.toHaveBeenCalled();
+  });
+
   it("sends volume, seek and fade", async () => {
     m.src = "http://x/1";
     m.volume = 0.5;
@@ -215,6 +245,22 @@ describe("NativeMedia", () => {
     fresh.subscribeAnalysis(() => {});
     const flags = calls("player_set_analysis").map((c) => (c[1] as { enabled: boolean }).enabled);
     expect(flags).toEqual([false, true]);
+  });
+
+  it("a rejected subscribe is logged and retried on the next use", async () => {
+    vi.resetModules();
+    h.invoke.mockClear();
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    h.invoke.mockImplementationOnce(async () => {
+      throw new Error("not the main window");
+    });
+    const fresh = await import("./native-media");
+    new fresh.NativeMedia("a");
+    await vi.advanceTimersByTimeAsync(0);
+    expect(err).toHaveBeenCalled();
+    fresh.subscribeAnalysis(() => {});
+    expect(calls("player_subscribe")).toHaveLength(2);
+    err.mockRestore();
   });
 
   it("syncEngine puts the engine slot back to the adapter's state", () => {
