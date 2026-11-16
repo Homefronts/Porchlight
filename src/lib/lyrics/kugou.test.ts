@@ -37,7 +37,7 @@ const cand = (singer: string) => ({
 });
 
 describe("kugou", () => {
-  beforeEach(() => localStorage?.clear?.());
+  beforeEach(() => globalThis.localStorage?.clear?.());
 
   it("Kugou: picks the matching song and returns word lines", async () => {
     const krc =
