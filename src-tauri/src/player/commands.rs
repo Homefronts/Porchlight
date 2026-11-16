@@ -6,11 +6,19 @@ use super::{Engine, PlayerEvent, Slot};
 use tauri::ipc::Channel;
 use tauri::State;
 
+/// The engine has one subscriber: only the main window may take it, so
+/// another webview importing native-media.ts can't steal its events.
 #[tauri::command]
-pub fn player_subscribe(engine: State<'_, Engine>, channel: Channel<PlayerEvent>) {
-    engine.subscribe(Box::new(move |e| {
-        channel.send(e).is_ok()
-    }));
+pub fn player_subscribe(
+    webview: tauri::Webview,
+    engine: State<'_, Engine>,
+    channel: Channel<PlayerEvent>,
+) -> Result<(), String> {
+    if webview.label() != "main" {
+        return Err(format!("player_subscribe: only the main window may subscribe, not {}", webview.label()));
+    }
+    engine.subscribe(Box::new(move |e| channel.send(e).is_ok()));
+    Ok(())
 }
 
 #[tauri::command]
