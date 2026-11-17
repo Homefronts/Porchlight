@@ -56,6 +56,44 @@ export type WhatsNewEntry = {
  */
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    version: "1.3.0",
+    date: "November 16, 2026",
+    summary: "Every word, and its own sound",
+    changes: [
+      {
+        type: "new",
+        title: "Word-by-word lyrics",
+        text: "Lyrics light up word by word as the song plays, with romanization for Japanese, Korean, Chinese and more, a translation under each line, and duets split by singer. Add your own TTML or LRC files too. Choose the sources and their order in Settings > Lyrics.",
+      },
+      {
+        type: "new",
+        title: "Podcasts",
+        text: "A Podcasts tab with your shows and their new episodes. Episodes remember where you stopped, can be marked as played, download for offline listening, and the next one plays when one ends. Sponsor skipping is there too, off unless you turn it on.",
+      },
+      {
+        type: "new",
+        title: "Libre.fm and ListenBrainz",
+        text: "Scrobble to Libre.fm and ListenBrainz as well as Last.fm, each with its own switch in Settings > Integrations.",
+      },
+      {
+        type: "improved",
+        title: "Porchlight plays its own sound",
+        text: "Music now comes from Porchlight itself, so Elgato Wave Link, OBS and the Windows volume mixer see it as its own app. Crossfade, speed, the equalizer, the visualizer and Skip Silences all work as before.",
+      },
+      {
+        type: "improved",
+        title: "Lighter in the background",
+        text: "Porchlight runs far fewer helper processes. The hidden window that keeps you signed in now closes between its checks.",
+      },
+      {
+        type: "fixed",
+        title: "Seeking with the keyboard",
+        text: "Moving through a song with the arrow keys no longer freezes the progress bar and the lyrics.",
+      },
+    ],
+    note: "Kugou and NetEase, two lyrics services based in China, are off until you say yes. You'll be asked once, and can change it any time in Settings > Lyrics.",
+  },
+  {
     version: "1.2.1",
     date: "November 5, 2026",
     summary: "Little touches",

@@ -152,6 +152,7 @@ Pick a look and a layout on first launch, with a live preview of your own librar
 - **Playback speed**: 0.75x to 1.5x, with the pitch unchanged.
 - **Skip silences**: long quiet stretches play fast until the music comes back, off unless you turn it on.
 - **Playback settings**: crossfade, volume normalization, an equalizer with presets, and output device choice.
+- **Its own sound**: Porchlight plays the music itself, so Elgato Wave Link, OBS and the Windows volume mixer see it as its own app.
 - **Picks up where you left off**: the app remembers your song, queue and position across restarts and updates.
 - **Radio button**: start a mix from whatever is playing, and click again to return to your album or playlist where you left off.
 - **Mood chips**: reshape a running mix with YouTube Music's chips (All, Familiar, Discover, Chill and more).
@@ -303,6 +304,28 @@ Complicated changes, some needing new servers or apps.
 ## Changelog
 
 Every release of Porchlight, and of YTubic Plus before it, newest first.
+
+#### 1.3.0 (November 16, 2026): Every word, and its own sound
+
+**New**
+
+- **Word-by-word lyrics**: lyrics light up word by word as the song plays, with romanization for Japanese, Korean, Chinese and more, a translation under each line, and duets split by singer. Add your own TTML or LRC files too. Kugou and NetEase are off until you say yes.
+- **Podcasts**: a Podcasts tab with your shows and their new episodes. Episodes remember where you stopped, can be marked as played, download for offline listening, and the next one plays when one ends. Sponsor skipping is optional.
+- **Libre.fm and ListenBrainz**: scrobble to them as well as Last.fm, each with its own switch.
+
+**Improved**
+
+- **Porchlight plays its own sound**: music comes from Porchlight itself, so Elgato Wave Link, OBS and the Windows volume mixer see it as its own app.
+- **Lighter in the background**: far fewer helper processes; the hidden window that keeps you signed in closes between its checks.
+
+**Fixed**
+
+- **Seeking with the keyboard**: the arrow keys no longer freeze the progress bar and the lyrics.
+- **Korean romanization**: an l before an n now reads as ll.
+
+**Platforms**
+
+- **Windows and Linux only from now on**: macOS installs stay on 1.2.1.
 
 #### 1.2.1 (November 5, 2026): Little touches
 
