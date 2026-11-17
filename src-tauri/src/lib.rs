@@ -1304,8 +1304,8 @@ async fn open_login_window(
                     app_poll.state::<SessionRenewal>().set_needs_relink(None);
                     let _ = app_poll.emit("session-relinked", &account_id);
                     // Rebuild the keeper on the renewed profile right away
-                    // so it holds the profile open (WebView2 flushes its
-                    // cookie store on a timer, not on window close).
+                    // so the renewed session is captured; it lingers past
+                    // WebView2's 30 s cookie commit before it closes.
                     refresh_now().notify_one();
                 }
             }
@@ -1348,11 +1348,38 @@ async fn relink_account(app: tauri::AppHandle, id: String) -> Result<(), String>
 /// it before navigating and waits for it to move.
 static KEEPER_PAGE_LOADS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
+/// How long the keeper stays open after a refresh before it is closed, so
+/// its browser processes aren't resident between refreshes. Longer than
+/// Chromium's 30 s cookie-store commit interval, so rotated cookies reach
+/// the profile on disk first.
+const KEEPER_LINGER_SECS: u64 = 60;
+/// Bumped by every refresh; a pending close only fires if no refresh ran since.
+static KEEPER_CLOSE_GEN: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// Close the keeper `KEEPER_LINGER_SECS` after the refresh that just ended,
+/// unless another refresh has started since (it schedules its own close).
+fn close_keeper_later(app: tauri::AppHandle, label: String) {
+    let gen = KEEPER_CLOSE_GEN.fetch_add(1, Ordering::SeqCst) + 1;
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(Duration::from_secs(KEEPER_LINGER_SECS)).await;
+        // Wait out any refresh in progress; it bumps the generation.
+        let guard = app.state::<RefreshGuard>();
+        let _lock = guard.inner().0.lock().await;
+        if KEEPER_CLOSE_GEN.load(Ordering::SeqCst) != gen {
+            return;
+        }
+        if let Some(win) = app.get_webview_window(&label) {
+            eprintln!("[refresh] closing the idle session keeper");
+            let _ = win.close();
+        }
+    });
+}
+
 /// The live "session-keeper" WebView for `id`: a hidden window on
 /// music.youtube.com that reuses the account's persisted profile. As a
 /// real browser engine it stays authenticated from the stored session and
 /// keeps the server-side session (and its rotating cookies) warm, which
-/// plain HTTP replay cannot do. Built ONCE and reused; any keeper left
+/// plain HTTP replay cannot do. Reused while open, and closed a minute after each refresh (see `close_keeper_later`); any keeper left
 /// over from a previously-active account is closed first, so at most one
 /// runs at a time. Returns (window, just_created).
 async fn ensure_session_keeper(
@@ -1596,6 +1623,14 @@ async fn refresh_account_cookies(
     let (win, created) = ensure_session_keeper(app, id)
         .await
         .map_err(RefreshFailure::Other)?;
+    // Whatever the outcome, the keeper closes a minute after this refresh.
+    struct CloseLater(tauri::AppHandle, String);
+    impl Drop for CloseLater {
+        fn drop(&mut self) {
+            close_keeper_later(self.0.clone(), std::mem::take(&mut self.1));
+        }
+    }
+    let _close_later = CloseLater(app.clone(), win.label().to_string());
     eprintln!("[refresh] start id={id} keeper_created={created} verify={verify}");
     // A reused keeper is reloaded to force fresh authenticated traffic; a
     // just-created one is already loading the URL from the builder.
